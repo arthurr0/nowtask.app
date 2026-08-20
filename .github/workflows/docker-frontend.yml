@@ -1,0 +1,30 @@
+name: Docker frontend
+
+on:
+  push:
+    branches:
+      - master
+      - development
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/docker-frontend.yml'
+      - '.github/workflows/docker-publish.yml'
+  pull_request:
+    branches:
+      - master
+      - development
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/docker-frontend.yml'
+      - '.github/workflows/docker-publish.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      image: nowtask-app-frontend
+      context: ./frontend
+    secrets: inherit

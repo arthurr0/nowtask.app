@@ -1,0 +1,47 @@
+name: CI mcp
+
+on:
+  push:
+    branches:
+      - master
+      - development
+    paths:
+      - 'mcp/**'
+      - '.github/workflows/ci-mcp.yml'
+  pull_request:
+    branches:
+      - master
+      - development
+    paths:
+      - 'mcp/**'
+      - '.github/workflows/ci-mcp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
