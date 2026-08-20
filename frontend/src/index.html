@@ -1,0 +1,68 @@
+<!doctype html>
+<html
+  lang="pl"
+  data-theme="light"
+  data-accent="graphite"
+  data-density="roomy"
+  data-radius="8"
+  data-anim="on"
+  data-rowhover="on"
+>
+  <head>
+    <meta charset="utf-8" />
+    <title>nowtask</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="nowtask to tablica zadań dla zespołów. Kolumny, karty, terminy i automatyzacje w jednym miejscu, a na wierzchu zawsze to, co dzieje się teraz."
+    />
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="brand/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="brand/favicon-16.png" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="brand/apple-touch-icon-180.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="nowtask" />
+    <meta property="og:title" content="nowtask" />
+    <meta property="og:description" content="Tablica zadań, która zaczyna się od teraz." />
+    <meta property="og:url" content="https://nowtask.app/" />
+    <meta property="og:image" content="https://nowtask.app/brand/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    />
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var raw = localStorage.getItem('nowtask.prefs');
+          var p = raw ? JSON.parse(raw) : {};
+          var theme = p.theme || 'system';
+          var dark =
+            theme === 'dark' ||
+            (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          root.setAttribute('data-theme', dark ? 'dark' : 'light');
+          if (p.accent) root.setAttribute('data-accent', p.accent);
+          if (p.density) root.setAttribute('data-density', p.density);
+          if (p.radius) root.setAttribute('data-radius', String(p.radius));
+          if (p.lang) root.setAttribute('lang', p.lang);
+        } catch (e) {
+          /* pierwszy start bez zapisanych preferencji */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
+</html>

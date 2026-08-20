@@ -1,0 +1,282 @@
+<div class="flex h-dvh overflow-hidden bg-bg text-ink">
+  <aside class="hidden w-[232px] flex-none flex-col border-r border-line bg-surface lg:flex">
+    <div class="flex h-14 flex-none items-center gap-2.5 border-b border-line px-4">
+      <ui-logo [size]="22" [tile]="false" />
+      <span class="flex min-w-0 flex-1 flex-col">
+        <span class="text-[13px] font-semibold lowercase tracking-[-0.02em]">{{
+          t('app.name')
+        }}</span>
+        <span class="text-[11px] text-ink-3">{{ t('app.workspace') }}</span>
+      </span>
+    </div>
+
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-thin">
+      <div class="p-3">
+        <button
+          type="button"
+          class="flex h-[34px] w-full items-center gap-2 rounded-field border border-line bg-surface-2 px-2.5 text-ink-3"
+          (click)="palette.open()"
+        >
+          <ui-icon name="search" [size]="15" />
+          <span class="flex-1 text-left text-xs">{{ t('common.searchTasks') }}</span>
+          <span class="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-[10px]"
+            >⌘K</span
+          >
+        </button>
+      </div>
+
+      <nav class="flex flex-col gap-0.5 px-3 pt-1">
+        <div class="flex items-center px-2 pt-2 pb-1.5">
+          <span class="kap flex-1">{{ t('nav.navigation') }}</span>
+          <ui-menu
+            [items]="navMenu()"
+            triggerClass="hoverable flex h-5 w-5 items-center justify-center rounded-[5px] text-ink-3"
+            triggerHeight="20px"
+            ariaLabel="nav.customize"
+            align="end"
+            (selected)="onNavMenu($event)"
+          >
+            <ui-icon name="sliders" [size]="14" />
+          </ui-menu>
+        </div>
+
+        @for (item of nav(); track item.code) {
+          <div
+            class="group flex h-[34px] items-center gap-1 rounded-field pr-1 pl-2"
+            [class.bg-surface-2]="link.isActive"
+          >
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="!text-ink font-medium"
+              #link="routerLinkActive"
+              class="flex h-full min-w-0 flex-1 items-center gap-2.5 text-ink-2"
+            >
+              <ui-icon [name]="item.icon" [size]="16" />
+              <span class="flex-1">{{ t(item.label) }}</span>
+              @if (item.code === 'my-tasks') {
+                <span class="font-mono text-[11px] text-ink-3">{{ store.myTaskCount() }}</span>
+              }
+              @if (item.code === 'automations' && activeRuleCount()) {
+                <span
+                  class="font-mono text-[11px] text-ink-3"
+                  [attr.title]="t('common.activeRules', { count: activeRuleCount() })"
+                  >{{ activeRuleCount() }}</span
+                >
+              }
+            </a>
+            <ui-menu
+              [items]="navItemMenu(item.code)"
+              triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              triggerHeight="24px"
+              ariaLabel="common.more"
+              align="end"
+              (selected)="onNavItemMenu($event, item.code)"
+            >
+              <ui-icon name="dots" [size]="14" />
+            </ui-menu>
+          </div>
+        }
+      </nav>
+
+      <div class="flex flex-col gap-0.5 px-3 pt-3">
+        <div class="flex items-center px-2 pt-2 pb-1.5">
+          <span class="kap flex-1">{{ t('nav.projects') }}</span>
+          <button
+            type="button"
+            class="hoverable flex h-5 w-5 items-center justify-center rounded-[5px] text-ink-3"
+            [attr.aria-label]="t('projects.new')"
+            (click)="addProject()"
+          >
+            <ui-icon name="plus" [size]="14" />
+          </button>
+        </div>
+
+        @if (state.projectId()) {
+          <button
+            type="button"
+            class="flex h-8 items-center gap-2.5 rounded-field px-2 text-ink-3"
+            (click)="clearProject()"
+          >
+            <ui-icon name="x" [size]="14" />
+            <span class="flex-1 truncate text-left">{{ t('projects.showAll') }}</span>
+          </button>
+        }
+
+        @for (project of store.activeProjects(); track project.id) {
+          <div
+            class="group flex h-8 items-center gap-1 rounded-field pr-1 pl-2"
+            [class.bg-surface-2]="state.projectId() === project.id"
+          >
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+              [class.font-medium]="state.projectId() === project.id"
+              [class.text-ink-2]="state.projectId() !== project.id"
+              (click)="selectProject(project)"
+            >
+              <span
+                class="h-[9px] w-[9px] flex-none rounded-sm"
+                [style.background]="
+                  state.projectId() === project.id ? 'var(--c-ink-2)' : 'var(--c-line-strong)'
+                "
+              ></span>
+              <span class="flex-1 truncate">{{ project.name }}</span>
+              <span class="font-mono text-[11px] text-ink-3">{{
+                projectTaskCount(project.id)
+              }}</span>
+            </button>
+            <ui-menu
+              [items]="projectMenu(project)"
+              triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              triggerHeight="24px"
+              ariaLabel="common.more"
+              align="end"
+              (selected)="onProjectMenu($event, project)"
+            >
+              <ui-icon name="dots" [size]="14" />
+            </ui-menu>
+          </div>
+        } @empty {
+          <p class="px-2 py-1 text-[11px] text-ink-3">{{ t('projects.none') }}</p>
+        }
+
+        @if (archivedProjects().length) {
+          <button
+            type="button"
+            class="flex h-8 items-center gap-2.5 rounded-field px-2 text-[11px] text-ink-3"
+            (click)="showArchived.set(!showArchived())"
+          >
+            <ui-icon [name]="showArchived() ? 'chevron-down' : 'chevron-right'" [size]="13" />
+            <span class="flex-1 text-left">{{
+              t('projects.archived', { count: archivedProjects().length })
+            }}</span>
+          </button>
+
+          @if (showArchived()) {
+            @for (project of archivedProjects(); track project.id) {
+              <div class="group flex h-8 items-center gap-1 rounded-field pr-1 pl-2 opacity-60">
+                <span class="flex min-w-0 flex-1 items-center gap-2.5">
+                  <ui-icon name="archive" [size]="13" class="text-ink-3" />
+                  <span class="flex-1 truncate">{{ project.name }}</span>
+                </span>
+                <ui-menu
+                  [items]="projectMenu(project)"
+                  triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                  triggerHeight="24px"
+                  ariaLabel="common.more"
+                  align="end"
+                  (selected)="onProjectMenu($event, project)"
+                >
+                  <ui-icon name="dots" [size]="14" />
+                </ui-menu>
+              </div>
+            }
+          }
+        }
+      </div>
+
+      <div class="flex flex-col gap-0.5 px-3 pt-3">
+        <span class="kap px-2 pt-2 pb-1.5">{{ t('nav.savedViews') }}</span>
+        @for (view of store.savedViews(); track view.id) {
+          <div
+            class="group flex h-8 items-center gap-1 rounded-field pr-1 pl-2"
+            [class.bg-surface-2]="state.activeViewId() === view.id"
+          >
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center gap-2.5 text-left text-ink-2"
+              (click)="applyView(view)"
+            >
+              <span class="flex-1 truncate">{{ view.name ?? t(view.code ?? '') }}</span>
+              <span class="font-mono text-[11px] text-ink-3">{{ view.count }}</span>
+            </button>
+            @if (view.name) {
+              <ui-menu
+                [items]="viewMenu"
+                triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                triggerHeight="24px"
+                ariaLabel="common.more"
+                align="end"
+                (selected)="onViewMenu($event, view)"
+              >
+                <ui-icon name="dots" [size]="14" />
+              </ui-menu>
+            }
+          </div>
+        } @empty {
+          <p class="px-2 py-1 text-[11px] text-ink-3">{{ t('nav.noSavedViews') }}</p>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1 border-t border-line p-3">
+      <a
+        routerLink="/app/settings"
+        routerLinkActive="bg-surface-2 !text-ink font-medium"
+        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-ink-2"
+      >
+        <ui-icon name="sliders" [size]="16" />
+        <span class="flex-1">{{ t('nav.settings') }}</span>
+      </a>
+      <a
+        routerLink="/app/admin"
+        routerLinkActive="bg-surface-2 !text-ink font-medium"
+        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-ink-2"
+      >
+        <ui-icon name="users" [size]="16" />
+        <span class="flex-1">{{ t('nav.admin') }}</span>
+      </a>
+      <a
+        routerLink="/app/system"
+        routerLinkActive="bg-surface-2 !text-ink font-medium"
+        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-ink-2"
+      >
+        <ui-icon name="layers" [size]="16" />
+        <span class="flex-1">{{ t('nav.system') }}</span>
+      </a>
+      <div class="flex h-[42px] items-center gap-2.5 rounded-field px-2">
+        <ui-avatar [user]="store.currentUser()" [size]="26" />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate text-xs font-medium">{{ store.currentUser()?.name }}</span>
+          <span class="text-[11px] text-ink-3">{{
+            t('role.' + (store.currentUser()?.role ?? 'member'))
+          }}</span>
+        </span>
+        <button
+          type="button"
+          class="text-ink-3"
+          [attr.aria-label]="t('state.signOut')"
+          (click)="signOut()"
+        >
+          <ui-icon name="x" [size]="15" />
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app-main flex min-w-0 flex-1 flex-col overflow-hidden">
+    @if (store.ready()) {
+      <router-outlet />
+    } @else {
+      <ui-page-state [loading]="store.loading()" [error]="store.error()" (retry)="reload()" />
+    }
+  </main>
+
+  <app-task-composer />
+  <ui-command-palette />
+
+  <nav
+    class="fixed inset-x-0 bottom-0 flex h-[84px] items-start border-t border-line bg-surface px-2 pt-2.5 lg:hidden"
+  >
+    @for (item of mobileNav(); track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="!text-ink font-medium"
+        class="flex h-14 flex-1 flex-col items-center justify-center gap-1.5 text-ink-3"
+      >
+        <ui-icon [name]="item.icon" [size]="21" />
+        <span class="text-[11px]">{{ t(item.label) }}</span>
+      </a>
+    }
+  </nav>
+</div>

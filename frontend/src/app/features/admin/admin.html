@@ -1,0 +1,586 @@
+<ui-topbar>
+  <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.admin') }}</span>
+  <span class="font-mono text-[11px] text-ink-3">
+    {{ t('admin.headcount', { people: admin.members().length, teams: admin.teams().length }) }}
+  </span>
+  <span class="hidden flex-1 lg:block"></span>
+  <ui-view-controls />
+  @if (isAdmin()) {
+    <button
+      type="button"
+      class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+      (click)="inviteOpen.set(true)"
+    >
+      <ui-icon name="plus" [size]="16" />
+      <span class="hidden sm:inline">{{ t('admin.invite') }}</span>
+    </button>
+  }
+</ui-topbar>
+
+@if (admin.loading() || admin.error()) {
+  <ui-page-state [loading]="admin.loading()" [error]="admin.error()" (retry)="reload()" />
+} @else {
+  <div class="flex flex-1 overflow-hidden">
+    <nav
+      class="hidden w-[232px] flex-none flex-col gap-0.5 border-r border-line bg-surface px-3 py-4 lg:flex"
+    >
+      <span class="kap px-2 pt-2 pb-1.5">{{ t('nav.admin') }}</span>
+      @for (item of sections; track item.id) {
+        <button
+          type="button"
+          class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-left"
+          [class.bg-surface-2]="section() === item.id"
+          [class.font-medium]="section() === item.id"
+          [class.text-ink-2]="section() !== item.id"
+          (click)="setSection(item.id)"
+        >
+          <ui-icon [name]="item.icon" [size]="16" />
+          <span class="flex-1">{{ t(item.label) }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto p-5 pb-24 lg:p-6 scroll-thin">
+      <div class="flex gap-2 overflow-x-auto lg:hidden">
+        @for (item of sections; track item.id) {
+          <button
+            type="button"
+            class="flex h-11 flex-none items-center gap-2 rounded-full px-4 text-[13px]"
+            [class.bg-inv]="section() === item.id"
+            [class.text-inv-ink]="section() === item.id"
+            [class.border]="section() !== item.id"
+            [class.border-line]="section() !== item.id"
+            [class.text-ink-2]="section() !== item.id"
+            (click)="setSection(item.id)"
+          >
+            <ui-icon [name]="item.icon" [size]="15" />
+            {{ t(item.label) }}
+          </button>
+        }
+      </div>
+
+      @switch (section()) {
+        @case ('people') {
+          <div class="flex flex-col gap-6 lg:flex-row">
+            <section class="flex w-full flex-none flex-col gap-3 lg:w-[460px]">
+              <div class="flex items-center gap-2.5">
+                <h2 class="kap">{{ t('admin.members') }}</h2>
+                <span class="h-px flex-1 bg-line"></span>
+              </div>
+
+              <span
+                class="focus-ring flex h-[34px] items-center gap-2 rounded-field border border-line bg-surface-2 px-2.5"
+              >
+                <ui-icon name="search" [size]="15" class="text-ink-3" />
+                <input
+                  class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-ink-3"
+                  [placeholder]="t('admin.searchPerson')"
+                  [value]="search()"
+                  (input)="search.set($any($event.target).value)"
+                />
+                @if (search()) {
+                  <button
+                    type="button"
+                    class="text-ink-3"
+                    [attr.aria-label]="t('ui.field.clear')"
+                    (click)="search.set('')"
+                  >
+                    <ui-icon name="x" [size]="12" />
+                  </button>
+                }
+              </span>
+
+              <div class="flex flex-col">
+                @for (user of visibleMembers(); track user.id) {
+                  <div
+                    class="flex h-14 items-center gap-3 border-b border-line"
+                    [class.opacity-70]="user.pending"
+                  >
+                    <ui-avatar [user]="user.pending ? null : user" [size]="32" />
+                    <span class="flex min-w-0 flex-1 flex-col">
+                      <span class="truncate text-[13px] font-medium">{{
+                        user.pending ? user.email : user.name
+                      }}</span>
+                      <span class="truncate text-[11px] text-ink-3">
+                        {{ user.pending ? invitedLabel(user) : user.email }}
+                      </span>
+                    </span>
+                    @if (user.capacity) {
+                      <span class="hidden font-mono text-[11px] text-ink-3 sm:inline">{{
+                        user.capacity
+                      }}</span>
+                    }
+                    <span
+                      class="flex-none rounded-full px-2.5 py-0.5 text-[11px]"
+                      [class.bg-inv]="user.role === 'admin'"
+                      [class.text-inv-ink]="user.role === 'admin'"
+                      [class.border]="user.role !== 'admin'"
+                      [class.border-line]="user.role !== 'admin'"
+                      [class.text-ink-2]="user.role !== 'admin'"
+                      >{{ t('role.' + user.role) }}</span
+                    >
+                    @if (isAdmin()) {
+                      <ui-menu
+                        [items]="memberMenu(user)"
+                        triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                        triggerHeight="28px"
+                        ariaLabel="common.more"
+                        align="end"
+                        (selected)="onMemberMenu($event, user)"
+                      >
+                        <ui-icon name="dots" [size]="15" />
+                      </ui-menu>
+                    }
+                  </div>
+                } @empty {
+                  <p class="py-8 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
+                }
+              </div>
+
+              <div class="mt-1.5 flex items-center gap-2.5">
+                <h2 class="kap">{{ t('admin.teams') }}</h2>
+                <span class="h-px flex-1 bg-line"></span>
+                @if (isAdmin()) {
+                  <button
+                    type="button"
+                    class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
+                    [attr.aria-label]="t('admin.newTeam')"
+                    (click)="addTeam()"
+                  >
+                    <ui-icon name="plus" [size]="15" />
+                  </button>
+                }
+              </div>
+
+              <div class="flex flex-col">
+                @for (team of admin.teams(); track team.id) {
+                  <div class="flex flex-col border-b border-line">
+                    <div class="flex h-10 items-center gap-3 text-[13px]">
+                      <button
+                        type="button"
+                        class="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        (click)="loadTeamMembers(team.id)"
+                      >
+                        <ui-icon
+                          [name]="expandedTeam(team.id) ? 'chevron-down' : 'chevron-right'"
+                          [size]="14"
+                          class="text-ink-3"
+                        />
+                        <span class="flex-1 truncate">{{ team.name }}</span>
+                      </button>
+                      <span class="font-mono text-[11px] text-ink-3">{{ team.headcount }}</span>
+                      @if (isAdmin()) {
+                        <ui-menu
+                          [items]="teamMenu()"
+                          triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                          triggerHeight="28px"
+                          ariaLabel="common.more"
+                          align="end"
+                          (selected)="onTeamMenu($event, team)"
+                        >
+                          <ui-icon name="dots" [size]="15" />
+                        </ui-menu>
+                      }
+                    </div>
+
+                    @if (expandedTeam(team.id)) {
+                      <div class="flex flex-wrap gap-1.5 pb-3">
+                        @for (user of admin.members(); track user.id) {
+                          <button
+                            type="button"
+                            class="flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px]"
+                            [class.bg-inv]="isInTeam(team.id, user.id)"
+                            [class.text-inv-ink]="isInTeam(team.id, user.id)"
+                            [class.border-inv]="isInTeam(team.id, user.id)"
+                            [class.border-line]="!isInTeam(team.id, user.id)"
+                            [class.text-ink-2]="!isInTeam(team.id, user.id)"
+                            [disabled]="!isAdmin()"
+                            [attr.aria-pressed]="isInTeam(team.id, user.id)"
+                            (click)="toggleTeamMember(team.id, user.id)"
+                          >
+                            @if (isInTeam(team.id, user.id)) {
+                              <ui-icon name="check" [size]="11" />
+                            }
+                            {{ user.shortName }}
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                } @empty {
+                  <p class="py-6 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
+                }
+              </div>
+            </section>
+
+            <section class="flex min-w-0 flex-1 flex-col gap-3">
+              <div class="flex items-center gap-2.5">
+                <h2 class="kap">{{ t('admin.workload') }}</h2>
+                <span class="h-px flex-1 bg-line"></span>
+              </div>
+              <div class="flex flex-col gap-3 rounded-panel border border-line bg-surface p-4">
+                @for (user of admin.members(); track user.id) {
+                  @if (!user.pending) {
+                    <div class="flex flex-col gap-1.5">
+                      <div class="flex items-center gap-2 text-xs">
+                        <span class="flex-1 truncate text-ink-2">{{ user.shortName }}</span>
+                        @if (workloadOf(user.id); as row) {
+                          <span
+                            class="font-mono text-[11px]"
+                            [class.text-warn]="row.points > row.capacity"
+                            [class.text-ink-3]="row.points <= row.capacity"
+                          >
+                            {{ row.points }} / {{ row.capacity }} {{ t('common.points') }}
+                          </span>
+                        } @else {
+                          <span class="font-mono text-[11px] text-ink-3">
+                            0 / {{ user.capacity }} {{ t('common.points') }}
+                          </span>
+                        }
+                      </div>
+                      <div class="h-1.5 overflow-hidden rounded-full bg-surface-3">
+                        <div
+                          class="h-1.5"
+                          [class.bg-warn]="isOverloaded(user.id)"
+                          [class.bg-ink-2]="!isOverloaded(user.id)"
+                          [style.width.%]="workloadPercent(user.id)"
+                        ></div>
+                      </div>
+                    </div>
+                  }
+                }
+                <p class="text-[11px] text-ink-3">{{ t('admin.workloadHint') }}</p>
+              </div>
+            </section>
+          </div>
+        }
+
+        @case ('security') {
+          <section class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex items-center gap-2.5">
+              <h2 class="kap">{{ t('admin.rolePermissions') }}</h2>
+              <span class="h-px flex-1 bg-line"></span>
+            </div>
+
+            <div class="overflow-x-auto rounded-panel border border-line bg-surface scroll-thin">
+              <div class="min-w-[700px]">
+                <div class="kap flex h-11 items-center border-b border-line bg-surface-2">
+                  <span class="min-w-0 flex-1 pl-4">{{ t('admin.permission') }}</span>
+                  @for (role of roles; track role) {
+                    <span class="w-[104px] flex-none text-center">{{ t('role.' + role) }}</span>
+                  }
+                </div>
+
+                @for (permission of admin.permissions(); track permission.key) {
+                  <div
+                    class="flex h-[42px] items-center border-b border-line text-[13px] last:border-b-0"
+                  >
+                    <span class="min-w-0 flex-1 truncate pl-4 text-ink-2">{{
+                      t(permission.key)
+                    }}</span>
+                    @for (role of roles; track role) {
+                      <span class="flex w-[104px] flex-none justify-center">
+                        @switch (value(permission, role)) {
+                          @case ('yes') {
+                            <ui-icon name="check" [size]="16" />
+                          }
+                          @case ('conditional') {
+                            <ui-icon name="lock" [size]="15" class="text-ink-3" />
+                          }
+                          @default {
+                            <span class="text-ink-3">—</span>
+                          }
+                        }
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <p class="flex items-start gap-2 text-[11px] text-ink-3">
+              <ui-icon name="lock" [size]="13" />
+              <span>{{ t('admin.padlockNote') }}</span>
+            </p>
+          </section>
+        }
+
+        @case ('keys') {
+          <section class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <h2 class="kap">{{ t('admin.apiKeys') }}</h2>
+              <span class="h-px flex-1 bg-line"></span>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-xs font-medium text-inv-ink"
+                  (click)="keyOpen.set(true)"
+                >
+                  <ui-icon name="plus" [size]="15" />
+                  {{ t('admin.newKey') }}
+                </button>
+              }
+            </div>
+
+            @if (issuedKey(); as key) {
+              <div class="flex flex-col gap-2 rounded-panel border border-warn bg-warn-soft p-4">
+                <p class="flex items-center gap-2 text-[13px] font-medium text-warn">
+                  <ui-icon name="alert" [size]="15" />
+                  {{ t('admin.keyOnce') }}
+                </p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <code
+                    class="min-w-0 flex-1 truncate rounded-field border border-line bg-surface px-3 py-2 font-mono text-xs"
+                    >{{ key }}</code
+                  >
+                  <button
+                    type="button"
+                    class="flex h-9 items-center gap-1.5 rounded-[7px] border border-line-strong bg-surface px-3 text-xs"
+                    (click)="copyIssuedKey()"
+                  >
+                    <ui-icon name="copy" [size]="14" />
+                    {{ t('admin.copyKey') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-9 items-center rounded-[7px] px-3 text-xs text-ink-2"
+                    (click)="issuedKey.set(null)"
+                  >
+                    {{ t('common.close') }}
+                  </button>
+                </div>
+              </div>
+            }
+
+            <a
+              routerLink="/app/agents"
+              class="flex flex-wrap items-center gap-3 rounded-panel border border-line bg-surface p-4 text-ink hover:bg-surface-2 hover:text-ink"
+            >
+              <ui-icon name="agent" [size]="16" class="flex-none text-ink-2" />
+              <span class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="text-[13px] font-medium">{{ t('admin.agents') }}</span>
+                <span class="text-xs leading-[1.7] text-ink-2">{{ t('admin.agentsLead') }}</span>
+              </span>
+              <span class="flex flex-none items-center gap-1.5 text-xs">
+                {{ t('admin.agentsOpen') }}
+                <ui-icon name="arrow-right" [size]="13" />
+              </span>
+            </a>
+
+            <div class="flex flex-col">
+              @for (key of admin.apiKeys(); track key.id) {
+                <div
+                  class="flex min-h-12 flex-wrap items-center gap-3.5 border-b border-line py-2 text-xs"
+                >
+                  <span class="w-[150px] flex-none font-mono text-ink-2">{{ key.prefix }}</span>
+                  <span class="min-w-0 flex-1 truncate text-ink-2">{{ key.label }}</span>
+                  <span class="flex flex-none flex-wrap gap-1">
+                    @for (scope of key.scopes; track scope) {
+                      <span
+                        class="rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] text-ink-3"
+                        >{{ scope }}</span
+                      >
+                    }
+                  </span>
+                  <span
+                    class="w-[92px] flex-none rounded-full px-2 py-0.5 text-center text-[11px]"
+                    [class.border]="key.state !== 'active'"
+                    [class.border-warn]="key.state !== 'active'"
+                    [class.text-warn]="key.state !== 'active'"
+                    [class.text-ink-3]="key.state === 'active'"
+                    >{{ t('admin.keyState.' + key.state) }}</span
+                  >
+                  <span class="w-[150px] flex-none text-ink-3">
+                    {{
+                      key.lastUsedAt
+                        ? t('admin.keyUsed', { when: shortDateTime(key.lastUsedAt) })
+                        : t('admin.keyNeverUsed')
+                    }}
+                  </span>
+                  @if (isAdmin()) {
+                    <ui-menu
+                      [items]="keyMenu(key)"
+                      triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                      triggerHeight="28px"
+                      ariaLabel="common.more"
+                      align="end"
+                      (selected)="onKeyMenu($event, key)"
+                    >
+                      <ui-icon name="dots" [size]="15" />
+                    </ui-menu>
+                  }
+                </div>
+              } @empty {
+                <p class="py-8 text-center text-xs text-ink-3">
+                  {{ isAdmin() ? t('admin.noKeys') : t('admin.keysAdminOnly') }}
+                </p>
+              }
+            </div>
+          </section>
+        }
+
+        @case ('integrations') {
+          <section class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <h2 class="kap">{{ t('admin.integrations') }}</h2>
+              <span class="h-px flex-1 bg-line"></span>
+              @if (isAdmin()) {
+                <button
+                  type="button"
+                  class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-xs font-medium text-inv-ink"
+                  (click)="integrationOpen.set(true)"
+                >
+                  <ui-icon name="plus" [size]="15" />
+                  {{ t('admin.newIntegration') }}
+                </button>
+              }
+            </div>
+
+            <p class="text-xs leading-[1.7] text-ink-2">{{ t('admin.integrationsLead') }}</p>
+
+            <div class="flex flex-col">
+              @for (integration of integrations.items(); track integration.id) {
+                <div
+                  class="flex min-h-12 flex-wrap items-center gap-3.5 border-b border-line py-2 text-xs"
+                >
+                  <ui-icon
+                    [name]="integration.kind === 'webhook' ? 'link' : 'message'"
+                    [size]="15"
+                    class="flex-none text-ink-3"
+                  />
+                  <span class="w-[150px] flex-none truncate font-medium">{{ integration.name }}</span>
+                  <span class="min-w-0 flex-1 truncate font-mono text-ink-3">{{
+                    integrationTarget(integration)
+                  }}</span>
+                  <span
+                    class="w-[92px] flex-none rounded-full px-2 py-0.5 text-center text-[11px]"
+                    [class.border]="!integration.enabled"
+                    [class.border-warn]="!integration.enabled"
+                    [class.text-warn]="!integration.enabled"
+                    [class.text-ink-3]="integration.enabled"
+                    >{{
+                      integration.enabled ? t('admin.integrationOn') : t('admin.integrationOff')
+                    }}</span
+                  >
+                  <span class="w-[190px] flex-none truncate text-ink-3">
+                    @if (integration.lastAt) {
+                      {{
+                        t('admin.integrationLast', {
+                          when: shortDateTime(integration.lastAt),
+                          detail: integration.lastDetail,
+                        })
+                      }}
+                    } @else {
+                      {{ t('admin.integrationNeverSent') }}
+                    }
+                  </span>
+                  @if (isAdmin()) {
+                    <ui-menu
+                      [items]="integrationMenu(integration)"
+                      triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                      triggerHeight="28px"
+                      ariaLabel="common.more"
+                      align="end"
+                      (selected)="onIntegrationMenu($event, integration)"
+                    >
+                      <ui-icon name="dots" [size]="15" />
+                    </ui-menu>
+                  }
+                </div>
+              } @empty {
+                <p class="py-8 text-center text-xs text-ink-3">{{ t('admin.noIntegrations') }}</p>
+              }
+            </div>
+          </section>
+        }
+
+        @case ('audit') {
+          <section class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <h2 class="kap">{{ t('admin.auditLog') }}</h2>
+              <span class="h-px flex-1 bg-line"></span>
+              <span class="font-mono text-[11px] text-ink-3">{{ admin.audit()?.total ?? 0 }}</span>
+              <button
+                type="button"
+                class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+                (click)="loadAudit(admin.auditPage())"
+              >
+                <ui-icon name="log" [size]="14" />
+                {{ t('admin.refresh') }}
+              </button>
+            </div>
+
+            <div class="overflow-x-auto scroll-thin">
+              <div class="min-w-[760px]">
+                <div class="kap flex h-9 items-center gap-4 border-b border-line">
+                  <span class="w-[132px]">{{ t('task.when') }}</span>
+                  <span class="w-[150px]">{{ t('task.author') }}</span>
+                  <span class="w-[170px]">{{ t('admin.action') }}</span>
+                  <span class="flex-1">{{ t('admin.subject') }}</span>
+                </div>
+                @for (entry of admin.audit()?.items ?? []; track entry.id) {
+                  <div class="flex min-h-10 items-center gap-4 border-b border-line py-1.5 text-xs">
+                    <span class="w-[132px] flex-none font-mono text-ink-3">{{
+                      shortDateTime(entry.at)
+                    }}</span>
+                    <span class="w-[150px] flex-none truncate text-ink-2">{{
+                      entry.actorLabel
+                    }}</span>
+                    <span class="w-[170px] flex-none font-mono text-ink-2">{{ entry.action }}</span>
+                    <span class="min-w-0 flex-1 truncate text-ink-2">{{ entry.subject }}</span>
+                  </div>
+                } @empty {
+                  <p class="py-8 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
+                }
+              </div>
+            </div>
+
+            @if (auditPages() > 1) {
+              <div class="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+                  [disabled]="admin.auditPage() === 0"
+                  (click)="loadAudit(admin.auditPage() - 1)"
+                >
+                  <ui-icon name="chevron-right" [size]="14" class="rotate-180" />
+                  {{ t('admin.previous') }}
+                </button>
+                <span class="font-mono text-[11px] text-ink-3"
+                  >{{ admin.auditPage() + 1 }} / {{ auditPages() }}</span
+                >
+                <button
+                  type="button"
+                  class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+                  [disabled]="admin.auditPage() + 1 >= auditPages()"
+                  (click)="loadAudit(admin.auditPage() + 1)"
+                >
+                  {{ t('admin.next') }}
+                  <ui-icon name="chevron-right" [size]="14" />
+                </button>
+              </div>
+            }
+          </section>
+        }
+      }
+    </div>
+  </div>
+}
+
+<app-invite-dialog
+  [open]="inviteOpen()"
+  (saved)="invite($event)"
+  (cancelled)="inviteOpen.set(false)"
+/>
+
+<app-api-key-dialog
+  [open]="keyOpen()"
+  (saved)="createKey($event)"
+  (cancelled)="keyOpen.set(false)"
+/>
+
+<app-integration-dialog
+  [open]="integrationOpen()"
+  (saved)="createIntegration($event)"
+  (cancelled)="integrationOpen.set(false)"
+/>

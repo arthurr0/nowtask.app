@@ -1,0 +1,302 @@
+<ui-topbar>
+  <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('system.title') }}</span>
+  <span class="hidden flex-1 lg:block"></span>
+  <ui-view-controls />
+</ui-topbar>
+
+<div class="flex flex-1 flex-col gap-9 overflow-y-auto p-5 pb-24 lg:p-10 lg:pb-10 scroll-thin">
+  <header class="flex flex-col gap-1.5">
+    <span class="kap">{{ t('system.title') }}</span>
+    <h1 class="text-[26px] font-semibold lowercase tracking-[-0.02em]">{{ t('app.name') }}</h1>
+    <p class="max-w-[620px] text-[13px] text-ink-2">{{ t('system.lead') }}</p>
+  </header>
+
+  <section class="flex flex-col gap-4">
+    <div class="flex items-center gap-3">
+      <h2 class="kap">{{ t('system.grayscale') }}</h2>
+      <span class="h-px flex-1 bg-line"></span>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="font-mono text-[10px] text-ink-3">{{ t('system.lightRamp') }}</span>
+      <div class="grid grid-cols-3 gap-3 sm:grid-cols-5 xl:grid-cols-9">
+        @for (swatch of lightRamp; track swatch.token) {
+          <div class="flex flex-col gap-1.5">
+            <span
+              class="h-14 rounded-md border border-line"
+              [style.background]="swatch.value"
+            ></span>
+            <span class="truncate font-mono text-[10px] text-ink-3">{{ swatch.token }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="font-mono text-[10px] text-ink-3">{{ t('system.darkRamp') }}</span>
+      <div class="grid grid-cols-3 gap-3 sm:grid-cols-5 xl:grid-cols-9">
+        @for (swatch of darkRamp; track swatch.token) {
+          <div class="flex flex-col gap-1.5">
+            <span
+              class="h-14 rounded-md border border-line"
+              [style.background]="swatch.value"
+            ></span>
+            <span class="truncate font-mono text-[10px] text-ink-3">{{ swatch.token }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-6 pt-1">
+      <span class="text-xs text-ink-2">{{ t('system.accentOptions') }}</span>
+      <div class="flex flex-wrap items-center gap-3.5">
+        @for (accent of accents; track accent.label) {
+          <span class="flex items-center gap-2">
+            <span class="h-5 w-5 rounded-full" [style.background]="accent.value"></span>
+            <span class="font-mono text-[10px] text-ink-3">{{ accent.label }}</span>
+          </span>
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="flex flex-col gap-9 xl:flex-row xl:gap-10">
+    <section class="flex flex-col gap-4 xl:w-[640px] xl:flex-none">
+      <div class="flex items-center gap-3">
+        <h2 class="kap">{{ t('system.typography') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+      </div>
+      <div class="flex flex-col">
+        <div class="flex min-h-13 flex-wrap items-center gap-5 border-b border-line py-2">
+          <span class="flex-1 text-2xl font-semibold tracking-[-0.02em]">{{
+            t('app.sprint')
+          }}</span>
+          <span class="font-mono text-[10px] text-ink-3">Plex Sans 600 · 24/1.25</span>
+        </div>
+        <div class="flex min-h-12 flex-wrap items-center gap-5 border-b border-line py-2">
+          <span class="flex-1 text-[17px] font-semibold tracking-[-0.01em]">{{
+            t('settings.title')
+          }}</span>
+          <span class="font-mono text-[10px] text-ink-3">Plex Sans 600 · 17/1.35</span>
+        </div>
+        <div class="flex min-h-11 flex-wrap items-center gap-5 border-b border-line py-2">
+          <span class="flex-1 text-[13px]">{{ t('settings.appearanceLead') }}</span>
+          <span class="font-mono text-[10px] text-ink-3">Plex Sans 400 · 13/1.5</span>
+        </div>
+        <div class="flex min-h-10 flex-wrap items-center gap-5 border-b border-line py-2">
+          <span class="flex-1 font-mono text-xs text-ink-2">KAD-172 · 15.03.2026 · 8 pkt</span>
+          <span class="font-mono text-[10px] text-ink-3">Plex Mono 400 · 12</span>
+        </div>
+        <div class="flex min-h-10 flex-wrap items-center gap-5 py-2">
+          <span class="kap flex-1">{{ t('nav.navigation') }}</span>
+          <span class="font-mono text-[10px] text-ink-3">Plex Mono 400 · 10 · 0.09em</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex flex-1 flex-col gap-4">
+      <div class="flex items-center gap-3">
+        <h2 class="kap">{{ t('system.spacing') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+      </div>
+      <div class="flex flex-wrap items-end gap-2.5">
+        @for (step of spacing; track step) {
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="bg-ink-2" [style.width.px]="step" [style.height.px]="step"></span>
+            <span class="font-mono text-[10px] text-ink-3">{{ step }}</span>
+          </div>
+        }
+      </div>
+      <div class="flex flex-wrap items-end gap-3 pt-1.5">
+        @for (radius of radii; track radius.px) {
+          <div class="flex flex-col items-center gap-1.5">
+            <span
+              class="h-11 w-11 border border-line-strong"
+              [style.border-radius.px]="radius.px"
+            ></span>
+            <span class="font-mono text-[10px] text-ink-3">{{ radius.label }}</span>
+          </div>
+        }
+      </div>
+      <div class="flex flex-wrap items-center gap-5 pt-2">
+        <span
+          class="flex h-13 w-[150px] items-center justify-center rounded-card border border-line bg-surface shadow-card font-mono text-[10px] text-ink-3"
+          >shadow-card</span
+        >
+        <span
+          class="flex h-13 w-[150px] items-center justify-center rounded-card border border-line-strong bg-surface font-mono text-[10px] text-ink-3"
+          >{{ t('system.stroke') }}</span
+        >
+        <span class="max-w-[240px] text-xs text-ink-3">{{ t('system.shadowNote') }}</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="flex flex-col gap-4">
+    <div class="flex items-center gap-3">
+      <h2 class="kap">{{ t('system.components') }}</h2>
+      <span class="h-px flex-1 bg-line"></span>
+    </div>
+
+    <div class="grid gap-7 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="flex flex-col gap-3">
+        <span class="font-mono text-[10px] text-ink-3">{{ t('system.buttons') }}</span>
+        <button
+          type="button"
+          class="flex h-[34px] items-center justify-center gap-1.5 rounded-[7px] bg-inv text-[13px] font-medium text-inv-ink"
+          (click)="demo('system.primary')"
+        >
+          <ui-icon name="plus" [size]="15" />
+          {{ t('system.primary') }}
+        </button>
+        <button
+          type="button"
+          class="flex h-[34px] items-center justify-center rounded-[7px] border border-line-strong bg-surface text-[13px]"
+          (click)="demo('system.secondary')"
+        >
+          {{ t('system.secondary') }}
+        </button>
+        <button
+          type="button"
+          class="flex h-[34px] items-center justify-center rounded-[7px] text-[13px] text-ink-2"
+          (click)="demo('system.ghost')"
+        >
+          {{ t('system.ghost') }}
+        </button>
+        <button
+          type="button"
+          class="flex h-[34px] items-center justify-center gap-1.5 rounded-[7px] border border-warn text-[13px] text-warn"
+          (click)="demo('system.destructive')"
+        >
+          <ui-icon name="trash" [size]="15" />
+          {{ t('system.destructive') }}
+        </button>
+        <button
+          type="button"
+          disabled
+          class="flex h-[34px] items-center justify-center rounded-[7px] border border-line bg-surface-2 text-[13px] text-ink-3"
+        >
+          {{ t('system.disabled') }}
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <span class="font-mono text-[10px] text-ink-3">{{ t('system.inputs') }}</span>
+        <span
+          class="flex h-9 items-center rounded-field border border-line bg-surface px-3 text-[13px] text-ink-3"
+          >{{ t('system.emptyField') }}</span
+        >
+        <span
+          class="flex h-9 items-center rounded-field border border-ink bg-surface px-3 text-[13px]"
+          >{{ t('system.filledField') }}</span
+        >
+        <span
+          class="flex h-9 items-center gap-2.5 rounded-field border border-line bg-surface px-3 text-[13px]"
+        >
+          <span class="flex-1 text-ink-2">{{ t('system.selectField') }}</span>
+          <ui-icon name="chevron-down" [size]="15" class="text-ink-3" />
+        </span>
+        <span
+          class="flex h-9 items-center rounded-field border border-warn bg-surface px-3 text-[13px] text-warn"
+          >{{ t('system.errorField') }}</span
+        >
+        <span
+          class="flex h-9 items-center gap-2 rounded-field border border-line bg-surface-2 px-3 text-[13px] text-ink-3"
+        >
+          <ui-icon name="lock" [size]="14" />
+          {{ t('system.readOnly') }}
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <span class="font-mono text-[10px] text-ink-3">{{ t('system.toggles') }}</span>
+        <div class="flex h-9 items-center gap-3.5">
+          <span class="h-4 w-4 rounded border border-line-strong"></span>
+          <span class="flex h-4 w-4 items-center justify-center rounded bg-inv text-inv-ink"
+            ><ui-icon name="check" [size]="11"
+          /></span>
+          <span class="h-4 w-4 rounded-full border border-line-strong"></span>
+          <span class="h-4 w-4 rounded-full border-4 border-inv"></span>
+        </div>
+        <div class="flex h-9 items-center gap-3.5">
+          <ui-switch [checked]="true" label="on" />
+          <ui-switch [checked]="false" label="off" />
+        </div>
+        <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
+          <span
+            class="flex h-[26px] flex-1 items-center justify-center rounded-[5px] bg-surface text-xs font-medium shadow-card"
+            >A</span
+          >
+          <span
+            class="flex h-[26px] flex-1 items-center justify-center rounded-[5px] text-xs text-ink-2"
+            >B</span
+          >
+          <span
+            class="flex h-[26px] flex-1 items-center justify-center rounded-[5px] text-xs text-ink-2"
+            >C</span
+          >
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-2"
+            >backend</span
+          >
+          <span class="rounded-full bg-inv px-2 py-0.5 text-[11px] text-inv-ink">{{
+            t('system.selectedChip')
+          }}</span>
+          <span class="rounded-full border border-warn px-2 py-0.5 text-[11px] text-warn">{{
+            t('system.atRiskChip')
+          }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <span class="font-mono text-[10px] text-ink-3">{{ t('system.taskCard') }}</span>
+        <article
+          class="flex flex-col gap-2.5 rounded-card border border-line bg-surface p-3.5 shadow-card"
+        >
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[11px] text-ink-3">KAD-172</span>
+            <span class="flex-1"></span>
+            <ui-icon name="flag" [size]="13" class="text-warn" />
+            <ui-icon name="bolt" [size]="13" class="text-accent" />
+          </div>
+          <h3 class="text-[13px] leading-[1.45] font-medium">
+            Builder reguł: warunki zagnieżdżone
+          </h3>
+          <div class="flex gap-1.5">
+            <span class="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-2"
+              >automatyzacje</span
+            >
+          </div>
+          <div class="flex items-center gap-2.5 text-ink-3">
+            <span
+              class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-surface-3 font-mono text-[9px] text-ink-2"
+              >MW</span
+            >
+            <span class="flex items-center gap-1 font-mono text-[11px]">
+              <ui-icon name="clock" [size]="13" />
+              15.03
+            </span>
+            <span class="flex-1"></span>
+            <span class="flex items-center gap-1 font-mono text-[11px]">
+              <ui-icon name="check" [size]="13" />
+              5/8
+            </span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-4">
+    <div class="flex items-center gap-3">
+      <h2 class="kap">{{ t('system.icons') }}</h2>
+      <span class="h-px flex-1 bg-line"></span>
+    </div>
+    <div class="flex flex-wrap items-center gap-6 text-ink-2">
+      @for (icon of icons; track icon) {
+        <ui-icon [name]="icon" [size]="22" [attr.title]="icon" />
+      }
+    </div>
+  </section>
+</div>

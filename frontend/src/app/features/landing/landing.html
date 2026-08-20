@@ -1,0 +1,693 @@
+<div lang="en" class="theme-dark flex min-h-dvh flex-col bg-bg text-ink">
+  <header class="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-8 px-5 lg:px-8">
+      <a routerLink="/" class="flex items-center gap-2.5 text-ink hover:text-ink">
+        <ui-logo [size]="28" [tile]="false" />
+        <span class="text-[17px] font-semibold lowercase tracking-[-0.02em]">{{ copy.brand }}</span>
+      </a>
+
+      <nav class="hidden flex-1 items-center gap-7 md:flex">
+        @for (link of copy.nav.links; track link.href) {
+          <a [href]="link.href" class="text-[13px] text-ink-2 hover:text-ink">{{ link.label }}</a>
+        }
+      </nav>
+
+      <div class="flex flex-1 items-center justify-end gap-3 md:flex-none">
+        <a
+          routerLink="/login"
+          class="hidden h-9 items-center rounded-card px-3 text-[13px] text-ink-2 hover:text-ink sm:inline-flex"
+          >{{ copy.nav.signIn }}</a
+        >
+        <a
+          routerLink="/signup"
+          class="ink-crisp inline-flex h-9 items-center rounded-card bg-inv px-4 text-[13px] font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
+          >{{ copy.nav.start }}</a
+        >
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="relative overflow-hidden border-b border-line">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
+        style="
+          background-image:
+            linear-gradient(to right, var(--c-line) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--c-line) 1px, transparent 1px);
+          background-size: 56px 56px;
+          opacity: 0.55;
+          mask-image: radial-gradient(ellipse 70% 70% at 50% 0%, #000 25%, transparent 78%);
+        "
+      ></div>
+
+      <div class="relative mx-auto max-w-[1180px] px-5 pt-16 pb-12 lg:px-8 lg:pt-24">
+        <div class="flex max-w-[760px] flex-col gap-6">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 font-mono text-[11px] text-ink-2"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-signal"></span>
+            {{ copy.hero.badge }}
+          </span>
+
+          <h1
+            class="text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-pretty sm:text-[46px] lg:text-[58px]"
+          >
+            {{ copy.hero.title }}
+          </h1>
+
+          <p class="max-w-[620px] text-[15px] leading-[1.75] text-ink-2 text-pretty lg:text-base">
+            {{ copy.hero.body }}
+          </p>
+
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <a
+              routerLink="/signup"
+              class="ink-crisp inline-flex h-12 items-center gap-2 rounded-card bg-inv px-6 text-sm font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
+            >
+              {{ copy.hero.ctaPrimary }}
+              <ui-icon name="arrow-right" [size]="16" />
+            </a>
+            <a
+              [href]="links.github"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex h-12 items-center gap-2 rounded-card border border-line-strong bg-surface px-6 text-sm font-medium text-ink hover:bg-surface-2 hover:text-ink"
+            >
+              <ui-icon name="link" [size]="16" />
+              {{ copy.hero.ctaSecondary }}
+            </a>
+          </div>
+
+          <p class="font-mono text-[11px] text-ink-3">{{ copy.hero.note }}</p>
+        </div>
+      </div>
+
+      <div class="relative mx-auto max-w-[1180px] px-5 pb-16 lg:px-8 lg:pb-20">
+        <app-landing-demo />
+      </div>
+    </section>
+
+    <section class="border-b border-line bg-surface">
+      <div
+        class="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:grid-cols-2 lg:grid-cols-4 lg:px-8"
+      >
+        @for (item of copy.strip; track item.label) {
+          <div class="flex items-center gap-3">
+            <ui-icon [name]="item.icon" [size]="17" class="text-ink-3" />
+            <span class="text-[13px] text-ink-2">{{ item.label }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section id="features" class="scroll-mt-20 border-b border-line">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="flex max-w-[720px] flex-col gap-4">
+          <span class="kap">{{ copy.features.eyebrow }}</span>
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.features.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.features.body }}</p>
+        </div>
+
+        <div
+          class="mt-12 grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-2 lg:grid-cols-3"
+        >
+          @for (feature of copy.features.items; track feature.title) {
+            <div class="flex flex-col gap-3 bg-surface p-6 lg:p-7">
+              <span
+                class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-surface-2 text-ink-2"
+              >
+                <ui-icon [name]="feature.icon" [size]="17" />
+              </span>
+              <h3 class="text-[15px] font-semibold tracking-[-0.01em]">{{ feature.title }}</h3>
+              <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ feature.body }}</p>
+            </div>
+          }
+        </div>
+
+        <a
+          href="#ai-agents"
+          class="mt-5 flex flex-col gap-4 rounded-panel border border-line-strong bg-surface p-6 text-ink hover:bg-surface-2 hover:text-ink lg:flex-row lg:items-center lg:gap-7 lg:p-7"
+        >
+          <span
+            class="flex h-11 w-11 flex-none items-center justify-center rounded-card border border-line bg-bg text-ink"
+          >
+            <ui-icon [name]="copy.features.agents.icon" [size]="20" />
+          </span>
+          <span class="flex min-w-0 flex-1 flex-col gap-2">
+            <span class="flex flex-wrap items-center gap-2.5">
+              <span class="text-[15px] font-semibold tracking-[-0.01em]">{{
+                copy.features.agents.title
+              }}</span>
+              <span
+                class="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-3"
+                >{{ copy.features.agents.badge }}</span
+              >
+            </span>
+            <span class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{
+              copy.features.agents.body
+            }}</span>
+          </span>
+          <span class="flex flex-none items-center gap-2 text-[13px] font-medium">
+            {{ copy.features.agents.cta }}
+            <ui-icon name="arrow-right" [size]="15" />
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section id="automations" class="scroll-mt-20 border-b border-line bg-surface">
+      <div
+        class="mx-auto grid max-w-[1180px] gap-12 px-5 py-20 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-8 lg:py-28"
+      >
+        <div class="flex flex-col gap-5">
+          <span class="kap">{{ copy.rules.eyebrow }}</span>
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.rules.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.rules.body }}</p>
+          <ul class="flex flex-col gap-3 pt-1">
+            @for (point of copy.rules.points; track point) {
+              <li class="flex items-start gap-3 text-[13px] text-ink-2">
+                <ui-icon name="check" [size]="16" class="mt-0.5 text-done-ink" />
+                <span>{{ point }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="rounded-panel border border-line bg-bg p-5 shadow-card">
+            <div class="flex items-center gap-2.5 pb-4">
+              <ui-icon name="bolt" [size]="16" class="text-signal-ink" />
+              <span class="text-[13px] font-medium">{{ copy.rules.name }}</span>
+              <span
+                class="ml-auto rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-3"
+                >{{ copy.rules.active }}</span
+              >
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
+                <span class="kap">{{ copy.rules.when }}</span>
+                <span class="text-[13px]">{{ copy.rules.whenValue }}</span>
+              </div>
+              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
+                <span class="kap">{{ copy.rules.if }}</span>
+                <span class="text-[13px]">{{ copy.rules.ifValue }}</span>
+              </div>
+              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
+                <span class="kap">{{ copy.rules.then }}</span>
+                <span class="text-[13px]">{{ copy.rules.thenValue }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-panel border border-line bg-bg p-5">
+            <span class="kap">{{ copy.rules.logTitle }}</span>
+            <ul class="flex flex-col pt-3">
+              @for (entry of copy.rules.log; track entry.label) {
+                <li
+                  class="flex items-center gap-3 border-t border-line py-2.5 first:border-t-0 first:pt-0"
+                >
+                  <span class="font-mono text-[11px] text-ink-3">{{ entry.time }}</span>
+                  <span class="text-[13px] text-ink-2">{{ entry.label }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai-agents" class="scroll-mt-20 border-b border-line">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
+          <div class="flex flex-col gap-5">
+            <span class="kap">{{ copy.agents.eyebrow }}</span>
+            <h2
+              class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            >
+              {{ copy.agents.title }}
+            </h2>
+            <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.agents.body }}</p>
+
+            <ul class="flex flex-col gap-3 pt-1">
+              @for (point of copy.agents.points; track point) {
+                <li class="flex items-start gap-3 text-[13px] text-ink-2">
+                  <ui-icon name="check" [size]="16" class="mt-0.5 text-done-ink" />
+                  <span>{{ point }}</span>
+                </li>
+              }
+            </ul>
+
+            <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-8">
+              <div class="flex flex-col gap-2">
+                <span class="kap">{{ copy.agents.transportTitle }}</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (transport of copy.agents.transports; track transport) {
+                    <span
+                      class="rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] text-ink-2"
+                      >{{ transport }}</span
+                    >
+                  }
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="kap">{{ copy.agents.clientsTitle }}</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (client of copy.agents.clients; track client) {
+                    <span
+                      class="rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] text-ink-2"
+                      >{{ client }}</span
+                    >
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-1">
+              <span class="kap">{{ copy.agents.configTitle }}</span>
+              <pre
+                class="overflow-x-auto rounded-panel border border-line bg-surface px-4 py-3.5 font-mono text-[12px] leading-[1.7] text-ink-2"
+                >{{ copy.agents.config }}</pre>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <a
+                [href]="links.agentGuide"
+                target="_blank"
+                rel="noreferrer"
+                class="inline-flex items-center gap-2 text-[13px] font-medium text-ink hover:text-ink"
+              >
+                {{ copy.agents.docs }}
+                <ui-icon name="arrow-right" [size]="14" />
+              </a>
+              <a
+                [href]="links.mcpServer"
+                target="_blank"
+                rel="noreferrer"
+                class="inline-flex items-center gap-2 text-[13px] text-ink-2 hover:text-ink"
+              >
+                <ui-icon name="link" [size]="14" />
+                {{ copy.agents.repo }}
+              </a>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <div class="rounded-panel border border-line bg-surface p-5 shadow-card">
+              <div class="flex items-center gap-2.5 border-b border-line pb-4">
+                <ui-icon name="agent" [size]="17" class="text-ink-2" />
+                <span class="text-[13px] font-medium">{{ copy.agents.demo.client }}</span>
+                <span class="ml-auto flex items-center gap-2 font-mono text-[11px] text-ink-3">
+                  <span class="h-1.5 w-1.5 rounded-full bg-done"></span>
+                  {{ copy.agents.demo.server }}
+                </span>
+              </div>
+
+              <p
+                class="mt-4 rounded-card border border-line bg-bg px-3.5 py-3 text-[13px] leading-[1.6] text-pretty"
+              >
+                {{ copy.agents.demo.prompt }}
+              </p>
+
+              <span class="kap mt-5 block">{{ copy.agents.demo.callsTitle }}</span>
+              <ul class="mt-2.5 flex flex-col gap-2">
+                @for (call of copy.agents.demo.calls; track call.tool) {
+                  <li
+                    class="flex flex-col gap-1 rounded-card border border-line bg-bg px-3.5 py-2.5"
+                  >
+                    <span class="flex items-center gap-2">
+                      <ui-icon name="play" [size]="13" class="text-signal-ink" />
+                      <span class="min-w-0 flex-1 truncate font-mono text-[11px]">{{
+                        call.tool
+                      }}</span>
+                      <span class="flex-none font-mono text-[10px] text-ink-3">{{
+                        call.result
+                      }}</span>
+                    </span>
+                    <span class="truncate pl-[21px] font-mono text-[10px] text-ink-3">{{
+                      call.args
+                    }}</span>
+                  </li>
+                }
+              </ul>
+
+              <p class="mt-4 text-[13px] leading-[1.7] text-ink-2 text-pretty">
+                {{ copy.agents.demo.answer }}
+              </p>
+
+              <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+                <span class="kap">{{ copy.agents.demo.scopesTitle }}</span>
+                @for (scope of copy.agents.demo.scopes; track scope) {
+                  <span
+                    class="rounded-full border border-line bg-bg px-2 py-0.5 font-mono text-[10px] text-ink-2"
+                    >{{ scope }}</span
+                  >
+                }
+              </div>
+            </div>
+
+            <div class="rounded-panel border border-line bg-surface p-5">
+              <span class="kap">{{ copy.agents.demo.trailTitle }}</span>
+              <p class="flex items-start gap-2.5 pt-3">
+                <ui-icon name="log" [size]="15" class="mt-px flex-none text-ink-3" />
+                <span class="min-w-0 font-mono text-[11px] leading-[1.7] text-ink-2 break-words">{{
+                  copy.agents.demo.trail
+                }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-16 flex flex-col gap-3 border-t border-line pt-12">
+          <h3 class="text-[19px] font-semibold tracking-[-0.02em]">{{ copy.agents.toolsTitle }}</h3>
+          <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2 text-pretty">
+            {{ copy.agents.toolsBody }}
+          </p>
+        </div>
+
+        <div
+          class="mt-8 grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
+        >
+          @for (group of copy.agents.toolGroups; track group.title) {
+            <div class="flex flex-col gap-3 bg-surface p-6">
+              <span
+                class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+              >
+                <ui-icon [name]="group.icon" [size]="17" />
+              </span>
+              <h4 class="text-[14px] font-semibold tracking-[-0.01em]">{{ group.title }}</h4>
+              <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ group.body }}</p>
+              <span
+                class="mt-auto w-fit rounded-full border border-line bg-bg px-2 py-0.5 font-mono text-[10px] text-ink-3"
+                >{{ group.scope }}</span
+              >
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="open-source" class="scroll-mt-20 border-b border-line">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="flex max-w-[720px] flex-col gap-4">
+          <span class="kap">{{ copy.oss.eyebrow }}</span>
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.oss.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.body }}</p>
+        </div>
+
+        <div class="mt-12 grid gap-5 md:grid-cols-2">
+          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-7">
+            <div class="flex items-center gap-3">
+              <ui-icon name="layers" [size]="18" class="text-ink-2" />
+              <h3 class="text-[15px] font-semibold">{{ copy.oss.selfTitle }}</h3>
+            </div>
+            <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.selfBody }}</p>
+            <pre
+              class="overflow-x-auto rounded-card border border-line bg-bg px-3.5 py-3 font-mono text-[12px] text-ink-2"
+              >{{ copy.oss.command }}</pre>
+            <a
+              [href]="links.deployGuide"
+              target="_blank"
+              rel="noreferrer"
+              class="mt-auto inline-flex items-center gap-2 text-[13px] text-ink hover:text-ink"
+            >
+              {{ copy.oss.docs }}
+              <ui-icon name="arrow-right" [size]="14" />
+            </a>
+          </div>
+
+          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-7">
+            <div class="flex items-center gap-3">
+              <ui-icon name="globe" [size]="18" class="text-ink-2" />
+              <h3 class="text-[15px] font-semibold">{{ copy.oss.cloudTitle }}</h3>
+            </div>
+            <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.cloudBody }}</p>
+            <div class="flex flex-wrap gap-2">
+              @for (tag of copy.oss.cloudTags; track tag) {
+                <span
+                  class="rounded-full border border-line bg-bg px-2.5 py-1 font-mono text-[11px] text-ink-2"
+                  >{{ tag }}</span
+                >
+              }
+            </div>
+            <a
+              routerLink="/signup"
+              class="mt-auto inline-flex items-center gap-2 text-[13px] text-ink hover:text-ink"
+            >
+              {{ copy.nav.start }}
+              <ui-icon name="arrow-right" [size]="14" />
+            </a>
+          </div>
+        </div>
+
+        <a
+          [href]="links.github"
+          target="_blank"
+          rel="noreferrer"
+          class="mt-5 flex items-center gap-3 rounded-panel border border-line bg-surface px-5 py-4 text-ink hover:bg-surface-2 hover:text-ink"
+        >
+          <ui-icon name="link" [size]="17" class="text-ink-2" />
+          <span class="text-[13px] font-medium">{{ copy.oss.repo }}</span>
+          <span class="ml-auto font-mono text-[11px] text-ink-3">{{ links.repoLabel }}</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="pricing" class="scroll-mt-20 border-b border-line bg-surface">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="flex max-w-[760px] flex-col gap-4">
+          <span class="kap">{{ copy.pricing.eyebrow }}</span>
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.pricing.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.pricing.body }}</p>
+        </div>
+
+        <div class="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          @for (tier of copy.pricing.tiers; track tier.name) {
+            <div
+              class="flex flex-col gap-5 rounded-panel border bg-bg p-6"
+              [class.border-line]="!tier.highlight"
+              [class.border-ink]="tier.highlight"
+              [class.shadow-lift]="tier.highlight"
+            >
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-[15px] font-semibold">{{ tier.name }}</h3>
+                  @if (tier.highlight) {
+                    <span
+                      class="ink-crisp rounded-full bg-inv px-2 py-0.5 font-mono text-[10px] text-inv-ink"
+                      >{{ copy.pricing.popular }}</span
+                    >
+                  }
+                </div>
+                <p class="text-[12px] leading-[1.6] text-ink-3">{{ tier.audience }}</p>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <span
+                  class="font-semibold tracking-[-0.02em]"
+                  [class]="
+                    tier.compactPrice ? 'text-[19px] leading-tight' : 'text-[30px] leading-none'
+                  "
+                  >{{ tier.price }}</span
+                >
+                <span class="font-mono text-[11px] text-ink-3">{{ tier.priceNote }}</span>
+              </div>
+
+              <ul class="flex flex-1 flex-col gap-2.5">
+                @for (item of tier.features; track item) {
+                  <li class="flex items-start gap-2.5 text-[13px] leading-[1.6] text-ink-2">
+                    <ui-icon name="check" [size]="15" class="mt-0.5 text-done-ink" />
+                    <span>{{ item }}</span>
+                  </li>
+                }
+              </ul>
+
+              @if (tier.href) {
+                <a
+                  [href]="tier.href"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-surface text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
+                  >{{ tier.cta }}</a
+                >
+              } @else if (tier.highlight) {
+                <a
+                  routerLink="/signup"
+                  class="ink-crisp inline-flex h-11 items-center justify-center rounded-card bg-inv text-[13px] font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
+                  >{{ tier.cta }}</a
+                >
+              } @else {
+                <a
+                  routerLink="/signup"
+                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-surface text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
+                  >{{ tier.cta }}</a
+                >
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="scroll-mt-20 border-b border-line">
+      <div class="mx-auto max-w-[820px] px-5 py-20 lg:px-8 lg:py-28">
+        <h2
+          class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+        >
+          {{ copy.faq.title }}
+        </h2>
+
+        <div class="mt-10 flex flex-col">
+          @for (item of copy.faq.items; track item.q; let i = $index) {
+            <div class="border-t border-line last:border-b">
+              <button
+                type="button"
+                class="flex w-full items-center gap-4 py-5 text-left"
+                [attr.aria-expanded]="openFaq() === i"
+                (click)="toggleFaq(i)"
+              >
+                <span class="flex-1 text-[15px] font-medium text-pretty">{{ item.q }}</span>
+                <ui-icon
+                  name="chevron-down"
+                  [size]="17"
+                  class="text-ink-3 transition-transform"
+                  [class.rotate-180]="openFaq() === i"
+                />
+              </button>
+              @if (openFaq() === i) {
+                <p class="pb-5 text-[14px] leading-[1.75] text-ink-2 text-pretty">{{ item.a }}</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="ink-crisp bg-inv text-inv-ink">
+      <div class="mx-auto flex max-w-[1180px] flex-col gap-7 px-5 py-20 lg:px-8 lg:py-24">
+        <div class="flex max-w-[640px] flex-col gap-4">
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.cta.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] opacity-85 text-pretty">{{ copy.cta.body }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            routerLink="/signup"
+            class="inline-flex h-12 items-center gap-2 rounded-card bg-inv-ink px-6 text-sm font-semibold text-inv hover:text-inv hover:brightness-110"
+          >
+            {{ copy.cta.primary }}
+            <ui-icon name="arrow-right" [size]="16" />
+          </a>
+          <a
+            [href]="links.contact"
+            class="inline-flex h-12 items-center gap-2 rounded-card border border-inv-ink/40 px-6 text-sm font-semibold text-inv-ink hover:border-inv-ink/60 hover:text-inv-ink"
+          >
+            {{ copy.cta.secondary }}
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-line bg-surface">
+    <div class="mx-auto max-w-[1180px] px-5 py-14 lg:px-8">
+      <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2.5">
+            <ui-logo [size]="26" [tile]="false" />
+            <span class="text-[16px] font-semibold lowercase tracking-[-0.02em]">{{
+              copy.brand
+            }}</span>
+          </div>
+          <p class="text-[13px] text-ink-2">{{ copy.footer.tagline }}</p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <span class="kap">{{ copy.footer.product }}</span>
+          @for (link of copy.nav.links; track link.href) {
+            <a [href]="link.href" class="text-[13px] text-ink-2 hover:text-ink">{{ link.label }}</a>
+          }
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <span class="kap">{{ copy.footer.community }}</span>
+          <a
+            [href]="links.github"
+            target="_blank"
+            rel="noreferrer"
+            class="text-[13px] text-ink-2 hover:text-ink"
+            >GitHub</a
+          >
+          <a
+            [href]="links.issues"
+            target="_blank"
+            rel="noreferrer"
+            class="text-[13px] text-ink-2 hover:text-ink"
+            >{{ copy.footer.issues }}</a
+          >
+          <a
+            [href]="links.discussions"
+            target="_blank"
+            rel="noreferrer"
+            class="text-[13px] text-ink-2 hover:text-ink"
+            >{{ copy.footer.discussions }}</a
+          >
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <span class="kap">{{ copy.footer.contact }}</span>
+          <a [href]="links.contact" class="text-[13px] text-ink-2 hover:text-ink">{{
+            links.contactLabel
+          }}</a>
+          <a
+            [href]="links.deployGuide"
+            target="_blank"
+            rel="noreferrer"
+            class="text-[13px] text-ink-2 hover:text-ink"
+            >{{ copy.oss.docs }}</a
+          >
+          <a
+            [href]="links.agentGuide"
+            target="_blank"
+            rel="noreferrer"
+            class="text-[13px] text-ink-2 hover:text-ink"
+            >{{ copy.agents.docs }}</a
+          >
+          <a routerLink="/login" class="text-[13px] text-ink-2 hover:text-ink">{{
+            copy.nav.signIn
+          }}</a>
+        </div>
+      </div>
+
+      <div
+        class="mt-12 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-6 font-mono text-[11px] text-ink-3"
+      >
+        <span>© {{ year }} {{ copy.brand }}</span>
+        <span class="h-[3px] w-[3px] rounded-full bg-line-strong"></span>
+        <span>{{ copy.footer.rights }}</span>
+      </div>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,610 @@
+@if (summary(); as task) {
+  <ui-topbar>
+    <div class="flex min-w-0 items-center gap-1.5">
+      <span class="hidden text-xs text-ink-3 sm:inline">{{ projectName() }}</span>
+      <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+      <span class="hidden text-xs text-ink-3 sm:inline">{{
+        task.sprintCode ?? t('common.none')
+      }}</span>
+      <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+      <span class="font-mono text-[13px] font-medium">{{ task.key }}</span>
+      @if (detail()!.watching) {
+        <span
+          class="flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-2"
+        >
+          <ui-icon name="eye" [size]="12" />
+          {{ t('task.watching') }}
+        </span>
+      }
+    </div>
+
+    <span class="hidden flex-1 lg:block"></span>
+
+    <ui-view-controls />
+
+    <button
+      type="button"
+      class="hidden h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2 md:flex"
+      (click)="copyLink()"
+    >
+      <ui-icon name="link" [size]="15" />
+      {{ t('task.copyLink') }}
+    </button>
+
+    <ui-menu
+      [items]="taskMenu()"
+      triggerClass="flex h-8 w-8 items-center justify-center rounded-[7px] border border-line bg-surface-2 text-ink-2"
+      triggerHeight="32px"
+      ariaLabel="common.more"
+      align="end"
+      (selected)="onTaskMenu($event)"
+    >
+      <ui-icon name="dots" [size]="16" />
+    </ui-menu>
+
+    <a
+      routerLink="/app/board"
+      class="flex h-8 w-8 items-center justify-center rounded-[7px] text-ink-2"
+      [attr.aria-label]="t('common.close')"
+    >
+      <ui-icon name="x" [size]="17" />
+    </a>
+  </ui-topbar>
+
+  <div class="flex flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden scroll-thin">
+    <div class="flex min-w-0 flex-1 flex-col gap-5 p-5 lg:overflow-y-auto lg:p-8 scroll-thin">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <ui-menu
+          [items]="statusItems()"
+          triggerClass="flex h-[30px] items-center gap-2 rounded-full bg-inv px-3 text-xs font-medium text-inv-ink"
+          triggerHeight="30px"
+          ariaLabel="common.status"
+          [chevron]="true"
+          (selected)="pickStatus($event)"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-inv-ink"></span>
+          <span>{{ store.statusName(status()) }}</span>
+        </ui-menu>
+
+        <ui-menu
+          [items]="priorityItems()"
+          triggerClass="flex h-[30px] items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
+          triggerHeight="30px"
+          ariaLabel="list.priority"
+          (selected)="pickPriority($event)"
+        >
+          @if (task.priority === 'high' || task.priority === 'critical') {
+            <ui-icon name="flag" [size]="13" class="text-warn" />
+          }
+          <span>{{ t('priority.' + task.priority) }}</span>
+        </ui-menu>
+
+        @if (detail()!.attachmentCount) {
+          <span
+            class="flex h-[30px] items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
+          >
+            <ui-icon name="clip" [size]="13" />
+            <span class="font-mono text-[11px]">{{ detail()!.attachmentCount }}</span>
+          </span>
+        }
+
+        @if (detail()!.watcherCount) {
+          <span
+            class="flex h-[30px] items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
+          >
+            <ui-icon name="eye" [size]="13" />
+            <span class="font-mono text-[11px]">{{ detail()!.watcherCount }}</span>
+          </span>
+        }
+      </div>
+
+      <ui-inline-edit
+        [value]="task.title"
+        textClass="text-2xl leading-[1.25] font-semibold tracking-[-0.015em] text-pretty"
+        ariaLabel="composer.taskTitle"
+        (saved)="saveTitle($event)"
+      />
+
+      <section class="flex max-w-[720px] flex-col gap-2">
+        <h2 class="kap">{{ t('task.description') }}</h2>
+        <ui-inline-edit
+          [value]="detail()!.description"
+          [multiline]="true"
+          [rows]="5"
+          placeholder="composer.descriptionPlaceholder"
+          textClass="text-[13px] leading-[1.65] text-ink-2 text-pretty whitespace-pre-wrap"
+          ariaLabel="task.description"
+          (saved)="saveDescription($event)"
+        />
+      </section>
+
+      <section class="flex max-w-[720px] flex-col gap-2">
+        <h2 class="kap">{{ t('list.labels') }}</h2>
+        <div class="flex flex-wrap items-center gap-1.5">
+          @for (label of task.labels; track label) {
+            <span
+              class="flex h-7 items-center gap-1.5 rounded-full border border-line pr-1.5 pl-2.5 text-[11px] text-ink-2"
+            >
+              {{ label }}
+              <button
+                type="button"
+                class="hoverable flex h-4 w-4 items-center justify-center rounded-full text-ink-3"
+                [attr.aria-label]="t('task.removeLabel', { label })"
+                (click)="removeLabel(label)"
+              >
+                <ui-icon name="x" [size]="11" />
+              </button>
+            </span>
+          }
+          @if (addingLabel()) {
+            <input
+              class="focus-ring h-7 w-36 rounded-full border border-line bg-surface px-2.5 text-[11px] outline-none"
+              [placeholder]="t('composer.newLabelPlaceholder')"
+              [value]="labelDraft()"
+              (input)="labelDraft.set($any($event.target).value)"
+              (keydown.enter)="$event.preventDefault(); addLabel()"
+              (keydown.escape)="addingLabel.set(false); labelDraft.set('')"
+              (blur)="addLabel()"
+              autofocus
+            />
+          } @else {
+            <button
+              type="button"
+              class="flex h-7 items-center gap-1 rounded-full border border-dashed border-line-strong px-2.5 text-[11px] text-ink-3"
+              (click)="startLabel()"
+            >
+              <ui-icon name="plus" [size]="12" />
+              {{ t('composer.addLabel') }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <section class="flex max-w-[720px] flex-col gap-2.5">
+        <div class="flex items-center gap-2.5">
+          <h2 class="kap">{{ t('task.subtasks') }}</h2>
+          @if (detail()!.subtasks.length) {
+            <span class="font-mono text-[11px] text-ink-3"
+              >{{ doneSubtasks() }}/{{ detail()!.subtasks.length }}</span
+            >
+            <div class="h-[3px] flex-1 overflow-hidden rounded-full bg-surface-3">
+              <div class="h-[3px] bg-ink-2" [style.width.%]="subtaskProgress()"></div>
+            </div>
+          }
+        </div>
+        <div class="flex flex-col">
+          @for (subtask of detail()!.subtasks; track subtask.id) {
+            <div class="group flex min-h-10 items-center gap-3 border-b border-line">
+              <button
+                type="button"
+                class="flex h-4 w-4 flex-none items-center justify-center rounded"
+                [class.bg-inv]="subtask.done"
+                [class.text-inv-ink]="subtask.done"
+                [class.border]="!subtask.done"
+                [class.border-line-strong]="!subtask.done"
+                [attr.aria-pressed]="subtask.done"
+                [attr.aria-label]="subtask.title"
+                (click)="toggleSubtask(subtask.id)"
+              >
+                @if (subtask.done) {
+                  <ui-icon name="check" [size]="11" />
+                }
+              </button>
+              <ui-inline-edit
+                class="flex-1"
+                [value]="subtask.title"
+                [textClass]="subtask.done ? 'text-ink-3 line-through' : ''"
+                ariaLabel="task.subtasks"
+                (saved)="renameSubtask(subtask.id, $event)"
+              />
+              <ui-menu
+                [items]="subtaskAssigneeItems(subtask.assigneeId)"
+                triggerClass="hoverable flex h-7 items-center gap-1.5 rounded-field px-1.5 font-mono text-[11px] text-ink-3"
+                triggerHeight="28px"
+                ariaLabel="common.assignee"
+                align="end"
+                (selected)="assignSubtask(subtask.id, $event)"
+              >
+                @if (store.user(subtask.assigneeId); as user) {
+                  <ui-avatar [user]="user" [size]="18" />
+                } @else {
+                  <ui-icon name="user" [size]="14" />
+                }
+              </ui-menu>
+              <button
+                type="button"
+                class="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                [attr.aria-label]="t('common.delete')"
+                (click)="removeSubtask(subtask.id, subtask.title)"
+              >
+                <ui-icon name="trash" [size]="14" />
+              </button>
+            </div>
+          }
+          <form
+            class="flex h-10 items-center gap-2.5 text-ink-3"
+            (submit)="$event.preventDefault(); addSubtask()"
+          >
+            <ui-icon name="plus" [size]="15" />
+            <input
+              class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-ink-3"
+              [placeholder]="t('task.addSubtask')"
+              [value]="subtaskDraft()"
+              (input)="subtaskDraft.set($any($event.target).value)"
+            />
+            @if (subtaskDraft().trim()) {
+              <button type="submit" class="text-ink-2" [attr.aria-label]="t('common.save')">
+                <ui-icon name="arrow-right" [size]="15" />
+              </button>
+            }
+          </form>
+        </div>
+      </section>
+
+      <div class="flex max-w-[720px] gap-6 border-b border-line">
+        <button
+          type="button"
+          class="border-b-2 pb-2.5 text-[13px]"
+          [class.border-ink]="tab() === 'feed'"
+          [class.font-medium]="tab() === 'feed'"
+          [class.text-ink]="tab() === 'feed'"
+          [class.border-transparent]="tab() !== 'feed'"
+          [class.text-ink-2]="tab() !== 'feed'"
+          (click)="setTab('feed')"
+        >
+          {{ t('task.activity') }}
+        </button>
+        <button
+          type="button"
+          class="border-b-2 pb-2.5 text-[13px]"
+          [class.border-ink]="tab() === 'comments'"
+          [class.font-medium]="tab() === 'comments'"
+          [class.text-ink]="tab() === 'comments'"
+          [class.border-transparent]="tab() !== 'comments'"
+          [class.text-ink-2]="tab() !== 'comments'"
+          (click)="setTab('comments')"
+        >
+          {{ t('task.comments') }}
+          <span class="font-mono text-[11px] text-ink-3">{{ comments().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="border-b-2 pb-2.5 text-[13px]"
+          [class.border-ink]="tab() === 'history'"
+          [class.font-medium]="tab() === 'history'"
+          [class.text-ink]="tab() === 'history'"
+          [class.border-transparent]="tab() !== 'history'"
+          [class.text-ink-2]="tab() !== 'history'"
+          (click)="setTab('history')"
+        >
+          {{ t('task.history') }}
+        </button>
+      </div>
+
+      @switch (tab()) {
+        @case ('feed') {
+          <section class="flex max-w-[720px] flex-col gap-4">
+            @for (entry of history(); track entry.id) {
+              <div class="flex items-start gap-3">
+                @if (entry.ruleName) {
+                  <span
+                    class="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-md bg-accent-soft text-accent"
+                  >
+                    <ui-icon [name]="isAgent(entry.ruleName) ? 'key' : 'bolt'" [size]="14" />
+                  </span>
+                } @else {
+                  <ui-avatar [user]="store.user(entry.actorId)" [size]="26" />
+                }
+                <div class="flex flex-1 flex-col gap-0.5">
+                  <p class="flex flex-wrap items-center gap-1.5 text-[13px]">
+                    <strong class="font-medium">{{
+                      actorLabel(entry.ruleName, entry.actorId)
+                    }}</strong>
+                    <span class="text-ink-2">{{ t('field.' + entry.field) }}</span>
+                    @if (entry.oldValue) {
+                      <span class="text-ink-3 line-through">{{
+                        translateValue(entry.oldValue)
+                      }}</span>
+                      <span class="text-ink-3">&rarr;</span>
+                    }
+                    <span>{{ translateValue(entry.newValue) }}</span>
+                  </p>
+                  <span class="font-mono text-[11px] text-ink-3">{{
+                    dateTime(entry.createdAt)
+                  }}</span>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-xs text-ink-3">{{ t('common.none') }}</p>
+            }
+          </section>
+        }
+
+        @case ('comments') {
+          <section class="flex max-w-[720px] flex-col gap-4">
+            @for (comment of comments(); track comment.id) {
+              <div class="flex items-start gap-3">
+                <ui-avatar [user]="store.user(comment.authorId)" [size]="28" />
+                <div
+                  class="flex flex-1 flex-col gap-1.5 rounded-card border border-line bg-surface px-3.5 py-3"
+                >
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-[13px] font-medium">{{
+                      store.user(comment.authorId)?.shortName
+                    }}</span>
+                    <span class="font-mono text-[11px] text-ink-3">{{
+                      dateTime(comment.createdAt)
+                    }}</span>
+                  </div>
+                  <p class="text-[13px] leading-[1.6] whitespace-pre-wrap text-ink-2">
+                    {{ comment.body }}
+                  </p>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-xs text-ink-3">{{ t('common.none') }}</p>
+            }
+            <div class="flex items-start gap-3">
+              <ui-avatar [user]="store.currentUser()" [size]="28" />
+              <form
+                class="flex min-h-11 flex-1 items-center gap-2 rounded-card border border-line bg-surface px-3.5"
+                (submit)="$event.preventDefault(); submitComment()"
+              >
+                <input
+                  class="min-w-0 flex-1 bg-transparent py-2.5 text-[13px] outline-none"
+                  [placeholder]="t('task.writeComment')"
+                  [value]="commentDraft()"
+                  (input)="commentDraft.set($any($event.target).value)"
+                />
+                <button type="submit" class="text-ink-2" [attr.aria-label]="t('common.save')">
+                  <ui-icon name="arrow-right" [size]="16" />
+                </button>
+              </form>
+            </div>
+          </section>
+        }
+
+        @case ('history') {
+          <section class="flex max-w-[720px] flex-col">
+            <div class="kap flex h-[38px] items-center gap-4 border-b border-line">
+              <span class="w-[108px]">{{ t('task.when') }}</span>
+              <span class="w-[120px]">{{ t('task.field') }}</span>
+              <span class="flex-1">{{ t('task.change') }}</span>
+              <span class="w-[110px]">{{ t('task.author') }}</span>
+            </div>
+            @for (entry of history(); track entry.id) {
+              <div class="flex min-h-[42px] items-center gap-4 border-b border-line text-xs">
+                <span class="w-[108px] font-mono text-ink-3">{{ dateTime(entry.createdAt) }}</span>
+                <span class="w-[120px] text-ink-2">{{ t('field.' + entry.field) }}</span>
+                <span class="flex flex-1 items-center gap-2">
+                  @if (entry.oldValue) {
+                    <span class="text-ink-3 line-through">{{
+                      translateValue(entry.oldValue)
+                    }}</span>
+                    <span class="text-ink-3">→</span>
+                  } @else {
+                    <span class="text-ink-3">+</span>
+                  }
+                  <span>{{ translateValue(entry.newValue) }}</span>
+                </span>
+                <span class="flex w-[110px] items-center gap-1.5">
+                  @if (entry.ruleName) {
+                    <ui-icon
+                      [name]="isAgent(entry.ruleName) ? 'key' : 'bolt'"
+                      [size]="12"
+                      class="text-accent"
+                    />
+                    <span class="text-[11px] text-accent">{{
+                      actorLabel(entry.ruleName, entry.actorId)
+                    }}</span>
+                  } @else {
+                    <span class="text-ink-2">{{ store.user(entry.actorId)?.shortName }}</span>
+                  }
+                </span>
+              </div>
+            } @empty {
+              <p class="py-4 text-xs text-ink-3">{{ t('common.none') }}</p>
+            }
+          </section>
+        }
+      }
+    </div>
+
+    <aside
+      class="flex w-full flex-none flex-col gap-5 border-t border-line bg-surface p-5 lg:w-[328px] lg:border-t-0 lg:border-l lg:overflow-y-auto lg:p-6 scroll-thin"
+    >
+      <div class="flex flex-col gap-0.5">
+        <div class="flex min-h-[34px] items-center gap-3">
+          <span class="w-24 flex-none text-xs text-ink-3">{{ t('common.assignee') }}</span>
+          <ui-menu
+            [items]="assigneeItems()"
+            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+            triggerHeight="28px"
+            ariaLabel="common.assignee"
+            (selected)="pickAssignee($event)"
+          >
+            <ui-avatar [user]="assignee()" [size]="20" />
+            <span class="truncate">{{ assignee()?.shortName ?? t('common.unassigned') }}</span>
+          </ui-menu>
+        </div>
+
+        <div class="flex min-h-[34px] items-center gap-3">
+          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.reviewer') }}</span>
+          <ui-menu
+            [items]="reviewerItems()"
+            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+            triggerHeight="28px"
+            ariaLabel="task.reviewer"
+            (selected)="pickReviewer($event)"
+          >
+            <ui-avatar [user]="reviewer()" [size]="20" />
+            <span class="truncate">{{ reviewer()?.shortName ?? t('common.none') }}</span>
+          </ui-menu>
+        </div>
+
+        <div class="flex min-h-[34px] items-center gap-3">
+          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.dueDate') }}</span>
+          <input
+            type="date"
+            class="focus-ring h-7 flex-1 rounded-field bg-transparent px-1.5 font-mono text-[13px] outline-none"
+            [class.text-warn]="overdue()"
+            [value]="task.dueDate ?? ''"
+            [attr.aria-label]="t('task.dueDate')"
+            (change)="saveDueDate($any($event.target).value)"
+          />
+        </div>
+
+        <div class="flex min-h-[34px] items-center gap-3">
+          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.estimate') }}</span>
+          <ui-inline-edit
+            class="flex-1"
+            [value]="estimateText()"
+            placeholder="composer.estimatePlaceholder"
+            textClass="font-mono text-[13px]"
+            ariaLabel="task.estimate"
+            (saved)="saveEstimate($event)"
+          />
+        </div>
+
+        <div class="flex min-h-[34px] items-center gap-3">
+          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.epic') }}</span>
+          <ui-menu
+            [items]="epicItems()"
+            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+            triggerHeight="28px"
+            ariaLabel="task.epic"
+            (selected)="pickEpic($event)"
+          >
+            <span class="truncate">{{ epic()?.name ?? t('common.none') }}</span>
+          </ui-menu>
+        </div>
+      </div>
+
+      @if (customRows().length) {
+        <section class="flex flex-col gap-2.5">
+          <div class="flex items-center gap-2">
+            <h2 class="kap">{{ t('task.customFields') }}</h2>
+            <span class="h-px flex-1 bg-line"></span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            @for (row of customRows(); track row.field.id) {
+              <div class="flex min-h-8 items-center gap-3">
+                <span class="flex w-24 flex-none items-center gap-1 text-xs text-ink-3">
+                  {{ row.field.name }}
+                  @if (!row.editable) {
+                    <ui-icon name="lock" [size]="11" />
+                  }
+                </span>
+                @if (row.field.type === 'toggle') {
+                  <ui-switch
+                    [checked]="row.raw === true"
+                    [label]="row.field.name"
+                    (toggled)="toggleCustom(row)"
+                  />
+                } @else if (row.field.type === 'date') {
+                  <input
+                    type="date"
+                    class="focus-ring h-7 flex-1 rounded-field bg-transparent px-1.5 font-mono text-[13px] outline-none"
+                    [value]="rawText(row)"
+                    [disabled]="!row.editable"
+                    [attr.aria-label]="row.field.name"
+                    (change)="saveCustomDate(row, $any($event.target).value)"
+                  />
+                } @else {
+                  <ui-inline-edit
+                    class="flex-1"
+                    [value]="row.display"
+                    [disabled]="!row.editable"
+                    placeholder="common.none"
+                    [textClass]="
+                      row.field.type === 'number' || row.field.type === 'currency'
+                        ? 'font-mono text-[13px]'
+                        : 'text-[13px]'
+                    "
+                    [ariaLabel]="row.field.name"
+                    (saved)="saveCustomText(row, $event)"
+                  />
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      @if (rules().length) {
+        <section class="flex flex-col gap-2.5">
+          <div class="flex items-center gap-2">
+            <h2 class="kap">{{ t('task.rulesOnTask') }}</h2>
+            <span class="h-px flex-1 bg-line"></span>
+          </div>
+          @for (rule of rules(); track rule.id) {
+            <a
+              class="hoverable flex items-center gap-2.5 rounded-card border border-line px-3 py-2.5"
+              [routerLink]="['/app/automations']"
+              [queryParams]="{ rule: rule.id }"
+            >
+              <ui-icon name="bolt" [size]="15" class="text-accent" />
+              <div class="flex min-w-0 flex-1 flex-col">
+                <span class="truncate text-xs font-medium">{{ rule.name }}</span>
+                <span class="text-[11px] text-ink-3">{{
+                  rule.enabled ? t('task.ranOnce') : t('common.draft')
+                }}</span>
+              </div>
+              <ui-icon name="chevron-right" [size]="14" class="text-ink-3" />
+            </a>
+          }
+        </section>
+      }
+
+      <section class="flex flex-col gap-2.5">
+        <div class="flex items-center gap-2">
+          <h2 class="kap">{{ t('task.relations') }}</h2>
+          <span class="h-px flex-1 bg-line"></span>
+        </div>
+        @for (relation of detail()!.relations; track relation.kind + relation.taskKey) {
+          <div class="group flex items-center gap-2.5 text-xs">
+            <span class="w-[74px] flex-none text-ink-3">{{
+              t('task.' + (relation.kind === 'blocks' ? 'blocks' : 'relatesTo'))
+            }}</span>
+            <a
+              class="flex-1 font-mono text-ink-2"
+              [routerLink]="['/app/tasks', relation.taskKey]"
+              >{{ relation.taskKey }}</a
+            >
+            <button
+              type="button"
+              class="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              [attr.aria-label]="t('common.delete')"
+              (click)="removeRelation(relation.kind, relation.taskKey)"
+            >
+              <ui-icon name="x" [size]="13" />
+            </button>
+          </div>
+        } @empty {
+          <p class="text-[11px] text-ink-3">{{ t('common.none') }}</p>
+        }
+      </section>
+
+      <div class="flex-1"></div>
+
+      @if (hasRestrictedField() && !canSeeProtected()) {
+        <p class="flex items-start gap-2 border-t border-line pt-3.5 text-[11px] text-ink-3">
+          <ui-icon name="lock" [size]="13" />
+          <span>{{ t('task.protectedField') }}</span>
+        </p>
+      }
+    </aside>
+  </div>
+} @else if (details.loading() || details.error()) {
+  <ui-page-state [loading]="details.loading()" [error]="details.error()" (retry)="reload()" />
+} @else {
+  <div class="flex flex-1 flex-col items-center justify-center gap-4">
+    <p class="text-[15px] text-ink-2">{{ t('task.notFound') }}</p>
+    <a
+      routerLink="/app/board"
+      class="flex h-9 items-center rounded-[7px] bg-inv px-4 text-[13px] font-medium text-inv-ink"
+    >
+      {{ t('task.backToBoard') }}
+    </a>
+  </div>
+}

@@ -1,0 +1,233 @@
+<ui-topbar>
+  <div class="flex min-w-0 items-center gap-1.5">
+    <span class="hidden text-xs text-ink-3 sm:inline">{{ projectLabel() }}</span>
+    <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.timeline') }}</span>
+  </div>
+  <span class="hidden flex-1 lg:block"></span>
+  <ui-view-controls />
+  <button
+    type="button"
+    class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+    (click)="composer.open()"
+  >
+    <ui-icon name="plus" [size]="16" />
+    <span class="hidden sm:inline">{{ t('common.newTask') }}</span>
+  </button>
+</ui-topbar>
+
+<div
+  class="hidden h-[50px] flex-none items-center gap-3 border-b border-line bg-surface px-5 lg:flex"
+>
+  <ui-view-tabs />
+  <span class="h-5 w-px bg-line"></span>
+  <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
+    @for (level of zooms; track level) {
+      <button
+        type="button"
+        class="flex h-[26px] items-center rounded-[5px] px-2.5 text-xs"
+        [class.bg-surface]="zoom() === level"
+        [class.font-medium]="zoom() === level"
+        [class.shadow-card]="zoom() === level"
+        [class.text-ink-2]="zoom() !== level"
+        [attr.aria-pressed]="zoom() === level"
+        (click)="zoom.set(level)"
+      >
+        {{ t('timeline.' + level) }}
+      </button>
+    }
+  </div>
+  <span class="flex-1"></span>
+  <div class="flex items-center gap-3.5 text-xs text-ink-2">
+    <span class="flex items-center gap-2"
+      ><span class="h-2 w-[22px] rounded-sm bg-ink-2"></span>{{ t('timeline.legendTask') }}</span
+    >
+    <span class="flex items-center gap-2"
+      ><span class="h-2 w-[22px] rounded-sm border border-line-strong bg-surface-2"></span
+      >{{ t('timeline.legendEpic') }}</span
+    >
+    <span class="flex items-center gap-2"
+      ><span class="h-2.5 w-2.5 rotate-45 bg-ink"></span>{{ t('timeline.legendMilestone') }}</span
+    >
+  </div>
+</div>
+
+@if (timeline.loading() || timeline.error()) {
+  <ui-page-state [loading]="timeline.loading()" [error]="timeline.error()" (retry)="reload()" />
+} @else {
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <div class="flex h-[58px] flex-none border-b border-line bg-surface">
+      <div class="hidden w-[300px] flex-none items-end border-r border-line px-4 pb-2.5 md:flex">
+        <span class="kap">{{ t('timeline.scope') }}</span>
+      </div>
+      <div class="flex flex-1 flex-col overflow-hidden">
+        <div class="flex h-7 items-center" [style.width.px]="gridWidth()">
+          <span
+            class="border-r border-line pl-2.5 text-xs font-medium capitalize"
+            [style.width.px]="monthSplit().first"
+            >{{ monthLabels().first }}</span
+          >
+          <span
+            class="pl-2.5 text-xs font-medium text-ink-2 capitalize"
+            [style.width.px]="monthSplit().second"
+            >{{ monthLabels().second }}</span
+          >
+        </div>
+        <div
+          class="flex h-[29px] items-center font-mono text-[10px] text-ink-3"
+          [style.width.px]="gridWidth()"
+        >
+          @for (day of days(); track day.iso) {
+            <span
+              class="text-center"
+              [style.width.px]="dayWidth()"
+              [class.text-ink]="day.iso === store.today"
+              [class.font-medium]="day.iso === store.today"
+              >{{ day.label }}</span
+            >
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-1 overflow-auto scroll-thin">
+      <div class="hidden w-[300px] flex-none flex-col border-r border-line md:flex">
+        <div
+          class="kap flex flex-none items-center border-b border-line px-4"
+          [style.height.px]="milestoneRow"
+        >
+          {{ t('timeline.milestones') }}
+        </div>
+        @for (row of rows(); track row.id) {
+          <button
+            type="button"
+            class="hoverable flex flex-none items-center gap-2.5 text-left"
+            [style.height.px]="rowHeight"
+            [class]="row.kind === 'epic' ? 'px-4' : 'pr-4 pl-[38px]'"
+            (click)="row.kind === 'epic' ? toggleEpic(row.id) : open(row.taskKey)"
+          >
+            @if (row.kind === 'epic') {
+              <ui-icon
+                [name]="isEpicCollapsed(row.id) ? 'chevron-right' : 'chevron-down'"
+                [size]="14"
+                class="text-ink-3"
+              />
+              <span class="flex-1 truncate text-[13px] font-semibold">{{ row.label }}</span>
+              <span class="font-mono text-[11px] text-ink-3">{{ row.initials }}</span>
+            } @else {
+              <span class="w-[62px] flex-none font-mono text-[11px] text-ink-3">{{
+                row.taskKey
+              }}</span>
+              <span class="min-w-0 flex-1 truncate text-xs">{{ row.label }}</span>
+              @if (row.initials) {
+                <span
+                  class="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-surface-3 font-mono text-[9px] text-ink-2"
+                >
+                  {{ row.initials }}
+                </span>
+              } @else {
+                <span
+                  class="flex h-5 w-5 flex-none items-center justify-center rounded-full border border-dashed border-line-strong text-ink-3"
+                  [attr.title]="t('common.unassigned')"
+                >
+                  <ui-icon name="user" [size]="11" />
+                </span>
+              }
+            }
+          </button>
+        }
+      </div>
+
+      <div
+        class="relative flex-none"
+        [style.width.px]="gridWidth()"
+        [style.height.px]="totalHeight()"
+      >
+        @for (band of weekendBands(); track band) {
+          <div
+            class="absolute top-0 bg-surface-2"
+            [style.left.px]="band"
+            [style.width.px]="dayWidth() * 2"
+            [style.height.px]="totalHeight()"
+          ></div>
+        }
+        @for (separator of weekSeparators(); track separator) {
+          <div
+            class="absolute top-0 w-px bg-line"
+            [style.left.px]="separator"
+            [style.height.px]="totalHeight()"
+          ></div>
+        }
+        @if (todayX(); as x) {
+          <div
+            class="absolute top-0 w-px bg-ink-2"
+            [style.left.px]="x"
+            [style.height.px]="totalHeight()"
+          ></div>
+          <span class="kap absolute top-2" [style.left.px]="x + 8">{{ t('common.today') }}</span>
+        }
+
+        <svg
+          class="pointer-events-none absolute top-0 left-0"
+          [attr.width]="gridWidth()"
+          [attr.height]="totalHeight()"
+          fill="none"
+          stroke="var(--c-line-strong)"
+          stroke-width="1"
+        >
+          @for (dependency of dependencies(); track dependency.id) {
+            <path [attr.d]="dependency.line" />
+            <path [attr.d]="dependency.head" stroke="var(--c-ink-3)" />
+          }
+        </svg>
+
+        <div
+          class="absolute top-0 left-0 border-b border-line"
+          [style.width.px]="gridWidth()"
+          [style.height.px]="milestoneRow"
+        >
+          @for (milestone of milestonePins(); track milestone.id) {
+            <span
+              class="absolute top-[13px] h-[11px] w-[11px] rotate-45 bg-ink"
+              [style.left.px]="milestone.x - 6"
+            ></span>
+            <span
+              class="absolute top-[11px] text-[11px] whitespace-nowrap text-ink-2"
+              [style.left.px]="milestone.x + 14"
+            >
+              {{ milestone.name }}
+            </span>
+          }
+        </div>
+
+        @for (row of rows(); track row.id) {
+          @if (row.bar; as bar) {
+            @if (row.kind === 'epic') {
+              <div
+                class="absolute rounded-sm border border-line-strong bg-surface-2"
+                [style.left.px]="bar.left"
+                [style.top.px]="row.y + 16"
+                [style.width.px]="bar.width"
+                [style.height.px]="12"
+              ></div>
+            } @else {
+              <div
+                class="absolute cursor-pointer overflow-hidden rounded bg-surface-3"
+                [style.left.px]="bar.left"
+                [style.top.px]="row.y + 14"
+                [style.width.px]="bar.width"
+                [style.height.px]="16"
+                [attr.title]="row.label"
+                (click)="open(row.taskKey)"
+              >
+                @if (bar.progress > 0) {
+                  <div class="h-4 bg-ink-2" [style.width.%]="bar.progress"></div>
+                }
+              </div>
+            }
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

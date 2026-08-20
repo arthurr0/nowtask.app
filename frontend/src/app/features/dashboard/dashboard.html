@@ -1,0 +1,274 @@
+<ui-topbar>
+  <span class="text-[15px] font-semibold tracking-[-0.01em]">
+    {{ mode() === 'reports' ? t('dash.reports') : t('dash.teamOverview') }}
+  </span>
+  <ui-menu
+    [items]="periodItems()"
+    triggerClass="flex h-7 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
+    triggerHeight="28px"
+    ariaLabel="dash.period"
+    [chevron]="true"
+    (selected)="setPeriod($event)"
+  >
+    <span>{{ periodLabel() }}</span>
+  </ui-menu>
+  <span class="hidden flex-1 lg:block"></span>
+  <ui-view-controls />
+</ui-topbar>
+
+@if (!overview()) {
+  <ui-page-state [loading]="metrics.loading()" [error]="metrics.error()" (retry)="reload()" />
+} @else {
+  <div class="flex flex-1 flex-col gap-4 overflow-y-auto p-5 pb-24 lg:p-6 lg:pb-6 scroll-thin">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface px-[18px] py-4">
+        <span class="text-xs text-ink-3">{{ t('dash.tasksInProgress') }}</span>
+        <span class="font-mono text-3xl leading-none font-medium tracking-[-0.02em]">{{
+          overview()!.tasksInProgress
+        }}</span>
+        <span class="text-[11px] text-ink-3">{{ t('dash.rightNow') }}</span>
+      </div>
+      <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface px-[18px] py-4">
+        <span class="text-xs text-ink-3">{{ t('dash.completed') }}</span>
+        <span class="font-mono text-3xl leading-none font-medium tracking-[-0.02em]">{{
+          overview()!.completedThisWeek
+        }}</span>
+        <span class="text-[11px] text-ink-3">{{ periodLabel() }}</span>
+      </div>
+      <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface px-[18px] py-4">
+        <span class="text-xs text-ink-3">{{ t('dash.avgCycleTime') }}</span>
+        <span class="font-mono text-3xl leading-none font-medium tracking-[-0.02em]">
+          {{ cycleTime() }}
+          <span class="text-[15px] text-ink-3">{{ t('dash.days') }}</span>
+        </span>
+        <span class="text-[11px] text-ink-3">{{ t('dash.cycleHint') }}</span>
+      </div>
+      <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface px-[18px] py-4">
+        <span class="text-xs text-ink-3">{{ t('dash.ruleExecutions') }}</span>
+        <span class="font-mono text-3xl leading-none font-medium tracking-[-0.02em]">{{
+          overview()!.ruleExecutions
+        }}</span>
+        @if (overview()!.ruleErrors > 0) {
+          <span class="flex items-center gap-1.5 text-[11px] text-warn">
+            <ui-icon name="alert" [size]="12" />
+            {{ t('dash.errors', { count: overview()!.ruleErrors }) }}
+          </span>
+        } @else {
+          <span class="text-[11px] text-ink-3">{{ t('dash.last30') }}</span>
+        }
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="hoverable flex flex-col gap-3 rounded-panel border border-line bg-surface px-[18px] py-4 text-left"
+      (click)="openAgents()"
+    >
+      <span class="flex items-center gap-2.5">
+        <ui-icon name="agent" [size]="16" class="text-ink-2" />
+        <span class="text-[13px] font-semibold">{{ t('agents.title') }}</span>
+        <span class="font-mono text-[11px] text-ink-3">{{
+          t('agents.statAgents', { count: agents.activeAgents().length })
+        }}</span>
+        <span class="flex-1"></span>
+        <span class="flex items-center gap-1.5 text-xs text-ink-2">
+          {{ t('dash.agentsOpen') }}
+          <ui-icon name="arrow-right" [size]="14" />
+        </span>
+      </span>
+
+      @if (recentAgentActivity().length) {
+        <span class="flex flex-col">
+          @for (event of recentAgentActivity(); track event.id) {
+            <span
+              class="flex items-center gap-2.5 border-b border-line py-1.5 text-xs last:border-b-0"
+            >
+              <span class="w-[104px] flex-none font-mono text-[11px] text-ink-3">{{
+                dateTime(event.at)
+              }}</span>
+              <span class="min-w-0 flex-1 truncate text-ink-2">{{ event.agent }}</span>
+              <span class="min-w-0 flex-1 truncate font-mono text-[11px] text-ink-3">
+                {{ event.method }} {{ event.path }}
+              </span>
+            </span>
+          }
+        </span>
+      } @else {
+        <span class="text-xs leading-[1.7] text-ink-3">{{ t('dash.agentsEmpty') }}</span>
+      }
+    </button>
+
+    <div class="flex flex-col gap-4 xl:flex-row">
+      <section
+        class="flex flex-col gap-3.5 rounded-panel border border-line bg-surface px-5 py-[18px] xl:w-[760px] xl:flex-none"
+      >
+        <header class="flex flex-wrap items-center gap-3">
+          <h2 class="text-[13px] font-semibold">{{ t('dash.burndown') }}</h2>
+          <span class="flex-1"></span>
+          <span class="flex items-center gap-2 text-[11px] text-ink-3">
+            <span class="h-px w-4 bg-line-strong"></span>
+            {{ t('dash.ideal') }}
+          </span>
+          <span class="flex items-center gap-2 text-[11px] text-ink-2">
+            <span class="h-0.5 w-4 bg-ink-2"></span>
+            {{ t('dash.actual') }}
+          </span>
+        </header>
+
+        <svg
+          viewBox="0 0 712 196"
+          class="h-[196px] w-full"
+          role="img"
+          [attr.aria-label]="t('dash.burndown')"
+        >
+          @for (line of gridLines(); track line.value) {
+            <path
+              [attr.d]="'M40 ' + line.y + ' H700'"
+              [attr.stroke]="line.value === 0 ? 'var(--c-line-strong)' : 'var(--c-line)'"
+              stroke-width="1"
+              fill="none"
+            />
+            <text
+              x="30"
+              [attr.y]="line.y + 4"
+              fill="currentColor"
+              opacity="0.5"
+              text-anchor="end"
+              style="font-family: var(--font-mono); font-size: 10px"
+            >
+              {{ line.value }}
+            </text>
+          }
+          <path
+            [attr.d]="idealPath()"
+            stroke="var(--c-line-strong)"
+            stroke-width="1"
+            stroke-dasharray="4 4"
+            fill="none"
+          />
+          <path
+            [attr.d]="actualPath()"
+            stroke="var(--c-ink-2)"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          @if (lastPoint(); as point) {
+            <circle [attr.cx]="point.x" [attr.cy]="point.yActual" r="3.5" fill="var(--c-ink)" />
+          }
+          @for (label of xLabels(); track label.day) {
+            <text
+              [attr.x]="label.x"
+              y="188"
+              fill="currentColor"
+              opacity="0.5"
+              text-anchor="middle"
+              style="font-family: var(--font-mono); font-size: 10px"
+            >
+              {{ label.label }}
+            </text>
+          }
+        </svg>
+      </section>
+
+      <section
+        class="flex flex-1 flex-col gap-3.5 rounded-panel border border-line bg-surface px-5 py-[18px]"
+      >
+        <h2 class="text-[13px] font-semibold">{{ t('dash.workload') }}</h2>
+        <div class="flex flex-col gap-3.5">
+          @for (row of overview()!.workload; track row.userId) {
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2 text-xs">
+                <span class="flex-1 truncate">{{ store.user(row.userId)?.shortName }}</span>
+                <span
+                  class="font-mono text-[11px]"
+                  [class.text-warn]="row.points > row.capacity"
+                  [class.text-ink-3]="row.points <= row.capacity"
+                >
+                  {{ row.points }} / {{ row.capacity }} {{ t('common.points') }}
+                </span>
+              </div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-surface-3">
+                <div
+                  class="h-1.5"
+                  [class.bg-warn]="row.points > row.capacity"
+                  [class.bg-ink-2]="row.points <= row.capacity"
+                  [style.width.%]="workloadPercent(row.points, row.capacity)"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <div class="flex flex-col gap-4 xl:flex-row">
+      <section
+        class="flex flex-col gap-4 rounded-panel border border-line bg-surface px-5 py-[18px] xl:w-[560px] xl:flex-none"
+      >
+        <header class="flex flex-wrap items-baseline gap-2.5">
+          <h2 class="text-[13px] font-semibold">{{ t('dash.throughput') }}</h2>
+          <span class="text-[11px] text-ink-3">{{ t('dash.throughputHint') }}</span>
+        </header>
+        <div class="flex h-[118px] items-end gap-3.5">
+          @for (week of overview()!.throughput; track week.label) {
+            <div class="flex flex-1 flex-col items-center gap-2">
+              <span
+                class="w-full rounded-t-sm"
+                [class.bg-ink-2]="$last"
+                [class.bg-surface-3]="!$last"
+                [style.height.px]="barHeight(week.completed)"
+                [attr.title]="week.completed"
+              ></span>
+              <span
+                class="font-mono text-[10px]"
+                [class.text-ink]="$last"
+                [class.text-ink-3]="!$last"
+                >{{ week.label }}</span
+              >
+            </div>
+          }
+        </div>
+      </section>
+
+      <section
+        class="flex flex-1 flex-col gap-3 rounded-panel border border-line bg-surface px-5 py-[18px]"
+      >
+        <header class="flex items-center gap-2.5">
+          <h2 class="text-[13px] font-semibold">{{ t('dash.automationsDid') }}</h2>
+          <span class="flex-1"></span>
+          <button
+            type="button"
+            class="flex items-center gap-1.5 text-xs text-ink-2"
+            (click)="openAutomations()"
+          >
+            <ui-icon name="log" [size]="14" />
+            {{ t('common.log') }}
+          </button>
+        </header>
+        <div class="flex flex-col">
+          @for (usage of overview()!.ruleUsage; track usage.ruleId) {
+            <button
+              type="button"
+              class="hoverable flex h-[38px] items-center gap-2.5 border-b border-line text-left text-xs last:border-b-0"
+              (click)="openRule(usage.ruleId)"
+            >
+              @if (usage.failing) {
+                <ui-icon name="alert" [size]="14" class="text-warn" />
+              } @else {
+                <ui-icon name="bolt" [size]="14" class="text-accent" />
+              }
+              <span class="min-w-0 flex-1 truncate text-ink-2">
+                {{ usage.ruleName }}
+              </span>
+              <span class="font-mono text-[11px]" [class.text-warn]="usage.failing">{{
+                usage.runs
+              }}</span>
+            </button>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+}

@@ -1,0 +1,156 @@
+<div class="flex min-h-dvh flex-col bg-bg text-ink lg:flex-row">
+  <section
+    class="flex flex-col justify-between gap-10 border-b border-line bg-surface px-6 py-10 lg:w-[620px] lg:flex-none lg:border-r lg:border-b-0 lg:px-16 lg:py-14"
+  >
+    <div class="flex items-center gap-3">
+      <ui-logo [size]="28" [tile]="false" />
+      <span class="text-[17px] font-semibold lowercase tracking-[-0.02em]">{{
+        t('app.name')
+      }}</span>
+    </div>
+
+    <div class="flex max-w-[460px] flex-col gap-6">
+      <h1
+        class="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-pretty lg:text-[38px]"
+      >
+        {{ t('login.heroTitle') }}
+      </h1>
+      <p class="text-sm leading-[1.7] text-ink-2 text-pretty">{{ t('login.heroBody') }}</p>
+      <ul class="flex flex-col gap-3 pt-1">
+        <li class="flex items-center gap-3 text-[13px] text-ink-2">
+          <ui-icon name="board" [size]="16" class="text-ink-3" />
+          {{ t('login.feat1') }}
+        </li>
+        <li class="flex items-center gap-3 text-[13px] text-ink-2">
+          <ui-icon name="bolt" [size]="16" class="text-ink-3" />
+          {{ t('login.feat2') }}
+        </li>
+        <li class="flex items-center gap-3 text-[13px] text-ink-2">
+          <ui-icon name="shield" [size]="16" class="text-ink-3" />
+          {{ t('login.feat3') }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 font-mono text-[11px] text-ink-3">
+      <span>{{ t('app.workspace') }}</span>
+      <span class="h-[3px] w-[3px] rounded-full bg-line-strong"></span>
+      <span>{{ t('login.server') }} {{ apiState() }}</span>
+      <span class="h-[3px] w-[3px] rounded-full bg-line-strong"></span>
+      <span>v{{ version() }}</span>
+    </div>
+  </section>
+
+  <section class="flex flex-1 items-center justify-center p-6 lg:p-10">
+    <form class="flex w-full max-w-[372px] flex-col gap-5" (submit)="submit($event)">
+      <header class="flex flex-col gap-1.5">
+        <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('login.signIn') }}</h2>
+        <p class="text-[13px] text-ink-2">{{ t('login.signInSub') }}</p>
+      </header>
+
+      <div class="flex flex-col gap-3.5">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-xs text-ink-2">{{ t('login.email') }}</span>
+          <input
+            type="email"
+            name="email"
+            autocomplete="email"
+            class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+          />
+        </label>
+
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-baseline">
+            <span class="flex-1 text-xs text-ink-2">{{ t('login.password') }}</span>
+            <button
+              type="button"
+              class="text-xs underline-offset-2 hover:underline"
+              (click)="forgotPassword()"
+            >
+              {{ t('login.forgot') }}
+            </button>
+          </div>
+          <div
+            class="flex h-11 items-center gap-2.5 rounded-card border border-line bg-surface px-3.5"
+          >
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              name="password"
+              autocomplete="current-password"
+              class="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+            />
+            <button
+              type="button"
+              class="text-ink-3"
+              [attr.aria-label]="t('login.showPassword')"
+              [attr.aria-pressed]="showPassword()"
+              (click)="showPassword.set(!showPassword())"
+            >
+              <ui-icon name="eye" [size]="17" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      @if (error()) {
+        <p
+          class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+        >
+          <ui-icon name="alert" [size]="15" />
+          <span>{{ error() }}</span>
+        </p>
+      }
+
+      <button
+        type="submit"
+        class="flex h-[46px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
+        [disabled]="submitting()"
+      >
+        {{ submitting() ? t('state.loading') : t('login.signIn') }}
+      </button>
+
+      <p class="text-[13px] text-ink-2">
+        {{ t('signup.noAccount') }}
+        <a routerLink="/signup" class="font-medium underline-offset-2 hover:underline">{{
+          t('signup.title')
+        }}</a>
+      </p>
+
+      <p class="text-[11px] text-ink-3">{{ t('login.demoHint') }}</p>
+
+      <div class="flex items-center gap-3.5">
+        <span class="h-px flex-1 bg-line"></span>
+        <span class="text-[11px] text-ink-3">{{ t('login.or') }}</span>
+        <span class="h-px flex-1 bg-line"></span>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <button
+          type="button"
+          disabled
+          class="flex h-[46px] items-center justify-center gap-2.5 rounded-card border border-line bg-surface-2 text-sm text-ink-3"
+        >
+          <ui-icon name="shield" [size]="17" />
+          {{ t('login.saml') }}
+        </button>
+        <button
+          type="button"
+          disabled
+          class="flex h-[46px] items-center justify-center gap-2.5 rounded-card border border-line bg-surface-2 text-sm text-ink-3"
+        >
+          <ui-icon name="key" [size]="17" />
+          {{ t('login.passkey') }}
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2.5 pt-1.5">
+        <ui-icon name="globe" [size]="15" class="text-ink-3" />
+        <ui-view-controls />
+      </div>
+    </form>
+  </section>
+</div>

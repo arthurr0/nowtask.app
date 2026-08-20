@@ -1,0 +1,364 @@
+<div class="overflow-hidden rounded-panel border border-line bg-surface shadow-lift">
+  <div class="flex items-center gap-3 border-b border-line bg-surface-2 px-4 py-2.5">
+    <ui-logo [size]="22" [radius]="5" />
+    <span class="text-[13px] font-medium">nowtask</span>
+    <span class="hidden font-mono text-[11px] text-ink-3 sm:inline">Sprint 24</span>
+
+    <span class="flex-1"></span>
+
+    <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface p-0.5">
+      @for (item of views; track item.id) {
+        <button
+          type="button"
+          class="flex h-7 items-center gap-1.5 rounded-[5px] px-2.5 text-[12px] sm:px-3"
+          [class.bg-inv]="view() === item.id"
+          [class.text-inv-ink]="view() === item.id"
+          [class.font-semibold]="view() === item.id"
+          [class.ink-crisp]="view() === item.id"
+          [class.text-ink-2]="view() !== item.id"
+          [attr.aria-pressed]="view() === item.id"
+          (click)="view.set(item.id)"
+        >
+          <ui-icon [name]="item.icon" [size]="14" />
+          <span class="hidden sm:inline">{{ item.label }}</span>
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="hoverable flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-2.5 font-mono text-[11px] text-ink-2"
+      (click)="reset()"
+    >
+      <ui-icon name="clock" [size]="13" />
+      <span class="hidden sm:inline">Reset</span>
+    </button>
+  </div>
+
+  <div class="flex flex-col lg:flex-row">
+    <div class="min-w-0 flex-1 p-4 lg:p-5">
+      @switch (view()) {
+        @case ('board') {
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" cdkDropListGroup>
+            @for (column of columns(); track column.id) {
+              <section class="flex flex-col gap-2.5">
+                <header class="flex items-center gap-2 px-0.5">
+                  <span class="h-2 w-2 flex-none rounded-full" [class]="column.dot"></span>
+                  <span class="text-[12px] font-medium">{{ column.label }}</span>
+                  <span class="font-mono text-[11px] text-ink-3">{{ column.tasks.length }}</span>
+                  <span class="flex-1"></span>
+                  <button
+                    type="button"
+                    class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
+                    [attr.aria-label]="'Add a task in ' + column.label"
+                    (click)="openComposer(column.id)"
+                  >
+                    <ui-icon name="plus" [size]="15" />
+                  </button>
+                </header>
+
+                <div
+                  class="flex min-h-[96px] flex-col gap-2.5 rounded-card"
+                  cdkDropList
+                  [cdkDropListData]="column.id"
+                  (cdkDropListDropped)="drop($event)"
+                >
+                  @for (task of column.tasks; track task.key) {
+                    <div
+                      class="cursor-grab rounded-card border bg-surface p-3 shadow-card active:cursor-grabbing"
+                      [class.border-line]="selectedKey() !== task.key"
+                      [class.border-ink]="selectedKey() === task.key"
+                      cdkDrag
+                      [cdkDragData]="task.key"
+                      [cdkDragStartDelay]="dragDelay"
+                      tabindex="0"
+                      role="button"
+                      [attr.aria-pressed]="selectedKey() === task.key"
+                      (click)="select(task.key)"
+                      (keydown.enter)="select(task.key)"
+                    >
+                      <p class="text-[13px] leading-snug font-medium">{{ task.title }}</p>
+                      <div class="mt-2.5 flex items-center gap-2">
+                        <span class="font-mono text-[10px] text-ink-3">{{ task.key }}</span>
+                        @if (task.priority === 'high') {
+                          <span
+                            class="rounded-full bg-warn-soft px-1.5 py-0.5 font-mono text-[10px] text-warn"
+                            >High</span
+                          >
+                        }
+                        <span class="ml-auto font-mono text-[10px] text-ink-3"
+                          >{{ task.points }} pts</span
+                        >
+                        <span
+                          class="flex h-5 w-5 items-center justify-center rounded-full bg-surface-3 font-mono text-[9px] text-ink-2"
+                          [title]="personName(task.who)"
+                          >{{ task.who }}</span
+                        >
+                      </div>
+                    </div>
+                  }
+
+                  @if (composerStatus() === column.id) {
+                    <input
+                      #composerField
+                      type="text"
+                      placeholder="Task title, then Enter"
+                      class="h-10 rounded-card border border-line-strong bg-surface px-3 text-[13px] outline-none"
+                      [value]="draft()"
+                      (input)="draft.set($any($event.target).value)"
+                      (keydown.enter)="commitComposer()"
+                      (keydown.escape)="closeComposer()"
+                      (blur)="commitAndClose()"
+                    />
+                  } @else if (!column.tasks.length) {
+                    <button
+                      type="button"
+                      class="rounded-card border border-dashed border-line px-3 py-5 text-[12px] text-ink-3"
+                      (click)="openComposer(column.id)"
+                    >
+                      Drop a task here
+                    </button>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        }
+
+        @case ('list') {
+          <div class="overflow-hidden rounded-card border border-line">
+            <div class="flex items-center gap-3 border-b border-line bg-surface-2 px-3 py-2">
+              <span class="kap w-[58px]">Key</span>
+              <span class="kap flex-1">Task</span>
+              <span class="kap hidden w-[92px] sm:block">Status</span>
+              <span class="kap hidden w-[64px] sm:block">Priority</span>
+              <span class="kap w-[42px] text-right">Pts</span>
+              <span class="kap w-6"></span>
+            </div>
+
+            @for (task of ordered(); track task.key) {
+              <div
+                class="hoverable flex cursor-pointer items-center gap-3 border-b border-line px-3 py-2.5 last:border-b-0"
+                [class.bg-surface-2]="selectedKey() === task.key"
+                tabindex="0"
+                role="button"
+                (click)="select(task.key)"
+                (keydown.enter)="select(task.key)"
+              >
+                <span class="w-[58px] font-mono text-[11px] text-ink-3">{{ task.key }}</span>
+                <span class="flex-1 truncate text-[13px]">{{ task.title }}</span>
+                <span class="hidden w-[92px] items-center gap-1.5 sm:flex">
+                  <span class="h-1.5 w-1.5 rounded-full" [class]="statusDot(task.status)"></span>
+                  <span class="text-[12px] text-ink-2">{{ statusLabel(task.status) }}</span>
+                </span>
+                <span
+                  class="hidden w-[64px] text-[12px] sm:block"
+                  [class.text-warn]="task.priority === 'high'"
+                  [class.text-ink-2]="task.priority !== 'high'"
+                  >{{ task.priority }}</span
+                >
+                <span class="w-[42px] text-right font-mono text-[11px] text-ink-3">{{
+                  task.points
+                }}</span>
+                <span
+                  class="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-surface-3 font-mono text-[9px] text-ink-2"
+                  [title]="personName(task.who)"
+                  >{{ task.who }}</span
+                >
+              </div>
+            } @empty {
+              <p class="px-3 py-6 text-center text-[12px] text-ink-3">No tasks left, hit Reset.</p>
+            }
+          </div>
+        }
+
+        @case ('timeline') {
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-center gap-3">
+              <span class="hidden w-[150px] flex-none sm:block"></span>
+              <div class="grid flex-1 grid-cols-10">
+                @for (day of days; track day) {
+                  <span class="kap text-center">{{ day }}</span>
+                }
+              </div>
+            </div>
+
+            @for (task of ordered(); track task.key) {
+              <div class="flex items-center gap-3">
+                <span class="hidden w-[150px] flex-none truncate text-[12px] sm:block">
+                  <span class="font-mono text-[10px] text-ink-3">{{ task.key }}</span>
+                  {{ task.title }}
+                </span>
+                <div class="relative h-8 flex-1 overflow-hidden rounded-card bg-surface-2">
+                  <div class="absolute inset-0 grid grid-cols-10">
+                    @for (day of days; track day) {
+                      <span class="border-r border-line last:border-r-0"></span>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute top-1.5 bottom-1.5 rounded-[5px]"
+                    [class]="statusBar(task.status)"
+                    [class.ring-2]="selectedKey() === task.key"
+                    [class.ring-ink]="selectedKey() === task.key"
+                    [style.left.%]="task.start * 10"
+                    [style.width.%]="task.span * 10"
+                    [attr.aria-label]="task.key + ' ' + task.title"
+                    [title]="task.key + ' ' + task.title"
+                    (click)="select(task.key)"
+                  ></button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <aside
+      class="flex flex-col gap-4 border-t border-line bg-surface-2 p-4 lg:w-[300px] lg:flex-none lg:border-t-0 lg:border-l lg:p-5"
+    >
+      @if (selected(); as task) {
+        <div class="flex items-center gap-2">
+          <span class="kap flex-1">Task</span>
+          <span class="font-mono text-[11px] text-ink-3">{{ task.key }}</span>
+          <button
+            type="button"
+            class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
+            aria-label="Close details"
+            (click)="selectedKey.set(null)"
+          >
+            <ui-icon name="x" [size]="14" />
+          </button>
+        </div>
+
+        <input
+          type="text"
+          class="rounded-card border border-line bg-surface px-3 py-2 text-[13px] font-medium outline-none"
+          aria-label="Task title"
+          [value]="task.title"
+          (input)="rename(task.key, $any($event.target).value)"
+        />
+
+        <div class="flex flex-col gap-2">
+          <span class="kap">Status</span>
+          <div class="grid grid-cols-2 gap-1.5">
+            @for (status of statuses; track status.id) {
+              <button
+                type="button"
+                class="flex h-8 items-center gap-1.5 rounded-card border px-2.5 text-[12px]"
+                [class.border-ink]="task.status === status.id"
+                [class.bg-surface]="task.status === status.id"
+                [class.border-line]="task.status !== status.id"
+                [class.text-ink-2]="task.status !== status.id"
+                [attr.aria-pressed]="task.status === status.id"
+                (click)="moveTask(task.key, status.id)"
+              >
+                <span class="h-1.5 w-1.5 flex-none rounded-full" [class]="status.dot"></span>
+                <span class="truncate">{{ status.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="kap">Priority</span>
+          <div class="flex items-center gap-1.5">
+            @for (priority of priorities; track priority.id) {
+              <button
+                type="button"
+                class="h-8 flex-1 rounded-card border text-[12px]"
+                [class.border-ink]="task.priority === priority.id"
+                [class.bg-surface]="task.priority === priority.id"
+                [class.border-line]="task.priority !== priority.id"
+                [class.text-ink-2]="task.priority !== priority.id"
+                [attr.aria-pressed]="task.priority === priority.id"
+                (click)="setPriority(task.key, priority.id)"
+              >
+                {{ priority.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="kap">Assignee</span>
+          <div class="flex items-center gap-2">
+            @for (person of people; track person.id) {
+              <button
+                type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-full border font-mono text-[10px]"
+                [class.border-ink]="task.who === person.id"
+                [class.bg-surface]="task.who === person.id"
+                [class.text-ink]="task.who === person.id"
+                [class.border-line]="task.who !== person.id"
+                [class.text-ink-3]="task.who !== person.id"
+                [attr.aria-pressed]="task.who === person.id"
+                [title]="person.name"
+                (click)="setAssignee(task.key, person.id)"
+              >
+                {{ person.id }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="mt-auto flex h-9 items-center justify-center gap-2 rounded-card border border-line text-[12px] text-ink-2"
+          (click)="remove(task.key)"
+        >
+          <ui-icon name="trash" [size]="14" />
+          Delete task
+        </button>
+      } @else {
+        <div class="flex items-center gap-2">
+          <ui-icon name="bolt" [size]="15" class="text-signal-ink" />
+          <span class="flex-1 text-[12px] font-medium">Review for urgent work</span>
+          <button
+            type="button"
+            class="flex h-5 w-9 flex-none items-center rounded-full border px-0.5 transition-colors"
+            [class.bg-inv]="ruleOn()"
+            [class.border-ink]="ruleOn()"
+            [class.justify-end]="ruleOn()"
+            [class.border-line]="!ruleOn()"
+            [attr.aria-pressed]="ruleOn()"
+            aria-label="Toggle the automation rule"
+            (click)="toggleRule()"
+          >
+            <span
+              class="h-3.5 w-3.5 rounded-full"
+              [class.bg-inv-ink]="ruleOn()"
+              [class.bg-line-strong]="!ruleOn()"
+            ></span>
+          </button>
+        </div>
+
+        <p class="text-[12px] leading-[1.6] text-ink-2">
+          Move a High priority task into Review and the rule assigns Marta R. as the reviewer.
+        </p>
+
+        <div class="flex flex-col gap-2">
+          <span class="kap">Activity</span>
+          <ul class="flex flex-col">
+            @for (entry of log(); track $index) {
+              <li
+                class="flex items-start gap-2.5 border-t border-line py-2 first:border-t-0 first:pt-0"
+              >
+                <span class="font-mono text-[10px] text-ink-3">{{ entry.time }}</span>
+                @if (entry.rule) {
+                  <ui-icon name="bolt" [size]="12" class="mt-0.5 text-signal-ink" />
+                }
+                <span class="flex-1 text-[12px] text-ink-2">{{ entry.text }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <p class="mt-auto text-[11px] text-ink-3">
+          Drag cards, switch views, add or open a task. Nothing here is saved.
+        </p>
+      }
+    </aside>
+  </div>
+</div>

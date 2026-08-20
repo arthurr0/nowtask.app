@@ -1,0 +1,295 @@
+<ui-topbar>
+  <div class="flex min-w-0 items-center gap-1.5">
+    <span class="hidden text-xs text-ink-3 sm:inline"
+      >{{ store.activeProjects().length }} {{ t('nav.projects') }}</span
+    >
+    <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('auto.title') }}</span>
+  </div>
+
+  <span class="hidden flex-1 lg:block"></span>
+
+  <ui-view-controls />
+
+  <button
+    type="button"
+    class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+    (click)="openDialog(null)"
+  >
+    <ui-icon name="plus" [size]="16" />
+    <span class="hidden sm:inline">{{ t('auto.newRule') }}</span>
+  </button>
+</ui-topbar>
+
+@if (rulesStore.loading() || rulesStore.error()) {
+  <ui-page-state [loading]="rulesStore.loading()" [error]="rulesStore.error()" (retry)="load()" />
+} @else {
+  <div class="flex flex-1 overflow-hidden">
+    <div
+      class="flex w-full flex-none flex-col overflow-y-auto border-r border-line bg-surface lg:flex lg:w-[336px] scroll-thin"
+      [class.hidden]="mobilePanel() === 'rule'"
+    >
+      <div class="flex flex-col gap-3 border-b border-line px-[18px] pt-4 pb-3">
+        <span
+          class="focus-ring flex h-[34px] items-center gap-2 rounded-field border border-line bg-surface-2 px-2.5"
+        >
+          <ui-icon name="search" [size]="15" class="text-ink-3" />
+          <input
+            class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-ink-3"
+            [placeholder]="t('auto.searchRules')"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+          />
+          @if (search()) {
+            <button
+              type="button"
+              class="text-ink-3"
+              [attr.aria-label]="t('ui.field.clear')"
+              (click)="search.set('')"
+            >
+              <ui-icon name="x" [size]="12" />
+            </button>
+          }
+        </span>
+        <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
+          @for (item of filters; track item.id) {
+            <button
+              type="button"
+              class="flex h-[26px] flex-1 items-center justify-center rounded-[5px] text-xs"
+              [class.bg-surface]="filter() === item.id"
+              [class.font-medium]="filter() === item.id"
+              [class.shadow-card]="filter() === item.id"
+              [class.text-ink-2]="filter() !== item.id"
+              (click)="filter.set(item.id)"
+            >
+              {{ t(item.label) }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col">
+        @for (rule of visibleRules(); track rule.id) {
+          <button
+            type="button"
+            class="flex items-start gap-3 border-b border-line px-[18px] py-3.5 text-left"
+            [class.bg-surface-2]="selected()?.id === rule.id"
+            [class.opacity-50]="!rule.enabled"
+            [style.box-shadow]="selected()?.id === rule.id ? 'inset 2px 0 0 var(--c-ink)' : 'none'"
+            (click)="select(rule.id)"
+          >
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="flex items-center gap-2">
+                <span
+                  class="text-[13px]"
+                  [class.font-semibold]="selected()?.id === rule.id"
+                  [class.font-medium]="selectedId() !== rule.id"
+                >
+                  {{ rule.name }}
+                </span>
+                @if (rule.draft) {
+                  <span class="kap rounded-full border border-line px-1.5 py-px">{{
+                    t('common.draft')
+                  }}</span>
+                }
+              </span>
+              <span class="text-xs leading-[1.45] text-ink-3">{{ rule.summary }}</span>
+              <span class="font-mono text-[11px] text-ink-3"
+                >{{ rule.runs30d }} {{ t('auto.runs30d') }}</span
+              >
+            </span>
+            <span class="mt-0.5 flex-none cursor-pointer" (click)="toggle(rule.id, $event)">
+              <ui-switch [checked]="rule.enabled" [label]="t('auto.enableRule')" />
+            </span>
+          </button>
+        } @empty {
+          <p class="px-[18px] py-8 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
+        }
+      </div>
+    </div>
+
+    @if (selected(); as rule) {
+      <div
+        class="flex min-w-0 flex-1 flex-col overflow-hidden"
+        [class.hidden]="mobilePanel() === 'list'"
+        [class.lg:flex]="true"
+      >
+        <div
+          class="flex flex-none flex-wrap items-start gap-4 border-b border-line px-5 pt-5 pb-4 lg:px-8"
+        >
+          <button
+            type="button"
+            class="mt-1 text-ink-2 lg:hidden"
+            (click)="mobilePanel.set('list')"
+            [attr.aria-label]="t('common.close')"
+          >
+            <ui-icon name="chevron-right" [size]="18" class="rotate-180" />
+          </button>
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ rule.name }}</h1>
+            <p class="text-[13px] text-ink-2">
+              {{
+                t('auto.scopeLine', {
+                  project: rule.scopeLabel,
+                  date: shortDate(rule.editedAt),
+                  user: editor()?.shortName ?? '',
+                })
+              }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
+            [disabled]="running()"
+            (click)="runOnTask(rule)"
+          >
+            <ui-icon name="play" [size]="14" />
+            {{ t('auto.testOnTask') }}
+          </button>
+          <button
+            type="button"
+            class="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
+            [disabled]="running()"
+            (click)="runOnAll(rule)"
+          >
+            <ui-icon name="bolt" [size]="14" />
+            {{ running() ? t('auto.running') : t('auto.runAll') }}
+          </button>
+          <button
+            type="button"
+            class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv px-3.5 text-xs font-medium text-inv-ink"
+            (click)="openDialog(rule)"
+          >
+            <ui-icon name="pencil" [size]="14" />
+            {{ t('common.edit') }}
+          </button>
+          <ui-menu
+            [items]="ruleMenu(rule)"
+            triggerClass="flex h-8 w-8 items-center justify-center rounded-[7px] border border-line bg-surface-2 text-ink-2"
+            triggerHeight="32px"
+            ariaLabel="common.more"
+            align="end"
+            (selected)="onRuleMenu($event, rule)"
+          >
+            <ui-icon name="dots" [size]="16" />
+          </ui-menu>
+        </div>
+
+        <div class="flex flex-1 flex-col overflow-y-auto px-5 py-5 lg:px-8 scroll-thin">
+          <div
+            class="flex items-center gap-3 rounded-panel border border-line-strong bg-surface p-3.5 shadow-card"
+          >
+            <span
+              class="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-card bg-inv text-inv-ink"
+            >
+              <ui-icon name="bolt" [size]="16" />
+            </span>
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="kap">{{ t('auto.trigger') }}</span>
+              <span class="text-sm">
+                {{ t('trigger.' + rule.trigger.kind) }}
+                <strong class="font-semibold">{{ triggerValue(rule) }}</strong>
+              </span>
+            </div>
+            <ui-icon name="dots" [size]="16" class="text-ink-3" />
+          </div>
+
+          <div class="ml-[31px] h-[18px] w-px bg-line-strong"></div>
+
+          <div
+            class="flex flex-col gap-2.5 rounded-panel border border-line bg-surface p-3.5 shadow-card"
+          >
+            <div class="flex items-center gap-2.5">
+              <span class="kap">{{ t('auto.conditions') }}</span>
+              <span class="h-px flex-1 bg-line"></span>
+              <span class="font-mono text-[11px] text-ink-3">{{ t('auto.allMustMatch') }}</span>
+            </div>
+            <app-condition-node [node]="rule.conditions" [depth]="0" />
+          </div>
+
+          <div class="ml-[31px] h-[18px] w-px bg-line-strong"></div>
+
+          <div
+            class="flex flex-col gap-2.5 rounded-panel border border-line bg-surface p-3.5 shadow-card"
+          >
+            <div class="flex items-center gap-2.5">
+              <span class="kap">{{ t('auto.actions') }}</span>
+              <span class="h-px flex-1 bg-line"></span>
+              <span class="font-mono text-[11px] text-ink-3">{{ t('auto.runInOrder') }}</span>
+            </div>
+
+            @for (action of rule.actions; track action.id) {
+              <div
+                class="flex min-h-10 items-center gap-3 rounded-card border border-line bg-surface-2 px-3 py-1.5"
+              >
+                <span class="w-[18px] flex-none font-mono text-[11px] text-ink-3">{{
+                  $index + 1
+                }}</span>
+                <ui-icon [name]="action.icon" [size]="15" class="text-ink-2" />
+                <span class="flex-1 text-[13px]">
+                  {{ t('action.' + action.kind) }}
+                  <strong class="font-semibold">{{
+                    action.value.includes('.') && !action.value.includes(' ')
+                      ? t(action.value)
+                      : action.value
+                  }}</strong>
+                </span>
+                <ui-icon name="dots" [size]="15" class="text-ink-3" />
+              </div>
+            }
+
+            <div
+              class="flex h-9 items-center gap-2.5 rounded-card border border-dashed border-line-strong px-3 text-ink-3"
+            >
+              <ui-icon name="plus" [size]="15" />
+              <span class="text-xs">{{ t('auto.addAction') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-none flex-col px-5 pb-5 lg:px-8">
+          <div class="flex items-center gap-2.5 py-2.5">
+            <span class="kap">{{ t('auto.recentRuns') }}</span>
+            <span class="h-px flex-1 bg-line"></span>
+            <span class="text-xs text-ink-2">{{ t('auto.fullLog') }}</span>
+          </div>
+          @for (run of runs(); track run.id) {
+            <div class="flex h-8 items-center gap-3.5 border-b border-line text-xs">
+              <span class="w-24 flex-none font-mono text-ink-3">{{ dateTime(run.createdAt) }}</span>
+              <span class="w-[84px] flex-none font-mono">{{ run.taskKey }}</span>
+              <span class="min-w-0 flex-1 truncate text-ink-2">{{
+                t(run.detailKey, run.detailParams)
+              }}</span>
+              @switch (run.outcome) {
+                @case ('ok') {
+                  <span class="flex flex-none items-center gap-1.5 text-ink-2">
+                    <ui-icon name="check" [size]="13" />
+                    {{ t('run.ok') }}
+                  </span>
+                }
+                @case ('skipped') {
+                  <span class="flex-none text-ink-3">{{ t('run.skipped') }}</span>
+                }
+                @case ('error') {
+                  <span class="flex flex-none items-center gap-1.5 text-warn">
+                    <ui-icon name="alert" [size]="13" />
+                    {{ t('run.error') }}
+                  </span>
+                }
+              }
+            </div>
+          } @empty {
+            <p class="py-4 text-xs text-ink-3">{{ t('common.none') }}</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<app-rule-dialog
+  [open]="dialogOpen()"
+  [rule]="editedRule()"
+  (saved)="saveRule($event)"
+  (cancelled)="closeDialog()"
+/>

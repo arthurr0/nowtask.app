@@ -1,0 +1,193 @@
+<ui-topbar>
+  <div class="flex min-w-0 items-center gap-1.5">
+    <span class="text-xs text-ink-3">{{ projectLabel() }}</span>
+    <ui-icon name="chevron-right" [size]="14" class="text-ink-3" />
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ boardTitle() }}</span>
+    <span class="kap ml-1.5 rounded-full border border-line px-2 py-0.5">{{
+      visibleTasks().length
+    }}</span>
+  </div>
+
+  <span class="hidden flex-1 lg:block"></span>
+
+  <div class="hidden items-center xl:flex">
+    @for (user of avatars(); track user.id) {
+      <button
+        type="button"
+        class="rounded-full border-2 border-surface"
+        [class.-ml-2]="!$first"
+        [class.ring-2]="view.assigneeId() === user.id"
+        [class.ring-ink]="view.assigneeId() === user.id"
+        [attr.aria-pressed]="view.assigneeId() === user.id"
+        [attr.aria-label]="t('filters.byPerson', { name: user.name })"
+        (click)="filterByUser(user.id)"
+      >
+        <ui-avatar [user]="user" [size]="26" />
+      </button>
+    }
+    @if (avatarOverflow() > 0) {
+      <ui-menu
+        [items]="memberItems()"
+        triggerClass="-ml-2 flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 border-surface bg-surface-2 font-mono text-[10px] text-ink-3"
+        triggerHeight="26px"
+        ariaLabel="common.assignee"
+        align="end"
+        (selected)="filterByUser($event.id)"
+      >
+        +{{ avatarOverflow() }}
+      </ui-menu>
+    }
+  </div>
+
+  <span class="hidden h-[22px] w-px bg-line xl:block"></span>
+
+  <ui-view-controls />
+
+  <ui-notifications class="hidden sm:flex" />
+
+  <button
+    type="button"
+    class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+    (click)="composer.open()"
+  >
+    <ui-icon name="plus" [size]="16" />
+    <span class="hidden sm:inline">{{ t('common.newTask') }}</span>
+  </button>
+</ui-topbar>
+
+<ui-filter-bar class="hidden lg:block" [showRules]="true">
+  <ui-view-tabs />
+</ui-filter-bar>
+
+<div
+  class="flex h-[60px] flex-none items-center gap-2 overflow-x-auto border-b border-line bg-surface px-4 lg:hidden"
+>
+  @for (column of columns(); track column.id) {
+    <button
+      type="button"
+      class="flex h-11 flex-none items-center gap-1.5 rounded-full px-3.5 text-[13px]"
+      [class.bg-inv]="mobileColumn()?.id === column.id"
+      [class.text-inv-ink]="mobileColumn()?.id === column.id"
+      [class.font-medium]="mobileColumn()?.id === column.id"
+      [class.border]="mobileColumn()?.id !== column.id"
+      [class.border-line]="mobileColumn()?.id !== column.id"
+      [class.text-ink-2]="mobileColumn()?.id !== column.id"
+      (click)="mobileColumnId.set(column.id)"
+    >
+      {{ column.label }}
+      <span class="font-mono text-[11px] opacity-70">{{ column.tasks.length }}</span>
+    </button>
+  }
+</div>
+
+<div class="hidden flex-1 gap-4 overflow-x-auto p-5 lg:flex scroll-thin" cdkDropListGroup>
+  @for (column of columns(); track column.id) {
+    @if (isCollapsed(column.id)) {
+      <button
+        type="button"
+        class="flex w-11 flex-none flex-col items-center gap-3 rounded-card border border-line bg-surface-2 py-3 text-ink-2"
+        (click)="expand(column.id)"
+      >
+        <ui-icon name="chevron-right" [size]="15" />
+        <span class="font-mono text-[11px]">{{ column.tasks.length }}</span>
+        <span class="text-[11px] [writing-mode:vertical-rl]">{{ column.label }}</span>
+      </button>
+    } @else {
+      <section class="flex w-[264px] flex-none flex-col gap-2.5">
+        <header class="flex h-[30px] items-center gap-2">
+          <h2 class="truncate text-[13px] font-semibold">{{ column.label }}</h2>
+          <span class="rounded-full bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-ink-3">{{
+            column.tasks.length
+          }}</span>
+          <span class="flex-1"></span>
+          @if (column.wipLimit !== null) {
+            <span
+              class="rounded border border-line px-1.5 py-px font-mono text-[10px]"
+              [class.text-warn]="column.tasks.length > column.wipLimit"
+              [class.border-warn]="column.tasks.length > column.wipLimit"
+              [class.text-ink-3]="column.tasks.length <= column.wipLimit"
+              >{{ wipLabel(column.wipLimit, column.tasks.length) }}</span
+            >
+          }
+          <button
+            type="button"
+            class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
+            [attr.aria-label]="t('board.addTask')"
+            (click)="newTask(column)"
+          >
+            <ui-icon name="plus" [size]="15" />
+          </button>
+          <ui-menu
+            [items]="columnMenu"
+            triggerClass="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
+            triggerHeight="24px"
+            ariaLabel="common.more"
+            align="end"
+            (selected)="onColumnMenu($event, column)"
+          >
+            <ui-icon name="dots" [size]="15" />
+          </ui-menu>
+        </header>
+
+        <div
+          class="flex min-h-24 flex-col gap-2.5 rounded-card"
+          cdkDropList
+          [cdkDropListData]="column.id"
+          (cdkDropListDropped)="drop($event)"
+        >
+          @for (task of column.tasks; track task.key) {
+            <div
+              class="group relative cursor-grab active:cursor-grabbing"
+              cdkDrag
+              [cdkDragData]="task.key"
+              (click)="select(task)"
+              (dblclick)="open(task)"
+            >
+              <app-task-card [task]="task" [selected]="selectedKey() === task.key" />
+              <ui-menu
+                [items]="cardMenu(task)"
+                triggerClass="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-[6px] bg-surface text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                triggerHeight="24px"
+                ariaLabel="common.more"
+                align="end"
+                (selected)="onCardMenu($event, task)"
+              >
+                <ui-icon name="dots" [size]="14" />
+              </ui-menu>
+            </div>
+          } @empty {
+            <button
+              type="button"
+              class="rounded-card border border-dashed border-line px-3 py-6 text-center text-xs text-ink-3"
+              (click)="newTask(column)"
+            >
+              {{ view.hasFilters() ? t('filters.empty') : t('board.addTask') }}
+            </button>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>
+
+<div class="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-24 lg:hidden scroll-thin">
+  @for (task of mobileColumn()?.tasks ?? []; track task.key) {
+    <div class="cursor-pointer" (click)="open(task)">
+      <app-task-card [task]="task" />
+    </div>
+  } @empty {
+    <p
+      class="rounded-card border border-dashed border-line px-3 py-8 text-center text-xs text-ink-3"
+    >
+      {{ view.hasFilters() ? t('filters.empty') : t('common.none') }}
+    </p>
+  }
+  <button
+    type="button"
+    class="flex h-12 items-center justify-center gap-2 rounded-card border border-dashed border-line-strong text-[13px] text-ink-3"
+    (click)="newTaskMobile()"
+  >
+    <ui-icon name="plus" [size]="16" />
+    {{ t('board.addTask') }}
+  </button>
+</div>

@@ -1,0 +1,15 @@
+{
+  "/api": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": false
+  },
+  "/mcp": {
+    "target": "http://localhost:8765",
+    "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "Host": "localhost:8765"
+    }
+  }
+}

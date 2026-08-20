@@ -1,0 +1,499 @@
+<ui-topbar>
+  <div class="flex min-w-0 items-center gap-1.5">
+    <ui-icon name="agent" [size]="16" class="hidden text-ink-3 sm:inline-flex" />
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('agents.title') }}</span>
+  </div>
+
+  <span class="hidden flex-1 lg:block"></span>
+
+  <ui-view-controls />
+
+  <button
+    type="button"
+    class="flex h-[34px] items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-[13px] text-ink-2"
+    (click)="load()"
+  >
+    <ui-icon name="log" [size]="15" />
+    <span class="hidden sm:inline">{{ t('agents.refresh') }}</span>
+  </button>
+
+  @if (isAdmin()) {
+    <button
+      type="button"
+      class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+      (click)="keyOpen.set(true)"
+    >
+      <ui-icon name="plus" [size]="16" />
+      <span class="hidden sm:inline">{{ t('admin.newKey') }}</span>
+    </button>
+  }
+</ui-topbar>
+
+@if (agents.loading() || agents.error()) {
+  <ui-page-state [loading]="agents.loading()" [error]="agents.error()" (retry)="load()" />
+} @else {
+  <div class="flex flex-1 flex-col gap-9 overflow-y-auto p-5 pb-24 lg:p-10 lg:pb-10 scroll-thin">
+    <header class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1.5">
+        <span class="kap">{{ t('agents.title') }}</span>
+        <h1 class="text-[26px] font-semibold tracking-[-0.02em]">{{ t('agents.heading') }}</h1>
+        <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2">{{ t('agents.lead') }}</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2.5">
+        <span
+          class="flex items-center gap-2 rounded-panel border border-line bg-surface px-3 py-2 text-xs text-ink-2"
+        >
+          <ui-icon name="agent" [size]="14" class="text-ink-3" />
+          {{ t('agents.statAgents', { count: agents.activeAgents().length }) }}
+        </span>
+        <span
+          class="flex items-center gap-2 rounded-panel border border-line bg-surface px-3 py-2 text-xs text-ink-2"
+        >
+          <ui-icon name="grip" [size]="14" class="text-ink-3" />
+          {{ t('agents.statTools', { count: toolCount }) }}
+        </span>
+        @for (transport of transports; track transport) {
+          <span
+            class="flex items-center gap-2 rounded-panel border border-line bg-surface px-3 py-2 font-mono text-[11px] text-ink-2"
+          >
+            <ui-icon name="link" [size]="14" class="text-ink-3" />
+            {{ transport }}
+          </span>
+        }
+        <span
+          class="flex items-center gap-2 rounded-panel border border-line bg-surface px-3 py-2 font-mono text-[11px] text-ink-2"
+        >
+          <ui-icon name="play" [size]="14" class="text-ink-3" />
+          {{ mcpUrl }}
+        </span>
+      </div>
+    </header>
+
+    <section class="flex flex-col gap-4 rounded-panel border border-line-strong bg-surface p-5">
+      <div class="flex flex-col gap-1.5">
+        <span class="kap">{{ t('agents.setup') }}</span>
+        <h2 class="text-[17px] font-semibold tracking-[-0.01em]">{{ t('agents.setupHeading') }}</h2>
+        <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2">
+          {{ t('agents.setupBody') }}
+        </p>
+      </div>
+
+      <div class="grid gap-2.5 sm:grid-cols-2">
+        @for (item of modes; track item.id) {
+          <button
+            type="button"
+            class="flex items-start gap-3 rounded-panel border p-3.5 text-left"
+            [class.border-ink]="mode() === item.id"
+            [class.bg-bg]="mode() === item.id"
+            [class.border-line]="mode() !== item.id"
+            [attr.aria-pressed]="mode() === item.id"
+            (click)="selectMode(item.id)"
+          >
+            <span
+              class="flex h-8 w-8 flex-none items-center justify-center rounded-card border border-line bg-surface-2 text-ink-2"
+            >
+              <ui-icon [name]="item.icon" [size]="15" />
+            </span>
+            <span class="flex min-w-0 flex-col gap-1">
+              <span class="text-[13px] font-medium">{{ t(item.label) }}</span>
+              <span class="text-xs leading-[1.6] text-ink-3">{{ t(item.body) }}</span>
+            </span>
+          </button>
+        }
+      </div>
+
+      <div class="flex flex-wrap gap-1.5">
+        @for (item of clients(); track item.id) {
+          <button
+            type="button"
+            class="flex h-9 items-center gap-2 rounded-[7px] border px-3 text-[13px]"
+            [class.bg-inv]="client() === item.id"
+            [class.text-inv-ink]="client() === item.id"
+            [class.border-inv]="client() === item.id"
+            [class.font-medium]="client() === item.id"
+            [class.border-line]="client() !== item.id"
+            [class.bg-bg]="client() !== item.id"
+            [class.text-ink-2]="client() !== item.id"
+            [attr.aria-pressed]="client() === item.id"
+            (click)="selectClient(item.id)"
+          >
+            <ui-icon [name]="item.icon" [size]="15" />
+            {{ item.label }}
+          </button>
+        }
+      </div>
+
+      <ol class="flex flex-col gap-5">
+        @if (!isHosted()) {
+          <li class="flex flex-col gap-2.5">
+            <span class="flex items-center gap-2.5">
+              <span
+                class="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-line bg-bg font-mono text-[11px] text-ink-2"
+                >1</span
+              >
+              <span class="text-[13px] font-medium">{{ t('agents.step1') }}</span>
+              <span class="h-px flex-1 bg-line"></span>
+              <button
+                type="button"
+                class="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-bg px-2.5 text-[11px] text-ink-2"
+                (click)="copyBuild()"
+              >
+                <ui-icon name="copy" [size]="13" />
+                {{ t('agents.copy') }}
+              </button>
+            </span>
+            <p class="pl-[34px] text-xs leading-[1.7] text-ink-3">{{ t('agents.step1Body') }}</p>
+            <pre
+              class="ml-[34px] overflow-x-auto rounded-panel border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-[1.7] text-ink-2 scroll-thin"
+              >{{ buildSnippet() }}</pre>
+            <div class="ml-[34px] max-w-[420px]">
+              <ui-text-field
+                [value]="serverPath()"
+                (valueChange)="serverPath.set($event)"
+                label="agents.serverPath"
+                hint="agents.serverPathHint"
+                icon="layers"
+              />
+            </div>
+          </li>
+        }
+
+        <li class="flex flex-col gap-2.5">
+          <span class="flex items-center gap-2.5">
+            <span
+              class="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-line bg-bg font-mono text-[11px] text-ink-2"
+              >{{ stepNo(2) }}</span
+            >
+            <span class="text-[13px] font-medium">{{ t('agents.step2') }}</span>
+            <span class="h-px flex-1 bg-line"></span>
+            @if (isAdmin()) {
+              <button
+                type="button"
+                class="flex h-7 items-center gap-1.5 rounded-[6px] bg-inv pr-3 pl-2 text-[11px] font-medium text-inv-ink"
+                (click)="keyOpen.set(true)"
+              >
+                <ui-icon name="key" [size]="13" />
+                {{ t('admin.newKey') }}
+              </button>
+            }
+          </span>
+          <p class="pl-[34px] text-xs leading-[1.7] text-ink-3">
+            {{ isAdmin() ? t('agents.step2Body') : t('agents.step2Member') }}
+          </p>
+
+          @if (issuedKey(); as key) {
+            <div
+              class="ml-[34px] flex flex-col gap-2 rounded-panel border border-warn bg-warn-soft p-4"
+            >
+              <p class="flex items-center gap-2 text-[13px] font-medium text-warn">
+                <ui-icon name="alert" [size]="15" />
+                {{ t('admin.keyOnce') }}
+              </p>
+              <div class="flex flex-wrap items-center gap-2">
+                <code
+                  class="min-w-0 flex-1 truncate rounded-field border border-line bg-surface px-3 py-2 font-mono text-xs"
+                  >{{ key }}</code
+                >
+                <button
+                  type="button"
+                  class="flex h-9 items-center gap-1.5 rounded-[7px] border border-line-strong bg-surface px-3 text-xs"
+                  (click)="copyIssuedKey()"
+                >
+                  <ui-icon name="copy" [size]="14" />
+                  {{ t('admin.copyKey') }}
+                </button>
+                <button
+                  type="button"
+                  class="flex h-9 items-center rounded-[7px] px-3 text-xs text-ink-2"
+                  (click)="issuedKey.set(null)"
+                >
+                  {{ t('common.close') }}
+                </button>
+              </div>
+              <p class="text-[11px] text-ink-3">{{ t('agents.keyInSnippet') }}</p>
+            </div>
+          }
+        </li>
+
+        <li class="flex flex-col gap-2.5">
+          <span class="flex items-center gap-2.5">
+            <span
+              class="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-line bg-bg font-mono text-[11px] text-ink-2"
+              >{{ stepNo(3) }}</span
+            >
+            <span class="text-[13px] font-medium">{{ t('agents.step3') }}</span>
+            <span class="h-px flex-1 bg-line"></span>
+            @if (configIsJson()) {
+              <button
+                type="button"
+                class="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-bg px-2.5 text-[11px] text-ink-2"
+                (click)="downloadConfig()"
+              >
+                <ui-icon name="save" [size]="13" />
+                {{ t('agents.downloadConfig') }}
+              </button>
+            }
+            <button
+              type="button"
+              class="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-bg px-2.5 text-[11px] text-ink-2"
+              (click)="copyConfig()"
+            >
+              <ui-icon name="copy" [size]="13" />
+              {{ t('agents.copy') }}
+            </button>
+          </span>
+          <p class="pl-[34px] text-xs leading-[1.7] text-ink-3">{{ configHint() }}</p>
+          <pre
+            class="ml-[34px] overflow-x-auto rounded-panel border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-[1.7] text-ink-2 scroll-thin"
+            >{{ configSnippet() }}</pre>
+        </li>
+
+        <li class="flex flex-col gap-2.5">
+          <span class="flex items-center gap-2.5">
+            <span
+              class="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-line bg-bg font-mono text-[11px] text-ink-2"
+              >{{ stepNo(4) }}</span
+            >
+            <span class="text-[13px] font-medium">{{ t('agents.step4') }}</span>
+            <span class="h-px flex-1 bg-line"></span>
+            <button
+              type="button"
+              class="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-bg px-2.5 text-[11px] text-ink-2"
+              (click)="load()"
+            >
+              <ui-icon name="log" [size]="13" />
+              {{ t('agents.refresh') }}
+            </button>
+          </span>
+          <p class="pl-[34px] text-xs leading-[1.7] text-ink-3">{{ t('agents.step4Body') }}</p>
+
+          <div
+            class="ml-[34px] flex flex-wrap items-center gap-2.5 rounded-panel border border-line bg-bg px-4 py-3 text-xs"
+          >
+            @if (connected()) {
+              <ui-icon name="check" [size]="15" class="text-done-ink" />
+              <span class="font-medium">{{ t('agents.checkConnected') }}</span>
+              @if (newestAgent(); as agent) {
+                <span class="font-mono text-[11px] text-ink-3">{{ agent.label }}</span>
+                <span class="text-ink-3">{{
+                  t('admin.keyUsed', { when: dateTime(agent.lastUsedAt) })
+                }}</span>
+              }
+            } @else {
+              <ui-icon name="clock" [size]="15" class="text-ink-3" />
+              <span class="text-ink-2">{{ t('agents.checkWaiting') }}</span>
+            }
+          </div>
+        </li>
+      </ol>
+
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-4">
+        <a
+          [href]="docs"
+          target="_blank"
+          rel="noreferrer"
+          class="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-ink"
+        >
+          {{ t('agents.docs') }}
+          <ui-icon name="arrow-right" [size]="13" />
+        </a>
+        <a
+          [href]="serverDocs"
+          target="_blank"
+          rel="noreferrer"
+          class="flex items-center gap-1.5 text-xs text-ink-2 hover:text-ink"
+        >
+          <ui-icon name="link" [size]="13" />
+          {{ t('agents.serverDocs') }}
+        </a>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <h2 class="kap">{{ t('agents.connected') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+        @if (isAdmin()) {
+          <button
+            type="button"
+            class="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface px-2.5 text-xs text-ink-2"
+            (click)="keyOpen.set(true)"
+          >
+            <ui-icon name="plus" [size]="14" />
+            {{ t('admin.newKey') }}
+          </button>
+        }
+      </div>
+
+      <div class="flex flex-col">
+        @for (agent of agents.agents(); track agent.id) {
+          <div
+            class="flex min-h-12 flex-wrap items-center gap-3.5 border-b border-line py-2 text-xs"
+          >
+            <span class="w-[150px] flex-none font-mono text-ink-2">{{ agent.prefix }}</span>
+            <span class="min-w-0 flex-1 truncate">{{ agent.label }}</span>
+            <span class="flex flex-none flex-wrap gap-1">
+              @for (scope of agent.scopes; track scope) {
+                <span
+                  class="rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] text-ink-3"
+                  >{{ scope }}</span
+                >
+              }
+            </span>
+            <span
+              class="w-[92px] flex-none rounded-full px-2 py-0.5 text-center text-[11px]"
+              [class.border]="agent.state !== 'active'"
+              [class.border-warn]="agent.state !== 'active'"
+              [class.text-warn]="agent.state !== 'active'"
+              [class.text-ink-3]="agent.state === 'active'"
+              >{{ t('admin.keyState.' + agent.state) }}</span
+            >
+            <span class="w-[150px] flex-none text-ink-3">
+              {{
+                agent.lastUsedAt
+                  ? t('admin.keyUsed', { when: dateTime(agent.lastUsedAt) })
+                  : t('admin.keyNeverUsed')
+              }}
+            </span>
+            @if (isAdmin()) {
+              <ui-menu
+                [items]="keyMenu(agent)"
+                triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                triggerHeight="28px"
+                ariaLabel="common.more"
+                align="end"
+                (selected)="onKeyMenu($event, agent)"
+              >
+                <ui-icon name="dots" [size]="15" />
+              </ui-menu>
+            }
+          </div>
+        } @empty {
+          <p class="py-8 text-center text-xs text-ink-3">{{ t('agents.noAgents') }}</p>
+        }
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <div class="flex items-center gap-2.5">
+        <h2 class="kap">{{ t('agents.tools') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+        <span class="font-mono text-[11px] text-ink-3">{{ toolCount }}</span>
+      </div>
+
+      <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2">{{ t('agents.toolsBody') }}</p>
+
+      <div class="grid gap-3 lg:grid-cols-2">
+        @for (group of groups; track group.title) {
+          <div class="flex flex-col gap-3 rounded-panel border border-line bg-surface p-4">
+            <div class="flex items-center gap-2.5">
+              <span
+                class="flex h-8 w-8 flex-none items-center justify-center rounded-card border border-line bg-surface-2 text-ink-2"
+              >
+                <ui-icon [name]="group.icon" [size]="15" />
+              </span>
+              <span class="min-w-0 flex-1 text-[13px] font-medium">{{ t(group.title) }}</span>
+              <span class="flex flex-none flex-wrap justify-end gap-1">
+                @for (scope of group.scopes; track scope) {
+                  <span
+                    class="rounded-full border border-line bg-bg px-1.5 py-0.5 font-mono text-[10px] text-ink-3"
+                    >{{ scope }}</span
+                  >
+                }
+              </span>
+            </div>
+            <p class="text-xs leading-[1.7] text-ink-2">{{ t(group.body) }}</p>
+            <div class="flex flex-wrap gap-1.5">
+              @for (tool of group.tools; track tool) {
+                <span
+                  class="rounded-field border border-line bg-bg px-2 py-1 font-mono text-[10px] text-ink-3"
+                  >{{ tool }}</span
+                >
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <div class="flex items-center gap-2.5">
+        <h2 class="kap">{{ t('agents.scopes') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+      </div>
+
+      <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2">{{ t('agents.scopesBody') }}</p>
+
+      <div class="grid gap-x-8 gap-y-2 md:grid-cols-2">
+        @for (scope of scopes; track scope.code) {
+          <div class="flex items-start gap-3 border-b border-line py-2 text-xs">
+            <span class="w-[122px] flex-none font-mono text-ink-2">{{ scope.code }}</span>
+            <span class="min-w-0 flex-1 leading-[1.6] text-ink-3">{{ t(scope.label) }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface p-4">
+        <span class="flex items-center gap-2 text-[13px] font-medium">
+          <ui-icon name="lock" [size]="14" class="text-ink-2" />
+          {{ t('agents.boundaries') }}
+        </span>
+        @for (boundary of boundaries; track boundary) {
+          <p class="flex items-start gap-2 text-xs leading-[1.6] text-ink-2">
+            <ui-icon name="check" [size]="13" class="mt-0.5 flex-none text-done-ink" />
+            <span>{{ t(boundary) }}</span>
+          </p>
+        }
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-3">
+      <div class="flex items-center gap-2.5">
+        <h2 class="kap">{{ t('agents.activity') }}</h2>
+        <span class="h-px flex-1 bg-line"></span>
+        <span class="font-mono text-[11px] text-ink-3">{{ agents.activity().length }}</span>
+      </div>
+
+      <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2">
+        {{ t('agents.activityBody') }}
+      </p>
+
+      <div class="flex flex-col">
+        @for (event of agents.activity(); track event.id) {
+          <div
+            class="flex min-h-11 flex-wrap items-center gap-3.5 border-b border-line py-2 text-xs"
+          >
+            <span class="w-[104px] flex-none font-mono text-ink-3">{{ dateTime(event.at) }}</span>
+            <span class="w-[168px] flex-none truncate">{{ event.agent }}</span>
+            <span
+              class="w-[132px] flex-none"
+              [class.text-warn]="isDenied(event.action)"
+              [class.text-ink-2]="!isDenied(event.action)"
+              >{{ actionLabel(event.action) }}</span
+            >
+            <span class="min-w-0 flex-1 truncate font-mono text-[11px] text-ink-3">
+              {{ event.method }} {{ event.path }}
+            </span>
+            @if (event.status) {
+              <span
+                class="w-[44px] flex-none text-right font-mono text-[11px]"
+                [class.text-warn]="event.status >= 400"
+                [class.text-ink-3]="event.status < 400"
+                >{{ event.status }}</span
+              >
+            }
+          </div>
+        } @empty {
+          <p class="py-8 text-center text-xs text-ink-3">{{ t('agents.noActivity') }}</p>
+        }
+      </div>
+    </section>
+  </div>
+}
+
+<app-api-key-dialog
+  [open]="keyOpen()"
+  (saved)="createKey($event)"
+  (cancelled)="keyOpen.set(false)"
+/>
