@@ -647,7 +647,7 @@ and that table is only created in `V60`. Flyway runs migrations in numeric order
 outside its area's range.
 
 Run it only after deploying the `identity` changes that stop reading those columns (`AppUser`,
-`AppUserDetailsService`, `UserDirectoryService.toView`, `DemoPasswordInitializer`).
+`AppUserDetailsService`, `UserDirectoryService.toView`).
 
 The V45 to V49 range stays free as this area's reserve.
 
@@ -671,7 +671,7 @@ Every module listed exists in `backend/settings.gradle.kts`.
 | Module | What is added | What has to be fixed | Risk |
 | --- | --- | --- | --- |
 | `shared` | `OrganizationContext` (a record plus a `ThreadLocal` holder), `OrganizationEvents` (`OrganizationCreated`, `MemberJoined`, `MemberRemoved`) | nothing, `RoleId` and `StatusCategory` unchanged | low |
-| `identity` | the `Organization`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `OrgController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting `roles(...)`; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears; `DemoPasswordInitializer` limits itself to the demo organization | **high**, this is where the whole role model changes |
+| `identity` | the `Organization`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `OrgController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting `roles(...)`; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears | **high**, this is where the whole role model changes |
 | `app` | `OrganizationContextFilter`, `OrganizationContextTransactionListener`, a second data source for Flyway, `BootstrapController` returns the organization and the organization list | `SecurityConfig` lets `/api/auth/signup`, `/api/invites/**`, `/api/orgs` through when signed in without an organization | medium |
 | `workspace` | `organization_id` in writes, `projectId` as a read parameter | `WorkspaceService.statuses()`, `transitions()`, `epics()`, `customFields()`, `milestones()` **do not filter by project even today**; `nextStatusPosition()` computes `MAX(position)` across the whole table; `createEpic` and `createCustomField` do the same; `updateSettings` does an `UPDATE` without a `WHERE` (only correct under RLS); `defaultProject()` throws `NotFoundException` for an organization without a project | **high**, two scope levels at once (organization and project) |
 | `tasks` | `organization_id` in the entities, the task key assigned from `task_key_sequence` per organization and project | `TaskService.CURRENT_SPRINT = "S24"` is a constant in the code, for a new organization no sprint with that code exists and the board will be empty; `TaskRepository.findByKey` has to hit the (organization, key) pair, because the key stops being globally unique | **high** |

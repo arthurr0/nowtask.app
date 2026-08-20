@@ -99,21 +99,12 @@ cd frontend && pnpm install && pnpm start          # http://localhost:4200, prox
 ```
 
 <details>
-<summary><b>Demo accounts</b></summary>
+<summary><b>First run</b></summary>
 
 <br>
 
-The `V2__demo_data.sql` migration sets up a workspace with tasks, rules and history. Demo accounts
-get a shared password from `NOWTASK_DEMO_PASSWORD` at startup. An empty value turns this mechanism
-off, and that is the default outside `docker-compose.yml`.
-
-| Address | Role |
-| --- | --- |
-| `artur@nowtask.app` | admin |
-| `marta@nowtask.app` | manager |
-| `piotr@nowtask.app` | member |
-| `ola@nowtask.app` | member |
-| `jakub@nowtask.app` | member |
+A new database starts empty. Create the first account at `/signup`, then add a project and its
+statuses in the interface. There is no seeded data and no shared password.
 
 </details>
 

@@ -219,8 +219,7 @@ And phase 4 point 8, because the wizard passes through the "organization without
 4. `app`: `SecurityConfig` lets five new public paths through, rate limiting.
 5. OIDC: a realm import file in `infra/keycloak/` (the directory exists and is empty),
    `ClientRegistration` in `application.yml`, `OidcUserService` with account linking rules.
-6. `DemoPasswordInitializer`: the three safeguards from `docs/onboarding.md`, point 6.3.
-7. Frontend: `signup`, `invite/:token`, `orgs/new`, `onboarding`, the checklist, the tour, fixes to
+6. Frontend: `signup`, `invite/:token`, `orgs/new`, `onboarding`, the checklist, the tour, fixes to
    the login screen (removing the hardcoded credentials).
 
 **Exit gate:** both flows go from zero to a board in the `docker compose` environment, with the mail
@@ -229,8 +228,7 @@ received in Mailpit.
 ### Phase 7: cleanup
 
 Migration `V64`. Removing the reads of `app_user.role`, `capacity`, `pending`, `invited_on` from
-`AppUser`, `AppUserDetailsService`, `UserDirectoryService.toView`, `DemoPasswordInitializer`, and
-only then the migration.
+`AppUser`, `AppUserDetailsService` and `UserDirectoryService.toView`, and only then the migration.
 
 ---
 
@@ -343,13 +341,8 @@ halfway through.
 
 ### R8. `DemoPasswordInitializer` on an installation with signup
 
-The component gives a shared password to every account with `password_hash IS NULL`. An account
-created through OIDC has no password. Restarting the application gives it `demo1234`. The default
-value of `NOWTASK_DEMO_PASSWORD` in `application.yml` is exactly `demo1234`, so the mechanism is on
-by default.
-
-The fix (`docs/onboarding.md`, point 6.3) has to land **together with phase 6 point 1**, not later,
-because from that moment public signup exists.
+Closed. The component and the whole demo password mechanism have been removed from the repository,
+so there is no longer a path where an account created through OIDC picks up a shared password.
 
 ### R9. Migration number collision
 

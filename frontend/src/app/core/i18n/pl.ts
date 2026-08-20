@@ -63,7 +63,6 @@ export const pl = {
   'state.retry': 'Spróbuj ponownie',
   'state.signOut': 'Wyloguj się',
   'login.badCredentials': 'Nieprawidłowy adres e-mail lub hasło.',
-  'login.demoHint': 'Konta demonstracyjne używają hasła demo1234.',
 
   'status.backlog': 'Backlog',
   'status.todo': 'Do zrobienia',

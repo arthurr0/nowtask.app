@@ -29,8 +29,6 @@ services:
       NOWTASK_DB_URL: jdbc:postgresql://db:5432/nowtask
       NOWTASK_DB_USER: nowtask
       NOWTASK_DB_PASSWORD: nowtask
-      # The demo account password, for a local demo only. Empty disables the mechanism.
-      NOWTASK_DEMO_PASSWORD: ${NOWTASK_DEMO_PASSWORD:-demo1234}
       NOWTASK_MAIL_HOST: mail
       NOWTASK_MAIL_PORT: '1025'
     depends_on:

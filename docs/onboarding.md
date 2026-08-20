@@ -19,9 +19,11 @@ What already exists and has to be matched:
   `HttpSessionSecurityContextRepository`. `formLogin` and `logout` are disabled, everything goes
   through `AuthController`. The frontend (`AuthService.login`) first does `GET /api/meta` to force
   the `XSRF-TOKEN` cookie, and only then `POST /api/auth/login`.
-- **Demo accounts.** On every startup `DemoPasswordInitializer` iterates `users.findAll()` and gives
-  a shared password (`NOWTASK_DEMO_PASSWORD`, `demo1234` by default) to every account that has
-  `password_hash IS NULL` and is not `pending`.
+- **No seeded data.** The `V2__demo_data.sql` migration and the `DemoPasswordInitializer` component
+  have been removed (`V33__remove_demo_data.sql` cleans up instances where `V2` had already run). A
+  new database has no accounts, no projects and no statuses, so the first account comes from
+  `POST /api/auth/signup`. Wherever the rest of this document refers to demo data as an existing
+  starting point, read it as a description of the state before that removal.
 - **Corporate login.** `docker-compose.yml` brings up Keycloak 26.4 with `--import-realm` and mounts
   `./infra/keycloak`, the backend gets `NOWTASK_OIDC_ISSUER`, `backend/app/build.gradle.kts` has
   `spring-boot-starter-oauth2-client`. **The `infra/keycloak/` directory exists but is empty**, so
@@ -574,29 +576,11 @@ The last limit protects against using the product as a mail relay.
 
 ### 6.3 `DemoPasswordInitializer`
 
-Today it iterates every account in the installation. Once organizations exist, with public signup,
-this is a mechanism we do not want switched on by accident.
+Removed. The component gave a shared password to every account with `password_hash IS NULL`, which
+on an installation with public signup meant that any account created through OIDC picked up that
+password on the next restart. There is nothing left to guard: the class, the `nowtask.demo.password`
+property and the `NOWTASK_DEMO_PASSWORD` variable are gone from the repository.
 
-The changes, all three necessary:
-
-1. **An organization count condition.** If there is more than one organization in the database, the
-   component does nothing and writes a warning to the log. A demonstration installation has one
-   organization and will stay that way.
-2. **Narrowing to the demo organization.** Instead of `users.findAll()` it iterates over the members
-   of organization `00000000-0000-0000-0000-000000000042` (the fixed identifier from
-   `docs/multi-tenancy.md`, migration `V40`).
-3. **An explicit switch.** A new `nowtask.demo.enabled` property (`false` by default), next to the
-   existing `nowtask.demo.password`. An empty password already disables the mechanism today, but
-   `application.yml` defaults to `demo1234`, so anyone who does not set `NOWTASK_DEMO_PASSWORD` gets
-   a working mechanism without making a deliberate decision. We reverse that: off by default,
-   `docker-compose.yml` turns it on explicitly.
-
-Additionally: demo accounts get `email_verified_at` in a migration so that they do not try to send
-verification mail to nonexistent `@nowtask.app` addresses.
-
-Condition 1 is the one that really closes the hole. Without it all it takes is someone on a public
-installation creating an account through OIDC (an account with no password, `password_hash IS
-NULL`), and an application restart gives it `demo1234`.
 
 ### 6.4 Mail
 

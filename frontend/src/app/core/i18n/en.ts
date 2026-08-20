@@ -65,7 +65,6 @@ export const en: Dictionary = {
   'state.retry': 'Try again',
   'state.signOut': 'Sign out',
   'login.badCredentials': 'Wrong email address or password.',
-  'login.demoHint': 'Demo accounts use the password demo1234.',
 
   'status.backlog': 'Backlog',
   'status.todo': 'To do',

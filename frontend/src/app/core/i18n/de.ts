@@ -65,7 +65,6 @@ export const de: Dictionary = {
   'state.retry': 'Erneut versuchen',
   'state.signOut': 'Abmelden',
   'login.badCredentials': 'Falsche E-Mail-Adresse oder falsches Passwort.',
-  'login.demoHint': 'Demo-Konten nutzen das Passwort demo1234.',
 
   'status.backlog': 'Backlog',
   'status.todo': 'Zu erledigen',
