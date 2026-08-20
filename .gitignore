@@ -1,0 +1,115 @@
+# --- Operating systems ---
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+*~
+
+# --- Editors and IDEs ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.fleet/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+*.swp
+*.swo
+.history/
+.project
+.classpath
+.settings/
+.c9/
+*.launch
+*.sublime-project
+*.sublime-workspace
+
+# --- Java, Gradle, Maven ---
+build/
+out/
+target/
+bin/
+.gradle/
+gradle-app.setting
+.gradletasknamecache
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+hs_err_pid*
+replay_pid*
+.kotlin/
+
+# --- Node, pnpm, npm ---
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-integrity
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.stylelintcache
+
+# --- Angular and frontend ---
+dist/
+tmp/
+out-tsc/
+bazel-out/
+.angular/
+.sass-cache/
+connect.lock
+coverage/
+libpeerconnection.log
+testem.log
+typings/
+__screenshots__/
+*.tsbuildinfo
+
+# --- Environment variables and secrets ---
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+secrets/
+credentials.json
+
+# --- Logs and temporary files ---
+*.log
+logs/
+*.pid
+*.seed
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- Docker and local data ---
+.docker/
+/data/
+/pgdata/
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Local tooling ---
+.claude/settings.local.json
