@@ -1,0 +1,69 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: nowtask
+      POSTGRES_USER: nowtask
+      POSTGRES_PASSWORD: nowtask
+    volumes:
+      # Postgres 18 expects the whole directory to be mounted, not the data subdirectory
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nowtask -d nowtask']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      # 5433 on the host so it does not clash with a locally installed Postgres
+      - '5433:5432'
+
+  mail:
+    image: axllent/mailpit:latest
+    ports:
+      - '8025:8025'
+      - '1025:1025'
+
+  backend:
+    build: ./backend
+    environment:
+      NOWTASK_DB_URL: jdbc:postgresql://db:5432/nowtask
+      NOWTASK_DB_USER: nowtask
+      NOWTASK_DB_PASSWORD: nowtask
+      # The demo account password, for a local demo only. Empty disables the mechanism.
+      NOWTASK_DEMO_PASSWORD: ${NOWTASK_DEMO_PASSWORD:-demo1234}
+      NOWTASK_MAIL_HOST: mail
+      NOWTASK_MAIL_PORT: '1025'
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8081:8081'
+
+  # The MCP server: exposes nowtask to AI agents over the Streamable HTTP transport.
+  # Every client brings its own key in the Authorization header, so NOWTASK_API_KEY is
+  # optional and serves only as a fallback key for clients that do not send the header.
+  # The frontend nginx exposes this server under /mcp, so an agent connects to the application address.
+  mcp:
+    build: ./mcp
+    environment:
+      NOWTASK_API_URL: http://backend:8081
+      NOWTASK_API_KEY: ${NOWTASK_API_KEY:-}
+      NOWTASK_MCP_TRANSPORT: http
+      NOWTASK_MCP_HTTP_HOST: 0.0.0.0
+      NOWTASK_MCP_HTTP_PORT: '8765'
+      NOWTASK_MCP_ALLOWED_HOSTS: localhost:8765,127.0.0.1:8765,mcp:8765
+    depends_on:
+      - backend
+    ports:
+      - '8765:8765'
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+      - mcp
+    ports:
+      - '8080:8080'
+
+volumes:
+  db-data:

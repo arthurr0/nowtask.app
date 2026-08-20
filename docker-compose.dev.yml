@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: nowtask
+      POSTGRES_USER: nowtask
+      POSTGRES_PASSWORD: nowtask
+    volumes:
+      # Postgres 18 expects the whole directory to be mounted, not the data subdirectory
+      - db-data-dev:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nowtask -d nowtask']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      # 5433 on the host so it does not clash with a locally installed Postgres
+      - '5433:5432'
+volumes:
+  db-data-dev:

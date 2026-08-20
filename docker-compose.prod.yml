@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${NOWTASK_DB_NAME:-nowtask}
+      POSTGRES_USER: ${NOWTASK_DB_USER:-nowtask}
+      POSTGRES_PASSWORD: ${NOWTASK_DB_PASSWORD:?ustaw NOWTASK_DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${NOWTASK_DB_USER:-nowtask} -d ${NOWTASK_DB_NAME:-nowtask}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-backend:${IMAGE_TAG:-latest}
+    environment:
+      NOWTASK_DB_URL: jdbc:postgresql://db:5432/${NOWTASK_DB_NAME:-nowtask}
+      NOWTASK_DB_USER: ${NOWTASK_DB_USER:-nowtask}
+      NOWTASK_DB_PASSWORD: ${NOWTASK_DB_PASSWORD:?ustaw NOWTASK_DB_PASSWORD}
+      NOWTASK_DEMO_PASSWORD: ${NOWTASK_DEMO_PASSWORD:-}
+      NOWTASK_MAIL_HOST: ${NOWTASK_MAIL_HOST:-}
+      NOWTASK_MAIL_PORT: ${NOWTASK_MAIL_PORT:-587}
+      NOWTASK_MAIL_FROM: ${NOWTASK_MAIL_FROM:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '${NOWTASK_BACKEND_PORT:-8081}:8081'
+    restart: unless-stopped
+
+  mcp:
+    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-mcp:${IMAGE_TAG:-latest}
+    environment:
+      NOWTASK_API_URL: http://backend:8081
+      # An optional fallback key. MCP clients bring their own in the Authorization header.
+      NOWTASK_API_KEY: ${NOWTASK_API_KEY:-}
+      NOWTASK_MCP_TRANSPORT: http
+      NOWTASK_MCP_HTTP_HOST: 0.0.0.0
+      NOWTASK_MCP_HTTP_PORT: '8765'
+      NOWTASK_MCP_ALLOWED_HOSTS: ${NOWTASK_MCP_ALLOWED_HOSTS:-mcp:8765}
+    depends_on:
+      - backend
+    ports:
+      - '${NOWTASK_MCP_PORT:-8765}:8765'
+    restart: unless-stopped
+
+  frontend:
+    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-frontend:${IMAGE_TAG:-latest}
+    depends_on:
+      - backend
+      - mcp
+    ports:
+      - '${NOWTASK_FRONTEND_PORT:-8080}:8080'
+    restart: unless-stopped
+
+volumes:
+  db-data:
