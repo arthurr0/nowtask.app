@@ -1,7 +1,45 @@
-# nowtask
+<div align="center">
 
-A task management application for teams: configurable statuses and fields, an automation engine,
-board, list, timeline and dashboard views, dark and light theme, interface in three languages.
+<a href="https://nowtask.app">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/brand/logo-horizontal-inverse.svg">
+    <img src=".github/brand/logo-horizontal.svg" alt="nowtask" width="232">
+  </picture>
+</a>
+
+<h3>Now, not someday.</h3>
+
+<p>
+  Task management for teams: configurable statuses and fields, an automation engine,<br>
+  board, list, timeline and dashboard views, dark and light theme, interface in three languages.
+</p>
+
+<p>
+  <a href="LICENSE"><img alt="License BSL 1.1" src="https://img.shields.io/badge/license-BSL%201.1-55585f?style=flat-square&labelColor=1d1f23"></a>
+  <img alt="Angular 22" src="https://img.shields.io/badge/Angular-22-55585f?style=flat-square&labelColor=1d1f23&logo=angular&logoColor=ecedef">
+  <img alt="Spring Boot 4.1" src="https://img.shields.io/badge/Spring%20Boot-4.1-55585f?style=flat-square&labelColor=1d1f23&logo=springboot&logoColor=ecedef">
+  <img alt="Java 25 LTS" src="https://img.shields.io/badge/Java-25%20LTS-55585f?style=flat-square&labelColor=1d1f23&logo=openjdk&logoColor=ecedef">
+  <img alt="PostgreSQL 18" src="https://img.shields.io/badge/PostgreSQL-18-55585f?style=flat-square&labelColor=1d1f23&logo=postgresql&logoColor=ecedef">
+  <img alt="MCP 31 tools" src="https://img.shields.io/badge/MCP-31%20tools-55585f?style=flat-square&labelColor=1d1f23">
+</p>
+
+<p>
+  <img alt="CI backend" src="https://img.shields.io/github/actions/workflow/status/arthurr0/nowtask.app/ci-backend.yml?branch=master&style=flat-square&label=backend&labelColor=1d1f23&color=55585f">
+  <img alt="CI frontend" src="https://img.shields.io/github/actions/workflow/status/arthurr0/nowtask.app/ci-frontend.yml?branch=master&style=flat-square&label=frontend&labelColor=1d1f23&color=55585f">
+  <img alt="CI mcp" src="https://img.shields.io/github/actions/workflow/status/arthurr0/nowtask.app/ci-mcp.yml?branch=master&style=flat-square&label=mcp&labelColor=1d1f23&color=55585f">
+</p>
+
+<p>
+  <a href="#running"><b>Running</b></a> &nbsp;·&nbsp;
+  <a href="#ai-agents"><b>AI agents</b></a> &nbsp;·&nbsp;
+  <a href="#how-it-is-organized"><b>Architecture</b></a> &nbsp;·&nbsp;
+  <a href="#documentation"><b>Documentation</b></a> &nbsp;·&nbsp;
+  <a href="#license"><b>License</b></a>
+</p>
+
+</div>
+
+---
 
 AI agents work here on equal terms with people. The repository holds an MCP server that gives an
 agent 31 tools over the same API the interface uses: from searching and editing tasks, through
@@ -15,22 +53,22 @@ The project is under construction and has no release yet. It works as a whole: t
 to the backend, the backend keeps data in Postgres, `docker compose up --build` brings everything
 up at once.
 
-What is missing:
-
-- **tests**. Not a single one, despite Vitest being configured on the frontend and a `src/test` module in Gradle.
-- **multi-tenancy**. An installation serves one organization. The target design is in `docs/multi-tenancy.md`.
-- **onboarding and work presets**. Designed in `docs/onboarding.md` and `docs/work-presets.md`, not written yet.
-- **corporate login through OIDC**. Designed in `docs/onboarding.md`, not in the code yet.
+| Missing | Where the design lives |
+| --- | --- |
+| **Tests** | not a single one, despite Vitest being configured on the frontend and a `src/test` module in Gradle |
+| **Multi-tenancy** | an installation serves one organization, the target design is in `docs/multi-tenancy.md` |
+| **Onboarding and work presets** | designed in `docs/onboarding.md` and `docs/work-presets.md`, not written yet |
+| **Corporate login through OIDC** | designed in `docs/onboarding.md`, not in the code yet |
 
 ## Stack
 
-| Layer     | Technology                                                              |
-| --------- | ----------------------------------------------------------------------- |
-| Frontend  | Angular 22, standalone components, signals, zoneless, Tailwind 4         |
-| Backend   | Spring Boot 4.1, Java 25 LTS, Spring Data JPA, JdbcClient, Flyway        |
-| Database  | PostgreSQL 18                                                            |
-| MCP       | TypeScript, @modelcontextprotocol/sdk, stdio and Streamable HTTP transports |
-| Packaging | Docker images (nginx, JRE, Node) plus compose                           |
+| Layer     | Technology                                                                  |
+| --------- | --------------------------------------------------------------------------- |
+| Frontend  | Angular 22, standalone components, signals, zoneless, Tailwind 4             |
+| Backend   | Spring Boot 4.1, Java 25 LTS, Spring Data JPA, JdbcClient, Flyway            |
+| Database  | PostgreSQL 18                                                               |
+| MCP       | TypeScript, @modelcontextprotocol/sdk, stdio and Streamable HTTP transports  |
+| Packaging | Docker images (nginx, JRE, Node) plus compose                               |
 
 ## Running
 
@@ -41,11 +79,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- frontend: http://localhost:8080
-- backend: http://localhost:8081/api/meta
-- MCP server for agents: http://localhost:8080/mcp (directly also http://localhost:8765/mcp)
-- Mailpit inbox, which catches outgoing mail: http://localhost:8025
-- Postgres: localhost:5433 (`nowtask` / `nowtask`), port shifted so it does not clash with a local installation
+| Service | Address |
+| --- | --- |
+| Frontend | http://localhost:8080 |
+| Backend | http://localhost:8081/api/meta |
+| MCP server for agents | http://localhost:8080/mcp, directly also http://localhost:8765/mcp |
+| Mailpit inbox, which catches outgoing mail | http://localhost:8025 |
+| Postgres | localhost:5433 (`nowtask` / `nowtask`), port shifted so it does not clash with a local installation |
 
 Nginx forwards `/api/` to the backend container, so the frontend needs no separate address configuration.
 
@@ -58,12 +98,24 @@ cd backend && ./gradlew :app:bootRun               # http://localhost:8081
 cd frontend && pnpm install && pnpm start          # http://localhost:4200, proxies /api to 8081
 ```
 
-### Demo accounts
+<details>
+<summary><b>Demo accounts</b></summary>
+
+<br>
 
 The `V2__demo_data.sql` migration sets up a workspace with tasks, rules and history. Demo accounts
 get a shared password from `NOWTASK_DEMO_PASSWORD` at startup. An empty value turns this mechanism
-off, and that is the default outside `docker-compose.yml`. Addresses: `artur@nowtask.app` (admin),
-`marta@nowtask.app` (manager), `piotr@nowtask.app`, `ola@nowtask.app`, `jakub@nowtask.app`.
+off, and that is the default outside `docker-compose.yml`.
+
+| Address | Role |
+| --- | --- |
+| `artur@nowtask.app` | admin |
+| `marta@nowtask.app` | manager |
+| `piotr@nowtask.app` | member |
+| `ola@nowtask.app` | member |
+| `jakub@nowtask.app` | member |
+
+</details>
 
 ## AI agents
 
@@ -116,7 +168,10 @@ separate traces in task history.
 You generate a key in AI agents → New key. The full key is shown once, only the SHA-256 hash stays
 in the database.
 
-### Running the server yourself
+<details>
+<summary><b>Running the server yourself</b></summary>
+
+<br>
 
 If you prefer to keep the server local, run it over `stdio`:
 
@@ -140,6 +195,8 @@ cd nowtask.app/mcp && npm install && npm run build
 }
 ```
 
+</details>
+
 ### Where an agent's permissions end
 
 Scopes are disjoint and do not contain one another: `tasks:write` grants no right to delete, and
@@ -153,12 +210,15 @@ Every write made with a key leaves a trace. In task history the entry has `ruleN
 request together with the method, path and response code, and denials caused by a missing scope are
 stored as `agent.denied`.
 
-Running the server, environment variables and troubleshooting: `mcp/README.md`.
-Keys, scopes and good practices: `docs/ai-agents.md`.
+> Running the server, environment variables and troubleshooting: `mcp/README.md`.<br>
+> Keys, scopes and good practices: `docs/ai-agents.md`.
 
 ## How it is organized
 
-### Backend
+<details open>
+<summary><b>Backend</b></summary>
+
+<br>
 
 Gradle, multi-module. Modules talk to each other through interfaces from `api` packages, not through
 entities.
@@ -186,7 +246,12 @@ Authentication has two paths: a cookie session with CSRF protection for the brow
 only the SHA-256 hash stays in the database, and every write request made with a key lands in the
 audit log.
 
-### Database schema
+</details>
+
+<details>
+<summary><b>Database schema</b></summary>
+
+<br>
 
 Flyway, 29 tables. Migration numbering has reserved ranges so that areas developed in parallel do
 not collide on numbers:
@@ -200,7 +265,12 @@ not collide on numbers:
 | V50 to V59 | work form presets |
 | V60 to V69 | onboarding and invitations |
 
-### Frontend
+</details>
+
+<details open>
+<summary><b>Frontend</b></summary>
+
+<br>
 
 ```
 frontend/src/app/
@@ -225,7 +295,16 @@ a `t()` function called directly in templates, so switching the language refresh
 a reload and without a separate build. Adding a language: a new dictionary file, an entry in
 `DICTIONARIES` and in `LANGUAGES`.
 
-### Notifications and integrations
+Brand assets live in `frontend/public/brand`: the mark, the horizontal logo in both variants, the
+favicon set and the OG image. The `ui-logo` component draws the same mark from the theme variables,
+so it follows the theme without a second file.
+
+</details>
+
+<details>
+<summary><b>Notifications and integrations</b></summary>
+
+<br>
 
 Assigning a task creates a notification for the assignee, and the bell in the header shows the
 unread count and the list on click. Outgoing channels are separate, configured in
@@ -238,13 +317,23 @@ recipient does not slow the application down.
 Locally Mailpit from `docker-compose.yml` catches mail, so nothing leaves the machine. Outside
 Docker mail is disabled until you set `NOWTASK_MAIL_HOST`.
 
-### Export
+</details>
+
+<details>
+<summary><b>Export</b></summary>
+
+<br>
 
 A button on the task list downloads CSV or XLSX with exactly the rows and columns left after
 filtering, with a limit of 10,000 rows. `GET /api/export/rule-runs?format=csv` gives the rule run
 log. CSV comes out in UTF-8 with a BOM so that Excel does not get the encoding wrong.
 
-### MCP server
+</details>
+
+<details>
+<summary><b>MCP server</b></summary>
+
+<br>
 
 ```
 mcp/src/
@@ -260,6 +349,8 @@ mcp/src/
 A separate process, a separate Docker image, no access to the database or to browser sessions. All
 traffic goes through the public `/api/**` with an API key, so an agent does not bypass the rules
 that apply to the interface. The user facing description is above, in [AI agents](#ai-agents).
+
+</details>
 
 ## Documentation
 
@@ -280,3 +371,13 @@ In short: the code is open, you can read it, change it and run it yourself. Prod
 for up to ten users in total. Above that threshold, and also when offering nowtask to third parties
 as a hosted service, a commercial license is required: kontakt@nowtask.app. Every version switches
 automatically to Apache 2.0 on 20 August 2029.
+
+<div align="center">
+<br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/brand/logo-horizontal-inverse.svg">
+  <img src=".github/brand/logo-horizontal.svg" alt="nowtask" width="132">
+</picture>
+
+<sub>An open source project. The official instance is run by nowtask.</sub>
+</div>
