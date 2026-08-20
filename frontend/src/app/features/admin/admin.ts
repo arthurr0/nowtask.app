@@ -172,7 +172,9 @@ export class Admin implements OnInit {
     }
 
     if (item.id === 'toggle') {
-      await this.run(() => this.integrations.update(integration.id, { enabled: !integration.enabled }));
+      await this.run(() =>
+        this.integrations.update(integration.id, { enabled: !integration.enabled }),
+      );
       return;
     }
 

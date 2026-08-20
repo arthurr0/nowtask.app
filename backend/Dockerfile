@@ -1,7 +1,6 @@
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
-# Najpierw sam wrapper i pliki builda: warstwa z zaleznosciami przetrwa zmiane kodu
 COPY gradlew ./
 COPY gradle ./gradle
 COPY settings.gradle.kts build.gradle.kts ./
@@ -11,6 +10,8 @@ COPY workspace/build.gradle.kts ./workspace/
 COPY tasks/build.gradle.kts ./tasks/
 COPY automation/build.gradle.kts ./automation/
 COPY analytics/build.gradle.kts ./analytics/
+COPY integrations/build.gradle.kts ./integrations/
+COPY exports/build.gradle.kts ./exports/
 COPY app/build.gradle.kts ./app/
 RUN ./gradlew --no-daemon :app:dependencies > /dev/null 2>&1 || true
 
@@ -20,6 +21,8 @@ COPY workspace/src ./workspace/src
 COPY tasks/src ./tasks/src
 COPY automation/src ./automation/src
 COPY analytics/src ./analytics/src
+COPY integrations/src ./integrations/src
+COPY exports/src ./exports/src
 COPY app/src ./app/src
 RUN ./gradlew --no-daemon :app:bootJar -x test
 
