@@ -24,6 +24,10 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testRuntimeOnly("org.postgresql:postgresql")
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {

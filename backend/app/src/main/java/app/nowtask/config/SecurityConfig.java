@@ -19,6 +19,8 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import app.nowtask.identity.api.ApiKeyAuthenticator;
 import app.nowtask.identity.api.AuditLog;
+import app.nowtask.identity.api.Organizations;
+import app.nowtask.identity.api.UserDirectory;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration
@@ -28,6 +30,8 @@ class SecurityConfig {
             HttpSecurity http,
             ApiKeyAuthenticator apiKeyAuthenticator,
             AuditLog auditLog,
+            Organizations organizations,
+            UserDirectory directory,
             ObjectMapper objectMapper) throws Exception {
 
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
@@ -44,13 +48,24 @@ class SecurityConfig {
                         .ignoringRequestMatchers(request -> ApiKeyAuthenticationFilter.bearerToken(request) != null))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/meta").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/verify-email",
+                                "/api/auth/forgot-password", "/api/auth/reset-password", "/api/meta")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/invites/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/invites/*/accept",
+                                "/api/invites/*/request-new")
+                        .permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/admin/members", "/api/admin/teams",
                                 "/api/admin/permissions")
                         .authenticated()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/integrations/**").hasRole("ADMIN")
+                        .requestMatchers("/api/orgs", "/api/orgs/**").authenticated()
+                        .requestMatchers("/api/admin/roles/**").hasAuthority("PERM_ROLES_MANAGE")
+                        .requestMatchers("/api/admin/invites", "/api/admin/invites/**")
+                        .hasAuthority("PERM_MEMBERS_INVITE")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/audit").hasAuthority("PERM_AUDIT_READ")
+                        .requestMatchers("/api/admin/**").hasAuthority("PERM_MEMBERS_MANAGE")
+                        .requestMatchers("/api/integrations/**").hasAuthority("PERM_INTEGRATIONS_MANAGE")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
 
@@ -60,8 +75,12 @@ class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .logout(logout -> logout.disable())
                 .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class)
+                .addFilterBefore(new RateLimitFilter(errorWriter), AuthorizationFilter.class)
                 .addFilterBefore(
                         new ApiKeyAuthenticationFilter(apiKeyAuthenticator, errorWriter), AuthorizationFilter.class)
+                .addFilterBefore(
+                        new OrganizationContextFilter(organizations, directory, errorWriter),
+                        AuthorizationFilter.class)
                 .addFilterAfter(new ApiKeyGuardFilter(errorWriter, auditLog), AuthorizationFilter.class);
 
         return http.build();

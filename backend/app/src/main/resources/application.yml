@@ -6,8 +6,8 @@ spring:
     name: nowtask
   datasource:
     url: ${NOWTASK_DB_URL:jdbc:postgresql://localhost:5433/nowtask}
-    username: ${NOWTASK_DB_USER:nowtask}
-    password: ${NOWTASK_DB_PASSWORD:nowtask}
+    username: ${NOWTASK_APP_DB_USER:nowtask_app}
+    password: ${NOWTASK_APP_DB_PASSWORD:nowtask_app}
   jpa:
     open-in-view: false
     hibernate:
@@ -15,11 +15,30 @@ spring:
   mail:
     host: ${NOWTASK_MAIL_HOST:}
     port: ${NOWTASK_MAIL_PORT:1025}
+    username: ${NOWTASK_MAIL_USERNAME:}
+    password: ${NOWTASK_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${NOWTASK_MAIL_AUTH:false}
+          starttls:
+            enable: ${NOWTASK_MAIL_STARTTLS:false}
+            required: ${NOWTASK_MAIL_STARTTLS:false}
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+  thymeleaf:
+    check-template: true
+    template-resolver-order: 2
   flyway:
     enabled: true
     locations: classpath:db/migration
     out-of-order: true
     ignore-migration-patterns: '*:missing'
+    user: ${NOWTASK_DB_USER:nowtask}
+    password: ${NOWTASK_DB_PASSWORD:nowtask}
+    placeholders:
+      appDbPassword: ${NOWTASK_APP_DB_PASSWORD:nowtask_app}
 
 management:
   endpoints:
@@ -33,5 +52,11 @@ management:
 
 nowtask:
   version: 0.1.0-SNAPSHOT
+  app:
+    url: ${NOWTASK_APP_URL:http://localhost:8080}
+  signup:
+    mode: ${NOWTASK_SIGNUP_MODE:open}
   mail:
     from: ${NOWTASK_MAIL_FROM:nowtask@localhost}
+    from-name: ${NOWTASK_MAIL_FROM_NAME:nowtask}
+    reply-to: ${NOWTASK_MAIL_REPLY_TO:}

@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import app.nowtask.automation.api.Automations;
+import app.nowtask.identity.OnboardingService;
 import app.nowtask.identity.api.NavItemView;
 import app.nowtask.identity.api.NavPreferences;
+import app.nowtask.identity.api.OnboardingView;
 import app.nowtask.identity.api.TeamView;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
@@ -28,18 +30,21 @@ class BootstrapController {
     private final Workspace workspace;
     private final Automations automations;
     private final Tasks tasks;
+    private final OnboardingService onboarding;
 
     BootstrapController(
             UserDirectory users,
             NavPreferences navPreferences,
             Workspace workspace,
             Automations automations,
-            Tasks tasks) {
+            Tasks tasks,
+            OnboardingService onboarding) {
         this.users = users;
         this.navPreferences = navPreferences;
         this.workspace = workspace;
         this.automations = automations;
         this.tasks = tasks;
+        this.onboarding = onboarding;
     }
 
     record Bootstrap(
@@ -53,8 +58,10 @@ class BootstrapController {
             List<SavedViewView> savedViews,
             SettingsView settings,
             List<NavItemView> navigation,
+            List<String> permissions,
             List<String> sprints,
-            int activeRuleCount) {
+            int activeRuleCount,
+            OnboardingView onboarding) {
     }
 
     @GetMapping
@@ -70,7 +77,12 @@ class BootstrapController {
                 workspace.savedViews(),
                 workspace.settings(),
                 navPreferences.currentNavigation(),
+                app.nowtask.shared.OrganizationContextHolder.current().permissions().stream()
+                        .map(app.nowtask.shared.Permission::code)
+                        .sorted()
+                        .toList(),
                 tasks.sprints(),
-                automations.activeRuleCount());
+                automations.activeRuleCount(),
+                onboarding.current().orElse(null));
     }
 }

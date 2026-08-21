@@ -1,0 +1,140 @@
+DELETE FROM workspace_settings WHERE organization_id IS NULL;
+ALTER TABLE team                 ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE team_member          ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE project              ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE status_def           ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE status_transition    ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE epic                 ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task                 ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_label           ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE subtask              ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_relation        ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_comment         ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_history         ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_watcher         ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE task_key_sequence    ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE automation_rule      ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE automation_run       ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE custom_field         ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE saved_view           ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE api_key              ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE milestone            ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE burndown_point       ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE throughput_week      ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE workspace_settings   ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE notification         ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE integration          ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE integration_delivery ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE user_nav_item        ALTER COLUMN organization_id SET NOT NULL;
+
+ALTER TABLE team                 ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE team_member          ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE project              ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE status_def           ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE status_transition    ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE epic                 ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task                 ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_label           ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE subtask              ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_relation        ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_comment         ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_history         ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_watcher         ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE task_key_sequence    ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE automation_rule      ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE automation_run       ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE custom_field         ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE saved_view           ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE api_key              ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE milestone            ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE burndown_point       ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE throughput_week      ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE workspace_settings   ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE audit_event          ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE notification         ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE integration          ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE integration_delivery ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+ALTER TABLE user_nav_item        ALTER COLUMN organization_id SET DEFAULT nullif(current_setting('app.organization_id', true), '')::UUID;
+
+ALTER TABLE team                 ADD CONSTRAINT team_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE team_member          ADD CONSTRAINT team_member_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE project              ADD CONSTRAINT project_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE status_def           ADD CONSTRAINT status_def_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE status_transition    ADD CONSTRAINT status_transition_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE epic                 ADD CONSTRAINT epic_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task                 ADD CONSTRAINT task_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_label           ADD CONSTRAINT task_label_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE subtask              ADD CONSTRAINT subtask_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_relation        ADD CONSTRAINT task_relation_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_comment         ADD CONSTRAINT task_comment_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_history         ADD CONSTRAINT task_history_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_watcher         ADD CONSTRAINT task_watcher_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE task_key_sequence    ADD CONSTRAINT task_key_sequence_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE automation_rule      ADD CONSTRAINT automation_rule_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE automation_run       ADD CONSTRAINT automation_run_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE custom_field         ADD CONSTRAINT custom_field_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE saved_view           ADD CONSTRAINT saved_view_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE api_key              ADD CONSTRAINT api_key_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE milestone            ADD CONSTRAINT milestone_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE burndown_point       ADD CONSTRAINT burndown_point_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE throughput_week      ADD CONSTRAINT throughput_week_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE workspace_settings   ADD CONSTRAINT workspace_settings_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE audit_event          ADD CONSTRAINT audit_event_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE notification         ADD CONSTRAINT notification_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE integration          ADD CONSTRAINT integration_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE integration_delivery ADD CONSTRAINT integration_delivery_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+ALTER TABLE user_nav_item        ADD CONSTRAINT user_nav_item_org_fk FOREIGN KEY (organization_id) REFERENCES organization (id) ON DELETE CASCADE;
+
+ALTER TABLE project DROP CONSTRAINT project_code_key;
+ALTER TABLE project ADD  CONSTRAINT project_org_code_key UNIQUE (organization_id, code);
+
+ALTER TABLE task DROP CONSTRAINT task_task_key_key;
+ALTER TABLE task ADD  CONSTRAINT task_org_key_key UNIQUE (organization_id, task_key);
+
+ALTER TABLE saved_view DROP CONSTRAINT saved_view_code_key;
+ALTER TABLE saved_view ADD  CONSTRAINT saved_view_org_code_key UNIQUE (organization_id, code);
+
+ALTER TABLE custom_field DROP CONSTRAINT custom_field_project_id_field_key_key;
+ALTER TABLE custom_field ADD  CONSTRAINT custom_field_org_project_key_key
+    UNIQUE NULLS NOT DISTINCT (organization_id, project_id, field_key);
+
+ALTER TABLE workspace_settings ADD CONSTRAINT workspace_settings_org_key UNIQUE (organization_id);
+
+ALTER TABLE task_key_sequence DROP CONSTRAINT task_key_sequence_pkey;
+ALTER TABLE task_key_sequence ADD  PRIMARY KEY (organization_id, project_id);
+
+ALTER TABLE user_nav_item DROP CONSTRAINT user_nav_item_pkey;
+ALTER TABLE user_nav_item ADD  PRIMARY KEY (organization_id, user_id, code);
+
+DROP INDEX idx_integration_name;
+CREATE UNIQUE INDEX idx_integration_org_name ON integration (organization_id, lower(name));
+
+DROP INDEX idx_task_status;
+DROP INDEX idx_task_assignee;
+DROP INDEX idx_task_due;
+DROP INDEX idx_task_sprint;
+DROP INDEX idx_task_project;
+DROP INDEX idx_comment_task;
+DROP INDEX idx_history_task;
+DROP INDEX idx_run_rule;
+DROP INDEX idx_subtask_task;
+DROP INDEX idx_notification_user;
+DROP INDEX idx_user_nav_item_user;
+
+CREATE INDEX idx_task_org_status    ON task (organization_id, status_id);
+CREATE INDEX idx_task_org_assignee  ON task (organization_id, assignee_id);
+CREATE INDEX idx_task_org_sprint    ON task (organization_id, sprint_code);
+CREATE INDEX idx_task_org_due       ON task (organization_id, due_date);
+CREATE INDEX idx_task_org_project   ON task (organization_id, project_id);
+CREATE INDEX idx_status_org_project ON status_def (organization_id, project_id, position);
+CREATE INDEX idx_epic_org_project   ON epic (organization_id, project_id, position);
+CREATE INDEX idx_rule_org           ON automation_rule (organization_id, position);
+CREATE INDEX idx_run_org_rule       ON automation_run (organization_id, rule_id, created_at DESC);
+CREATE INDEX idx_comment_org_task   ON task_comment (organization_id, task_id, created_at);
+CREATE INDEX idx_history_org_task   ON task_history (organization_id, task_id, created_at DESC);
+CREATE INDEX idx_subtask_org_task   ON subtask (organization_id, task_id, position);
+CREATE INDEX idx_watcher_org_task   ON task_watcher (organization_id, task_id);
+CREATE INDEX idx_audit_org_at       ON audit_event (organization_id, at DESC);
+CREATE INDEX idx_notification_org_user ON notification (organization_id, user_id, at DESC);
+CREATE INDEX idx_nav_org_user       ON user_nav_item (organization_id, user_id, position);
+CREATE INDEX idx_member_org_role    ON organization_member (role_id);
