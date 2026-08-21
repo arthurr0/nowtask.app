@@ -28,6 +28,8 @@ interface BoardColumn {
 
 const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 const NONE = '__none__';
+const STATUS_PREFIX = 'status:';
+const USER_PREFIX = 'user:';
 
 @Component({
   selector: 'app-board',
@@ -163,7 +165,7 @@ export class Board {
 
   protected cardMenu(task: TaskDto): MenuItem[] {
     const me = this.store.currentUser();
-    return [
+    const items: MenuItem[] = [
       { id: 'open', label: 'board.openTask', icon: 'arrow-right' },
       {
         id: 'assign-me',
@@ -171,11 +173,43 @@ export class Board {
         icon: 'user',
         disabled: !me || task.assigneeId === me.id,
       },
-      { id: 'unassign', label: 'board.unassign', disabled: task.assigneeId === null },
-      { id: 'copy', label: 'task.copyLink', icon: 'link', separatorBefore: true },
-      { id: 'duplicate', label: 'board.duplicate', icon: 'copy' },
-      { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
     ];
+
+    this.store.allowedTargets(task.statusId).forEach((status, index) => {
+      items.push({
+        id: STATUS_PREFIX + status.id,
+        label: this.store.statusName(status),
+        icon: index === 0 ? 'board' : undefined,
+        checked: status.id === task.statusId,
+        separatorBefore: index === 0,
+      });
+    });
+
+    this.store.activeMembers().forEach((user, index) => {
+      items.push({
+        id: USER_PREFIX + user.id,
+        label: user.name,
+        icon: 'user',
+        checked: task.assigneeId === user.id,
+        separatorBefore: index === 0,
+      });
+    });
+    items.push({
+      id: USER_PREFIX + NONE,
+      label: 'common.unassigned',
+      checked: task.assigneeId === null,
+    });
+
+    items.push({ id: 'copy', label: 'task.copyLink', icon: 'link', separatorBefore: true });
+    items.push({ id: 'duplicate', label: 'board.duplicate', icon: 'copy' });
+    items.push({
+      id: 'delete',
+      label: 'common.delete',
+      icon: 'trash',
+      danger: true,
+      separatorBefore: true,
+    });
+    return items;
   }
 
   filterByUser(userId: string): void {
@@ -240,6 +274,16 @@ export class Board {
   }
 
   async onCardMenu(item: MenuItem, task: TaskDto): Promise<void> {
+    if (item.id.startsWith(STATUS_PREFIX)) {
+      await this.changeStatus(task, item.id.slice(STATUS_PREFIX.length));
+      return;
+    }
+    if (item.id.startsWith(USER_PREFIX)) {
+      const value = item.id.slice(USER_PREFIX.length);
+      await this.assignTo(task, value === NONE ? null : value);
+      return;
+    }
+
     switch (item.id) {
       case 'open':
         this.open(task);
@@ -249,9 +293,6 @@ export class Board {
         if (me) await this.patch(task, { assigneeId: me.id }, 'board.assigned');
         break;
       }
-      case 'unassign':
-        await this.patch(task, { assigneeId: null }, 'board.unassigned');
-        break;
       case 'copy':
         await this.copyLink(task);
         break;
@@ -262,6 +303,24 @@ export class Board {
         await this.remove(task);
         break;
     }
+  }
+
+  async changeStatus(task: TaskDto, statusId: string): Promise<void> {
+    if (statusId === task.statusId) return;
+    const status = this.store.status(statusId);
+    await this.patch(task, { statusId }, 'board.statusChanged', {
+      status: status ? this.store.statusName(status) : '',
+    });
+  }
+
+  async assignTo(task: TaskDto, assigneeId: string | null): Promise<void> {
+    if (assigneeId === task.assigneeId) return;
+    if (assigneeId === null) {
+      await this.patch(task, { assigneeId: null }, 'board.unassigned');
+      return;
+    }
+    const user = this.store.user(assigneeId);
+    await this.patch(task, { assigneeId }, 'board.assignedTo', { name: user?.name ?? '' });
   }
 
   drop(event: CdkDragDrop<string>): void {
@@ -310,10 +369,11 @@ export class Board {
     task: TaskDto,
     patch: Record<string, unknown>,
     messageKey: string,
+    extra: Record<string, string> = {},
   ): Promise<void> {
     try {
       await this.store.patchTask(task.key, patch);
-      this.toast.success(this.t(messageKey, { key: task.key }));
+      this.toast.success(this.t(messageKey, { key: task.key, ...extra }));
     } catch (error) {
       this.toast.error(this.errorText(error));
     }

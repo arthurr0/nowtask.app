@@ -177,6 +177,8 @@ export const de: Dictionary = {
   'board.duplicate': 'Duplizieren',
   'board.copyOf': 'Kopie von {title}',
   'board.assigned': '{key} dir zugewiesen',
+  'board.assignedTo': '{key} zugewiesen an {name}',
+  'board.statusChanged': '{key} → {status}',
   'board.unassigned': '{key} ohne Zuständigen',
   'board.deleted': '{key} gelöscht',
   'board.sprintTitle': 'Sprint {sprint}',

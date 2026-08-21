@@ -88,7 +88,8 @@ public class ExportService {
 
     private List<String> visibleColumns(TaskQuery query) {
         List<String> columns = query.columns();
-        return columns == null || columns.isEmpty() ? TaskQuery.COLUMN_CODES : columns;
+        List<String> chosen = columns == null || columns.isEmpty() ? TaskQuery.COLUMN_CODES : columns;
+        return chosen.stream().filter(code -> !"status".equals(code)).toList();
     }
 
     private List<String> header(List<String> columns) {

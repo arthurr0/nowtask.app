@@ -132,10 +132,37 @@
                 >{{ task.subtasksDone }}/{{ task.subtasksTotal }}</span
               >
             }
+            @if (task.commentCount) {
+              <span
+                class="flex flex-none items-center gap-1 font-mono text-[11px] text-ink-3"
+                [attr.title]="t('task.comments')"
+              >
+                <ui-icon name="message" [size]="13" />
+                {{ task.commentCount }}
+              </span>
+            }
           </span>
 
           @for (column of view.visibleColumns(); track column) {
             @switch (column) {
+              @case ('status') {
+                <span class="hidden w-[132px] flex-none lg:flex" (click)="$event.stopPropagation()">
+                  <ui-menu
+                    class="w-full min-w-0"
+                    [items]="rowStatusItems(task)"
+                    triggerClass="hoverable flex w-full min-w-0 items-center gap-1.5 rounded-[6px] px-1.5 text-xs text-ink-2"
+                    triggerHeight="26px"
+                    ariaLabel="list.changeStatus"
+                    (selected)="changeStatus($event, task)"
+                  >
+                    <span
+                      class="h-1.5 w-1.5 flex-none rounded-full"
+                      [style.background]="statusSwatch(task)"
+                    ></span>
+                    <span class="min-w-0 truncate">{{ statusLabel(task) }}</span>
+                  </ui-menu>
+                </span>
+              }
               @case ('labels') {
                 <span class="hidden w-[172px] flex-none gap-1.5 lg:flex">
                   @for (label of task.labels; track label) {
@@ -150,11 +177,20 @@
                 </span>
               }
               @case ('assignee') {
-                <span
-                  class="hidden w-[116px] flex-none items-center gap-1.5 text-xs text-ink-2 lg:flex"
-                >
-                  <ui-avatar [user]="store.user(task.assigneeId)" [size]="20" />
-                  {{ store.user(task.assigneeId)?.shortName ?? t('common.none') }}
+                <span class="hidden w-[116px] flex-none lg:flex" (click)="$event.stopPropagation()">
+                  <ui-menu
+                    class="w-full min-w-0"
+                    [items]="rowAssigneeItems(task)"
+                    triggerClass="hoverable flex w-full min-w-0 items-center gap-1.5 rounded-[6px] px-1.5 text-xs text-ink-2"
+                    triggerHeight="26px"
+                    ariaLabel="list.assign"
+                    (selected)="changeAssignee($event, task)"
+                  >
+                    <ui-avatar [user]="store.user(task.assigneeId)" [size]="20" />
+                    <span class="min-w-0 truncate">{{
+                      store.user(task.assigneeId)?.shortName ?? t('common.none')
+                    }}</span>
+                  </ui-menu>
                 </span>
               }
               @case ('priority') {

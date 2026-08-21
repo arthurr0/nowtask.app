@@ -175,6 +175,8 @@ export const pl = {
   'board.duplicate': 'Duplikuj',
   'board.copyOf': 'Kopia: {title}',
   'board.assigned': '{key} przypisane do Ciebie',
+  'board.assignedTo': '{key} przypisane: {name}',
+  'board.statusChanged': '{key} → {status}',
   'board.unassigned': '{key} bez osoby',
   'board.deleted': '{key} usunięte',
   'board.sprintTitle': 'Sprint {sprint}',

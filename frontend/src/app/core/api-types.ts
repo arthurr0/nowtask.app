@@ -91,7 +91,7 @@ export interface SavedViewDto {
   count: number;
 }
 
-export type ListColumn = 'labels' | 'assignee' | 'priority' | 'due' | 'estimate';
+export type ListColumn = 'status' | 'labels' | 'assignee' | 'priority' | 'due' | 'estimate';
 
 export interface TaskQueryDto {
   query?: string;

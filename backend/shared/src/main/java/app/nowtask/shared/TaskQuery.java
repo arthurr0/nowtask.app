@@ -24,7 +24,7 @@ public record TaskQuery(
         Integer page,
         Integer size) {
 
-    public static final List<String> COLUMN_CODES = List.of("labels", "assignee", "priority", "due", "estimate");
+    public static final List<String> COLUMN_CODES = List.of("status", "labels", "assignee", "priority", "due", "estimate");
 
     public static TaskQuery empty() {
         return new TaskQuery(

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { PrefsService } from '../../core/prefs.service';
 import { isOverdue, shortDate } from '../../core/format';
@@ -6,11 +6,14 @@ import type { TaskDto } from '../../core/api-types';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { Icon } from '../../ui/icon';
+import { Menu, type MenuItem } from '../../ui/menu';
+
+const UNASSIGNED = '__none__';
 
 @Component({
   selector: 'app-task-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, Avatar],
+  imports: [Icon, Avatar, Menu],
   template: `
     <article
       class="flex cursor-pointer flex-col gap-2.5 rounded-card border bg-surface shadow-card"
@@ -61,7 +64,20 @@ import { Icon } from '../../ui/icon';
 
       <div class="flex items-center gap-2.5 text-ink-3">
         @if (prefs.avatarsOnCards()) {
-          <ui-avatar [user]="assignee()" [size]="22" />
+          @if (interactive()) {
+            <ui-menu
+              [items]="assigneeItems()"
+              triggerClass="hoverable flex items-center justify-center rounded-full"
+              triggerHeight="22px"
+              ariaLabel="list.assign"
+              (selected)="onAssign($event)"
+              (click)="$event.stopPropagation()"
+            >
+              <ui-avatar [user]="assignee()" [size]="22" />
+            </ui-menu>
+          } @else {
+            <ui-avatar [user]="assignee()" [size]="22" />
+          }
         }
         @if (task().dueDate) {
           <span class="flex items-center gap-1 font-mono text-[11px]" [class.text-warn]="overdue()">
@@ -93,8 +109,34 @@ export class TaskCard {
 
   readonly task = input.required<TaskDto>();
   readonly selected = input(false);
+  readonly interactive = input(false);
+
+  readonly assign = output<string | null>();
 
   protected readonly assignee = computed(() => this.store.user(this.task().assigneeId));
   protected readonly due = computed(() => shortDate(this.task().dueDate));
   protected readonly overdue = computed(() => isOverdue(this.task().dueDate, this.store.today));
+
+  protected readonly assigneeItems = computed<MenuItem[]>(() => {
+    const current = this.task().assigneeId;
+    const items: MenuItem[] = this.store.activeMembers().map((user) => ({
+      id: user.id,
+      label: user.name,
+      icon: 'user',
+      checked: current === user.id,
+    }));
+    items.push({
+      id: UNASSIGNED,
+      label: 'common.unassigned',
+      separatorBefore: true,
+      checked: current === null,
+    });
+    return items;
+  });
+
+  protected onAssign(item: MenuItem): void {
+    const assigneeId = item.id === UNASSIGNED ? null : item.id;
+    if (assigneeId === this.task().assigneeId) return;
+    this.assign.emit(assigneeId);
+  }
 }

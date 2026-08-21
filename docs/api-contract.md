@@ -94,11 +94,11 @@ DELETE /api/views/{id}
 `SavedViewDto`: `{ id, code, name, query, shared, ownerId, count }`, where `code` and `name` are
 disjoint: built-in views have a `code` and an empty `name`, user views the other way round. `query`
 is an object with the same keys as the `GET /api/tasks` parameters, plus `columns`: an ordered list
-of visible task list columns (`labels`, `assignee`, `priority`, `due`, `estimate`). The order of the
-array is the order of the columns, an omitted code means a hidden column, a missing field means the
-default layout. ID and title are always visible and do not appear in this list. Saving a view
-validates the codes: an unknown one ends in a 400, a repeated one is skipped. `columns` does not
-affect `GET /api/tasks`. Trying to delete a built-in view ends in a 422.
+of visible task list columns (`status`, `labels`, `assignee`, `priority`, `due`, `estimate`). The
+order of the array is the order of the columns, an omitted code means a hidden column, a missing
+field means the default layout. ID and title are always visible and do not appear in this list.
+Saving a view validates the codes: an unknown one ends in a 400, a repeated one is skipped.
+`columns` does not affect `GET /api/tasks`. Trying to delete a built-in view ends in a 422.
 
 `TransitionDto` carries `id`, needed for deleting a transition.
 
@@ -522,8 +522,9 @@ events. The "notify channel" rule action sends a request to the integration with
 records the result.
 
 Task export gives the columns `Key`, `Title`, `Status`, followed by the list columns from `columns`
-in the same order. It takes all rows matching the filters, not just the current page, with a hard
-limit of 10,000. CSV comes out in UTF-8 with a BOM so that Excel does not get the encoding wrong.
+in the same order; the `status` code is skipped there because status is already a fixed column. It
+takes all rows matching the filters, not just the current page, with a hard limit of 10,000. CSV
+comes out in UTF-8 with a BOM so that Excel does not get the encoding wrong.
 `rule-runs` exists in CSV only, another format ends in a `422`.
 
 `IntegrationDto.config` for a webhook is `{ url, secret?, events? }`, for mail `{ to, events? }`.

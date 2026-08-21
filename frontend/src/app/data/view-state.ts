@@ -23,6 +23,7 @@ export const SORT_FIELDS: Partial<Record<SortBy, string>> = {
 };
 
 export const COLUMN_FIELDS: Record<ListColumn, string> = {
+  status: 'status',
   labels: 'labels',
   assignee: 'assignee',
   priority: 'priority',
@@ -31,6 +32,7 @@ export const COLUMN_FIELDS: Record<ListColumn, string> = {
 };
 
 export const LIST_COLUMNS: readonly { code: ListColumn; label: string }[] = [
+  { code: 'status', label: 'common.status' },
   { code: 'labels', label: 'list.labels' },
   { code: 'assignee', label: 'common.assignee' },
   { code: 'priority', label: 'list.priority' },

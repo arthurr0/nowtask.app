@@ -28,6 +28,7 @@ const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 const NONE = '__none__';
 
 const HEADER_CLASS: Record<ListColumn, string> = {
+  status: 'w-[132px]',
   labels: 'w-[172px]',
   assignee: 'w-[116px]',
   priority: 'w-24',
@@ -182,6 +183,49 @@ export class TaskList {
     return HEADER_CLASS[code];
   }
 
+  statusLabel(task: TaskDto): string {
+    return this.store.statusName(this.store.status(task.statusId));
+  }
+
+  statusSwatch(task: TaskDto): string {
+    return this.store.status(task.statusId)?.swatch ?? 'var(--c-line-strong)';
+  }
+
+  rowStatusItems(task: TaskDto): MenuItem[] {
+    return this.store.allowedTargets(task.statusId).map((status) => ({
+      id: status.id,
+      label: this.store.statusName(status),
+      checked: status.id === task.statusId,
+    }));
+  }
+
+  rowAssigneeItems(task: TaskDto): MenuItem[] {
+    const items: MenuItem[] = this.store.activeMembers().map((user) => ({
+      id: user.id,
+      label: user.name,
+      icon: 'user',
+      checked: task.assigneeId === user.id,
+    }));
+    items.push({
+      id: NONE,
+      label: 'common.unassigned',
+      separatorBefore: true,
+      checked: task.assigneeId === null,
+    });
+    return items;
+  }
+
+  async changeStatus(item: MenuItem, task: TaskDto): Promise<void> {
+    if (item.id === task.statusId) return;
+    await this.patch(task, { statusId: item.id });
+  }
+
+  async changeAssignee(item: MenuItem, task: TaskDto): Promise<void> {
+    const assigneeId = item.id === NONE ? null : item.id;
+    if (assigneeId === task.assigneeId) return;
+    await this.patch(task, { assigneeId });
+  }
+
   rowMenu(task: TaskDto): MenuItem[] {
     const me = this.store.currentUser();
     return [
@@ -305,6 +349,14 @@ export class TaskList {
         if (confirmed) await this.run(() => this.store.deleteTask(task.key));
         break;
       }
+    }
+  }
+
+  private async patch(task: TaskDto, patch: Record<string, unknown>): Promise<void> {
+    try {
+      await this.store.patchTask(task.key, patch);
+    } catch (error) {
+      this.toast.error(this.errorText(error));
     }
   }
 
