@@ -29,6 +29,10 @@ services:
       NOWTASK_DB_URL: jdbc:postgresql://db:5432/nowtask
       NOWTASK_DB_USER: nowtask
       NOWTASK_DB_PASSWORD: nowtask
+      NOWTASK_APP_DB_USER: nowtask_app
+      NOWTASK_APP_DB_PASSWORD: nowtask_app
+      NOWTASK_APP_URL: http://localhost:8080
+      NOWTASK_SIGNUP_MODE: open
       NOWTASK_MAIL_HOST: mail
       NOWTASK_MAIL_PORT: '1025'
     depends_on:
