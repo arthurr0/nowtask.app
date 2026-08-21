@@ -58,6 +58,9 @@ public final class WorkspaceViews {
     public record MilestoneView(UUID id, String name, LocalDate dueDate) {
     }
 
+    public record TaskFieldSettingView(String fieldKey, UUID projectId, boolean enabled) {
+    }
+
     public record SettingsView(
             String dateFormat,
             String timeFormat,

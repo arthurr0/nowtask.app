@@ -14,6 +14,7 @@ import type {
   StatusDto,
   TaskDto,
   TaskPageDto,
+  TaskFieldSettingDto,
   TaskQueryDto,
   TeamDto,
   TransitionDto,
@@ -27,7 +28,7 @@ export interface NewTaskInput {
   statusId: string;
   projectId?: string | null;
   sprintCode?: string | null;
-  priority: string;
+  priority?: string;
   assigneeId?: string | null;
   reviewerId?: string | null;
   dueDate?: string | null;
@@ -80,6 +81,42 @@ export class WorkspaceStore {
   readonly navigation = computed<NavItemDto[]>(() => this.bootstrapSignal()?.navigation ?? []);
   readonly currentSprint = computed(() => this.settings()?.currentSprint ?? '');
   readonly activeRuleCount = computed(() => this.bootstrapSignal()?.activeRuleCount ?? 0);
+
+  readonly taskFieldSettings = computed<TaskFieldSettingDto[]>(
+    () => this.bootstrapSignal()?.taskFieldSettings ?? [],
+  );
+
+  taskFieldEnabled(fieldKey: string, projectId: string | null | undefined): boolean {
+    if (projectId) return this.resolveTaskField(fieldKey, projectId);
+
+    const projects = this.activeProjects();
+    if (!projects.length) return this.resolveTaskField(fieldKey, null);
+    return projects.some((project) => this.resolveTaskField(fieldKey, project.id));
+  }
+
+  private resolveTaskField(fieldKey: string, projectId: string | null): boolean {
+    const settings = this.taskFieldSettings();
+    if (projectId) {
+      const own = settings.find(
+        (setting) => setting.projectId === projectId && setting.fieldKey === fieldKey,
+      );
+      if (own) return own.enabled;
+    }
+    const shared = settings.find(
+      (setting) => setting.projectId === null && setting.fieldKey === fieldKey,
+    );
+    return shared ? shared.enabled : true;
+  }
+
+  async updateTaskFieldSettings(
+    projectId: string | null,
+    fields: Record<string, boolean | null>,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<TaskFieldSettingDto[]>('/api/workspace/task-fields', { projectId, fields }),
+    );
+    await this.load(true);
+  }
 
   readonly permissions = computed<readonly string[]>(
     () => this.bootstrapSignal()?.permissions ?? [],

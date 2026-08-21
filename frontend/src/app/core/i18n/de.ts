@@ -232,6 +232,13 @@ export const de: Dictionary = {
   'settings.fieldScope': 'Bereich',
   'settings.fieldVisibility': 'Sichtbarkeit',
   'settings.availableTypes': 'Verfügbare Feldtypen',
+  'settings.taskFields': 'Aufgabenfelder',
+  'settings.taskFieldsLead':
+    'Ein deaktiviertes Feld verschwindet aus dem Aufgabenformular, der Aufgabenansicht, den Listenspalten und den Filtern. Die API weist das Setzen ab.',
+  'settings.taskFieldsScope': 'Geltungsbereich',
+  'settings.taskFieldsOrg': 'Gesamte Organisation',
+  'settings.taskFieldInherited': 'Geerbt',
+  'settings.taskFieldInherit': 'Erben',
   'permission.tasks.create_edit': 'Aufgaben anlegen und bearbeiten',
   'permission.tasks.comment': 'Kommentieren',
   'permission.tasks.delete': 'Aufgaben löschen',

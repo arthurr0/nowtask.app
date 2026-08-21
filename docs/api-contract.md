@@ -150,11 +150,34 @@ PATCH  /api/workspace/custom-fields/{id}  // fieldKey is immutable
 DELETE /api/workspace/custom-fields/{id}
 GET    /api/workspace/settings            -> WorkspaceSettingsDto
 PATCH  /api/workspace/settings            {dateFormat?,timeFormat?,firstDayOfWeek?,timeZone?,currency?,allowUserOverride?,blockDisallowedDrag?}
+GET    /api/workspace/task-fields         -> TaskFieldSettingDto[]
+PATCH  /api/workspace/task-fields         {projectId?, fields: {key: true|false|null}} -> TaskFieldSettingDto[]
 GET    /api/workspace/epics, POST, PATCH, DELETE
 ```
 
 Status transitions have to be enforced: `PATCH /api/tasks/{key}` with a status outside an allowed
 transition returns a 422 when `blockDisallowedDrag` is on.
+
+### Task fields on and off
+
+`TaskFieldSettingDto` is `{fieldKey, projectId, enabled}` and it says which optional task fields the
+organization uses. `projectId = null` is the default for the whole organization, a row with a
+`projectId` overrides it for that one project. A field with no row anywhere is on. `GET /api/bootstrap`
+carries the same list as `taskFieldSettings`, so the interface knows the answer without another call.
+
+`fieldKey` is one of `description`, `priority`, `assignee`, `reviewer`, `dueDate`, `estimate`,
+`epic`, `labels`, `sprint`, or `custom:{fieldKey}` for a custom field. Title, status and project are
+always required and have no setting.
+
+In `PATCH` a `true` or `false` writes a setting at the chosen level, `null` removes it, so a project
+goes back to inheriting from the organization and the organization goes back to the default. The
+call requires `fields.manage`, an unknown key ends in a 422.
+
+A disabled field disappears from the task form, the task detail, the list columns and the filters.
+`POST /api/tasks` and `PATCH /api/tasks/{key}` return a 422 when they carry a value for a field that
+is off in the project of that task, and so do `POST /api/tasks/{key}/labels` and
+`PUT /api/tasks/{key}/custom/{fieldKey}`. An empty value (`null`, an empty string, an empty list) is
+ignored rather than rejected, so a client that always sends the whole task does not break.
 
 ## To add: people and access
 

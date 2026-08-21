@@ -231,6 +231,13 @@ export const pl = {
   'settings.fieldScope': 'Zakres',
   'settings.fieldVisibility': 'Widoczność',
   'settings.availableTypes': 'Dostępne typy pól',
+  'settings.taskFields': 'Pola zadania',
+  'settings.taskFieldsLead':
+    'Wyłączone pola znikają z formularza tworzenia zadania, ze szczegółów zadania, z kolumn listy i z filtrów. API odrzuca próbę ich ustawienia.',
+  'settings.taskFieldsScope': 'Zakres ustawień',
+  'settings.taskFieldsOrg': 'Cała organizacja',
+  'settings.taskFieldInherited': 'Dziedziczone',
+  'settings.taskFieldInherit': 'Dziedzicz',
   'permission.tasks.create_edit': 'Tworzenie i edycja zadań',
   'permission.tasks.comment': 'Komentowanie',
   'permission.tasks.delete': 'Usuwanie zadań',

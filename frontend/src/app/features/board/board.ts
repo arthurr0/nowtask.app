@@ -4,7 +4,7 @@ import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angul
 import { I18nService } from '../../core/i18n/i18n.service';
 import type { TaskDto } from '../../core/api-types';
 import { ViewState } from '../../data/view-state';
-import { WorkspaceStore } from '../../data/workspace.store';
+import { WorkspaceStore, type NewTaskInput } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { ConfirmService } from '../../ui/confirm.service';
 import { FilterBar } from '../../ui/filter-bar';
@@ -331,16 +331,23 @@ export class Board {
 
   private async duplicate(task: TaskDto): Promise<void> {
     try {
-      const created = await this.store.createTask({
+      const enabled = (field: string): boolean =>
+        this.store.taskFieldEnabled(field, task.projectId);
+
+      const input: NewTaskInput = {
         title: this.t('board.copyOf', { title: task.title }),
         statusId: task.statusId,
-        priority: task.priority,
-        assigneeId: task.assigneeId,
-        dueDate: task.dueDate,
-        estimate: task.estimate,
-        epicId: task.epicId,
-        labels: [...task.labels],
-      });
+        projectId: task.projectId,
+      };
+
+      if (enabled('priority')) input.priority = task.priority;
+      if (enabled('assignee')) input.assigneeId = task.assigneeId;
+      if (enabled('dueDate')) input.dueDate = task.dueDate;
+      if (enabled('estimate')) input.estimate = task.estimate;
+      if (enabled('epic')) input.epicId = task.epicId;
+      if (enabled('labels')) input.labels = [...task.labels];
+
+      const created = await this.store.createTask(input);
       this.toast.success(this.t('composer.created', { key: created.key }), {
         action: { label: this.t('composer.openTask'), run: () => this.open(created) },
       });

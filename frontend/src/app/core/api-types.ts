@@ -143,6 +143,12 @@ export interface NavItemDto {
   hidden: boolean;
 }
 
+export interface TaskFieldSettingDto {
+  fieldKey: string;
+  projectId: string | null;
+  enabled: boolean;
+}
+
 export interface BootstrapDto {
   currentUser: UserDto;
   users: UserDto[];
@@ -152,6 +158,7 @@ export interface BootstrapDto {
   transitions: TransitionDto[];
   epics: EpicDto[];
   savedViews: SavedViewDto[];
+  taskFieldSettings: TaskFieldSettingDto[];
   settings: WorkspaceSettingsDto;
   navigation: NavItemDto[];
   permissions: string[];

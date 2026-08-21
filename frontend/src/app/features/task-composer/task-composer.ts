@@ -11,8 +11,9 @@ import {
 import { Router } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import type { Priority } from '../../core/models';
+import type { TaskFieldKey } from '../../core/task-fields';
 import { ViewState } from '../../data/view-state';
-import { WorkspaceStore } from '../../data/workspace.store';
+import { WorkspaceStore, type NewTaskInput } from '../../data/workspace.store';
 import { ComboField, type ComboOption } from '../../ui/combo-field';
 import { DateField } from '../../ui/date-field';
 import { Dialog } from '../../ui/dialog';
@@ -75,14 +76,16 @@ const PRIORITIES: readonly Priority[] = ['low', 'medium', 'high', 'critical'];
           [maxLength]="180"
         />
 
-        <ui-textarea-field
-          [value]="description()"
-          (valueChange)="description.set($event)"
-          label="task.description"
-          placeholder="composer.descriptionPlaceholder"
-          [rows]="4"
-          [maxLength]="4000"
-        />
+        @if (fieldEnabled('description')) {
+          <ui-textarea-field
+            [value]="description()"
+            (valueChange)="description.set($event)"
+            label="task.description"
+            placeholder="composer.descriptionPlaceholder"
+            [rows]="4"
+            [maxLength]="4000"
+          />
+        }
 
         <div class="grid gap-4 sm:grid-cols-2">
           @if (projectOptions().length > 1) {
@@ -101,77 +104,93 @@ const PRIORITIES: readonly Priority[] = ['low', 'medium', 'high', 'critical'];
             label="common.status"
             [required]="true"
           />
-          <ui-select-field
-            [value]="priority()"
-            (valueChange)="priority.set($event)"
-            [options]="priorityOptions()"
-            label="list.priority"
-            [required]="true"
-          />
-          <ui-combo-field
-            [value]="assigneeId()"
-            (valueChange)="assigneeId.set($any($event))"
-            [options]="userOptions()"
-            label="common.assignee"
-            placeholder="common.unassigned"
-          />
-          <ui-combo-field
-            [value]="reviewerId()"
-            (valueChange)="reviewerId.set($any($event))"
-            [options]="userOptions()"
-            label="task.reviewer"
-            placeholder="common.none"
-          />
-          <ui-date-field
-            [value]="dueDate()"
-            (valueChange)="dueDate.set($event)"
-            label="task.dueDate"
-            [min]="today"
-          />
-          <ui-text-field
-            [value]="estimate()"
-            (valueChange)="estimate.set($event)"
-            label="task.estimate"
-            type="number"
-            placeholder="composer.estimatePlaceholder"
-          />
-          <ui-combo-field
-            [value]="epicId()"
-            (valueChange)="epicId.set($any($event))"
-            [options]="epicOptions()"
-            label="task.epic"
-            placeholder="common.none"
-          />
-          <ui-combo-field
-            [value]="labels()"
-            (valueChange)="labels.set($any($event))"
-            [options]="labelOptions()"
-            label="list.labels"
-            [multiple]="true"
-            placeholder="composer.labelsPlaceholder"
-          />
+          @if (fieldEnabled('priority')) {
+            <ui-select-field
+              [value]="priority()"
+              (valueChange)="priority.set($event)"
+              [options]="priorityOptions()"
+              label="list.priority"
+              [required]="true"
+            />
+          }
+          @if (fieldEnabled('assignee')) {
+            <ui-combo-field
+              [value]="assigneeId()"
+              (valueChange)="assigneeId.set($any($event))"
+              [options]="userOptions()"
+              label="common.assignee"
+              placeholder="common.unassigned"
+            />
+          }
+          @if (fieldEnabled('reviewer')) {
+            <ui-combo-field
+              [value]="reviewerId()"
+              (valueChange)="reviewerId.set($any($event))"
+              [options]="userOptions()"
+              label="task.reviewer"
+              placeholder="common.none"
+            />
+          }
+          @if (fieldEnabled('dueDate')) {
+            <ui-date-field
+              [value]="dueDate()"
+              (valueChange)="dueDate.set($event)"
+              label="task.dueDate"
+              [min]="today"
+            />
+          }
+          @if (fieldEnabled('estimate')) {
+            <ui-text-field
+              [value]="estimate()"
+              (valueChange)="estimate.set($event)"
+              label="task.estimate"
+              type="number"
+              placeholder="composer.estimatePlaceholder"
+            />
+          }
+          @if (fieldEnabled('epic')) {
+            <ui-combo-field
+              [value]="epicId()"
+              (valueChange)="epicId.set($any($event))"
+              [options]="epicOptions()"
+              label="task.epic"
+              placeholder="common.none"
+            />
+          }
+          @if (fieldEnabled('labels')) {
+            <ui-combo-field
+              [value]="labels()"
+              (valueChange)="labels.set($any($event))"
+              [options]="labelOptions()"
+              label="list.labels"
+              [multiple]="true"
+              placeholder="composer.labelsPlaceholder"
+            />
+          }
         </div>
 
-        <label class="flex flex-col gap-1.5">
-          <span class="kap">{{ t('composer.newLabel') }}</span>
-          <span class="flex items-center gap-2">
-            <input
-              class="focus-ring h-9 min-w-0 flex-1 rounded-field border border-line bg-surface px-3 text-[13px] outline-none"
-              [placeholder]="t('composer.newLabelPlaceholder')"
-              [value]="labelDraft()"
-              (input)="labelDraft.set($any($event.target).value)"
-              (keydown.enter)="$event.preventDefault(); addLabel()"
-            />
-            <button
-              type="button"
-              class="flex h-9 w-9 flex-none items-center justify-center rounded-field border border-line bg-surface-2 text-ink-2"
-              [attr.aria-label]="t('composer.addLabel')"
-              (click)="addLabel()"
-            >
-              <ui-icon name="plus" [size]="16" />
-            </button>
-          </span>
-        </label>
+        @if (fieldEnabled('labels')) {
+          <label class="flex flex-col gap-1.5">
+            <span class="kap">{{ t('composer.newLabel') }}</span>
+            <span class="flex items-center gap-2">
+              <input
+                class="focus-ring h-9 min-w-0 flex-1 rounded-field border border-line bg-surface px-3 text-[13px] outline-none"
+                [placeholder]="t('composer.newLabelPlaceholder')"
+                [value]="labelDraft()"
+                (input)="labelDraft.set($any($event.target).value)"
+                (keydown.enter)="$event.preventDefault(); addLabel()"
+              />
+              <button
+                type="button"
+                class="flex h-9 w-9 flex-none items-center justify-center rounded-field border border-line bg-surface-2 text-ink-2"
+                [attr.aria-label]="t('composer.addLabel')"
+                (click)="addLabel()"
+              >
+                <ui-icon name="plus" [size]="16" />
+              </button>
+            </span>
+          </label>
+        }
       </form>
 
       <div dialogFooter class="flex w-full items-center gap-2">
@@ -275,6 +294,10 @@ export class TaskComposerDialog {
     })),
   );
 
+  protected fieldEnabled(field: TaskFieldKey): boolean {
+    return this.store.taskFieldEnabled(field, this.projectId() || null);
+  }
+
   protected readonly epicOptions = computed<ComboOption[]>(() =>
     this.store
       .epicsOfProject(this.projectId() || null)
@@ -313,19 +336,20 @@ export class TaskComposerDialog {
     const parsedEstimate = Number.parseInt(this.estimate(), 10);
 
     try {
-      const created = await this.store.createTask({
-        title,
-        description: this.description().trim(),
-        statusId,
-        projectId: this.projectId() || null,
-        priority: this.priority(),
-        assigneeId: this.assigneeId(),
-        reviewerId: this.reviewerId(),
-        dueDate: this.dueDate() || null,
-        estimate: Number.isFinite(parsedEstimate) ? parsedEstimate : null,
-        epicId: this.epicId(),
-        labels: [...this.labels()],
-      });
+      const input: NewTaskInput = { title, statusId, projectId: this.projectId() || null };
+
+      if (this.fieldEnabled('description')) input.description = this.description().trim();
+      if (this.fieldEnabled('priority')) input.priority = this.priority();
+      if (this.fieldEnabled('assignee')) input.assigneeId = this.assigneeId();
+      if (this.fieldEnabled('reviewer')) input.reviewerId = this.reviewerId();
+      if (this.fieldEnabled('dueDate')) input.dueDate = this.dueDate() || null;
+      if (this.fieldEnabled('estimate')) {
+        input.estimate = Number.isFinite(parsedEstimate) ? parsedEstimate : null;
+      }
+      if (this.fieldEnabled('epic')) input.epicId = this.epicId();
+      if (this.fieldEnabled('labels')) input.labels = [...this.labels()];
+
+      const created = await this.store.createTask(input);
 
       this.composer.close();
       this.toast.success(this.t('composer.created', { key: created.key }), {

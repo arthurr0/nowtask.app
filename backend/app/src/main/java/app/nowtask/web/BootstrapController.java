@@ -20,6 +20,7 @@ import app.nowtask.workspace.api.WorkspaceViews.EpicView;
 import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @RestController
@@ -56,6 +57,7 @@ class BootstrapController {
             List<TransitionView> transitions,
             List<EpicView> epics,
             List<SavedViewView> savedViews,
+            List<TaskFieldSettingView> taskFieldSettings,
             SettingsView settings,
             List<NavItemView> navigation,
             List<String> permissions,
@@ -75,6 +77,7 @@ class BootstrapController {
                 workspace.transitions(),
                 workspace.epics(),
                 workspace.savedViews(),
+                workspace.taskFieldSettings(),
                 workspace.settings(),
                 navPreferences.currentNavigation(),
                 app.nowtask.shared.OrganizationContextHolder.current().permissions().stream()

@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import type { ListColumn, TaskDto, TaskQueryDto } from '../core/api-types';
 import { WorkspaceStore } from './workspace.store';
 
@@ -9,6 +9,26 @@ export interface ColumnPref {
   code: ListColumn;
   hidden: boolean;
 }
+
+export const GROUP_FIELDS: Record<GroupBy, string> = {
+  status: 'status',
+  assignee: 'assignee',
+  priority: 'priority',
+  epic: 'epic',
+};
+
+export const SORT_FIELDS: Partial<Record<SortBy, string>> = {
+  due: 'dueDate',
+  priority: 'priority',
+};
+
+export const COLUMN_FIELDS: Record<ListColumn, string> = {
+  labels: 'labels',
+  assignee: 'assignee',
+  priority: 'priority',
+  due: 'dueDate',
+  estimate: 'estimate',
+};
 
 export const LIST_COLUMNS: readonly { code: ListColumn; label: string }[] = [
   { code: 'labels', label: 'list.labels' },
@@ -55,14 +75,42 @@ export class ViewState {
   readonly activeViewId = signal<string | null>(null);
   readonly columns = signal<ColumnPref[]>(defaultColumns());
 
+  constructor() {
+    effect(() => {
+      const group = this.groupBy();
+      if (
+        group !== 'status' &&
+        !this.store.taskFieldEnabled(GROUP_FIELDS[group], this.projectId())
+      ) {
+        this.groupBy.set('status');
+      }
+
+      const sortField = SORT_FIELDS[this.sort()];
+      if (sortField && !this.store.taskFieldEnabled(sortField, this.projectId())) {
+        this.sort.set('manual');
+      }
+    });
+  }
+
+  readonly availableColumns = computed(() =>
+    LIST_COLUMNS.filter((column) =>
+      this.store.taskFieldEnabled(COLUMN_FIELDS[column.code], this.projectId()),
+    ),
+  );
+
+  columnAvailable(code: ListColumn): boolean {
+    return this.store.taskFieldEnabled(COLUMN_FIELDS[code], this.projectId());
+  }
+
   readonly visibleColumns = computed<ListColumn[]>(() =>
     this.columns()
-      .filter((column) => !column.hidden)
+      .filter((column) => !column.hidden && this.columnAvailable(column.code))
       .map((column) => column.code),
   );
 
   readonly hiddenColumnCount = computed(
-    () => this.columns().filter((column) => column.hidden).length,
+    () =>
+      this.columns().filter((column) => column.hidden && this.columnAvailable(column.code)).length,
   );
 
   toggleColumn(code: ListColumn): void {

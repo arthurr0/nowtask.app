@@ -3,12 +3,14 @@ package app.nowtask.tasks;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +28,7 @@ import app.nowtask.shared.OrganizationContext;
 import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
+import app.nowtask.shared.TaskField;
 import app.nowtask.shared.TaskQuery;
 import app.nowtask.shared.events.TaskEvents;
 import app.nowtask.tasks.api.TaskViews.CommentView;
@@ -145,6 +148,17 @@ public class TaskService implements Tasks {
                 ? firstStatus()
                 : requireStatus(request.statusId());
 
+        Set<String> disabled = workspace.disabledTaskFields(project.id());
+        requireEnabled(disabled, TaskField.DESCRIPTION, request.description());
+        requireEnabled(disabled, TaskField.PRIORITY, request.priority());
+        requireEnabled(disabled, TaskField.ASSIGNEE, request.assigneeId());
+        requireEnabled(disabled, TaskField.REVIEWER, request.reviewerId());
+        requireEnabled(disabled, TaskField.DUE_DATE, request.dueDate());
+        requireEnabled(disabled, TaskField.ESTIMATE, request.estimate());
+        requireEnabled(disabled, TaskField.EPIC, request.epicId());
+        requireEnabled(disabled, TaskField.LABELS, request.labels());
+        requireEnabled(disabled, TaskField.SPRINT, request.sprintCode());
+
         Task task = new Task(
                 UUID.randomUUID(),
                 project.id(),
@@ -166,6 +180,7 @@ public class TaskService implements Tasks {
             task.getLabels().addAll(request.labels());
         }
         if (request.custom() != null) {
+            request.custom().keySet().forEach(fieldKey -> requireCustomEnabled(disabled, fieldKey));
             task.setCustom(knownCustomFields(request.custom()));
         }
         if (status.category() == StatusCategory.IN_FLIGHT) {
@@ -189,6 +204,16 @@ public class TaskService implements Tasks {
     public TaskSummary patch(String key, PatchBody patch) {
         Task task = require(key);
         UserView actor = users.currentUser();
+        Set<String> disabled = workspace.disabledTaskFields(task.getProjectId());
+
+        requireEnabled(disabled, patch, "description", TaskField.DESCRIPTION);
+        requireEnabled(disabled, patch, "priority", TaskField.PRIORITY);
+        requireEnabled(disabled, patch, "assigneeId", TaskField.ASSIGNEE);
+        requireEnabled(disabled, patch, "reviewerId", TaskField.REVIEWER);
+        requireEnabled(disabled, patch, "dueDate", TaskField.DUE_DATE);
+        requireEnabled(disabled, patch, "estimate", TaskField.ESTIMATE);
+        requireEnabled(disabled, patch, "epicId", TaskField.EPIC);
+        requireEnabled(disabled, patch, "sprintCode", TaskField.SPRINT);
 
         if (patch.has("title")) {
             String title = required(patch.text("title"), "Task title");
@@ -317,6 +342,8 @@ public class TaskService implements Tasks {
         Task task = require(key);
         String value = required(label, "Etykieta").toLowerCase();
 
+        requireEnabled(workspace.disabledTaskFields(task.getProjectId()), TaskField.LABELS, value);
+
         if (task.getLabels().add(value)) {
             task.touch();
             record(task, "label", null, value, users.currentUser().id());
@@ -379,6 +406,8 @@ public class TaskService implements Tasks {
         Task task = require(key);
         CustomFieldView field = workspace.customFieldByKey(fieldKey)
                 .orElseThrow(() -> NotFoundException.of("Custom field", fieldKey));
+
+        requireCustomEnabled(workspace.disabledTaskFields(task.getProjectId()), fieldKey);
 
         if (field.requiredPermission() != null
                 && !OrganizationContextHolder.current().can(field.requiredPermission())) {
@@ -650,6 +679,41 @@ public class TaskService implements Tasks {
         }
         return workspace.epicById(epicId).map(epic -> epic.id())
                 .orElseThrow(() -> NotFoundException.of("Epik", epicId));
+    }
+
+    private void requireEnabled(Set<String> disabled, TaskField field, Object value) {
+        if (isEmpty(value) || !disabled.contains(field.key())) {
+            return;
+        }
+        throw new RuleViolationException("Field " + field.key() + " is disabled in this project");
+    }
+
+    private void requireEnabled(Set<String> disabled, PatchBody patch, String name, TaskField field) {
+        if (patch.has(name)) {
+            requireEnabled(disabled, field, patch.raw(name));
+        }
+    }
+
+    private void requireCustomEnabled(Set<String> disabled, String fieldKey) {
+        if (disabled.contains(TaskField.customKey(fieldKey))) {
+            throw new RuleViolationException("Field " + fieldKey + " is disabled in this project");
+        }
+    }
+
+    private static boolean isEmpty(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String text) {
+            return text.isBlank();
+        }
+        if (value instanceof Collection<?> items) {
+            return items.isEmpty();
+        }
+        if (value instanceof Map<?, ?> entries) {
+            return entries.isEmpty();
+        }
+        return false;
     }
 
     private Map<String, Object> knownCustomFields(Map<String, Object> custom) {

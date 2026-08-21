@@ -2,6 +2,7 @@ package app.nowtask.workspace.api;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
 import app.nowtask.workspace.api.WorkspaceViews.EpicView;
@@ -10,6 +11,7 @@ import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 public interface Workspace {
@@ -41,6 +43,10 @@ public interface Workspace {
     List<MilestoneView> milestones();
 
     SettingsView settings();
+
+    List<TaskFieldSettingView> taskFieldSettings();
+
+    Set<String> disabledTaskFields(UUID projectId);
 
     boolean transitionAllowed(UUID fromStatus, UUID toStatus);
 }

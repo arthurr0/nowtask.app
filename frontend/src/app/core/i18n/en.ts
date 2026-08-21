@@ -233,6 +233,13 @@ export const en: Dictionary = {
   'settings.fieldScope': 'Scope',
   'settings.fieldVisibility': 'Visibility',
   'settings.availableTypes': 'Available field types',
+  'settings.taskFields': 'Task fields',
+  'settings.taskFieldsLead':
+    'A disabled field disappears from the task form, the task detail, list columns and filters. The API rejects any attempt to set it.',
+  'settings.taskFieldsScope': 'Settings scope',
+  'settings.taskFieldsOrg': 'Whole organization',
+  'settings.taskFieldInherited': 'Inherited',
+  'settings.taskFieldInherit': 'Inherit',
   'permission.tasks.create_edit': 'Create and edit tasks',
   'permission.tasks.comment': 'Commenting',
   'permission.tasks.delete': 'Deleting tasks',

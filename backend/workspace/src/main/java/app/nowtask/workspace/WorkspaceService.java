@@ -1,9 +1,13 @@
 package app.nowtask.workspace;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +22,7 @@ import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @Service
@@ -163,6 +168,32 @@ class WorkspaceService implements Workspace {
                         rs.getString("current_sprint")))
                 .optional()
                 .orElseThrow(() -> new NotFoundException("No workspace settings"));
+    }
+
+    @Override
+    public List<TaskFieldSettingView> taskFieldSettings() {
+        return jdbc.sql("SELECT field_key, project_id, enabled FROM task_field_setting ORDER BY project_id, field_key")
+                .query((rs, rowNum) -> new TaskFieldSettingView(
+                        rs.getString("field_key"),
+                        rs.getObject("project_id", UUID.class),
+                        rs.getBoolean("enabled")))
+                .list();
+    }
+
+    @Override
+    public Set<String> disabledTaskFields(UUID projectId) {
+        Map<String, Boolean> effective = new HashMap<>();
+        for (TaskFieldSettingView setting : taskFieldSettings()) {
+            if (setting.projectId() == null) {
+                effective.putIfAbsent(setting.fieldKey(), setting.enabled());
+            } else if (setting.projectId().equals(projectId)) {
+                effective.put(setting.fieldKey(), setting.enabled());
+            }
+        }
+        return effective.entrySet().stream()
+                .filter(entry -> !entry.getValue())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
     }
 
     @Override

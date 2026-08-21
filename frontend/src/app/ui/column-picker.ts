@@ -81,11 +81,14 @@ export class ColumnPicker {
   readonly open = model(false);
 
   protected readonly rows = computed(() =>
-    this.view.columns().map((column) => ({
-      code: column.code,
-      hidden: column.hidden,
-      label: labelOf(column.code),
-    })),
+    this.view
+      .columns()
+      .filter((column) => this.view.columnAvailable(column.code))
+      .map((column) => ({
+        code: column.code,
+        hidden: column.hidden,
+        label: labelOf(column.code),
+      })),
   );
 }
 

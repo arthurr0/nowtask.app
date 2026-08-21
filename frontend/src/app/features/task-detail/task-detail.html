@@ -3,10 +3,12 @@
     <div class="flex min-w-0 items-center gap-1.5">
       <span class="hidden text-xs text-ink-3 sm:inline">{{ projectName() }}</span>
       <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
-      <span class="hidden text-xs text-ink-3 sm:inline">{{
-        task.sprintCode ?? t('common.none')
-      }}</span>
-      <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+      @if (fieldEnabled('sprint')) {
+        <span class="hidden text-xs text-ink-3 sm:inline">{{
+          task.sprintCode ?? t('common.none')
+        }}</span>
+        <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+      }
       <span class="font-mono text-[13px] font-medium">{{ task.key }}</span>
       @if (detail()!.watching) {
         <span
@@ -66,18 +68,20 @@
           <span>{{ store.statusName(status()) }}</span>
         </ui-menu>
 
-        <ui-menu
-          [items]="priorityItems()"
-          triggerClass="flex h-[30px] items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
-          triggerHeight="30px"
-          ariaLabel="list.priority"
-          (selected)="pickPriority($event)"
-        >
-          @if (task.priority === 'high' || task.priority === 'critical') {
-            <ui-icon name="flag" [size]="13" class="text-warn" />
-          }
-          <span>{{ t('priority.' + task.priority) }}</span>
-        </ui-menu>
+        @if (fieldEnabled('priority')) {
+          <ui-menu
+            [items]="priorityItems()"
+            triggerClass="flex h-[30px] items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-2"
+            triggerHeight="30px"
+            ariaLabel="list.priority"
+            (selected)="pickPriority($event)"
+          >
+            @if (task.priority === 'high' || task.priority === 'critical') {
+              <ui-icon name="flag" [size]="13" class="text-warn" />
+            }
+            <span>{{ t('priority.' + task.priority) }}</span>
+          </ui-menu>
+        }
 
         @if (detail()!.attachmentCount) {
           <span
@@ -105,60 +109,64 @@
         (saved)="saveTitle($event)"
       />
 
-      <section class="flex max-w-[720px] flex-col gap-2">
-        <h2 class="kap">{{ t('task.description') }}</h2>
-        <ui-inline-edit
-          [value]="detail()!.description"
-          [multiline]="true"
-          [rows]="5"
-          placeholder="composer.descriptionPlaceholder"
-          textClass="text-[13px] leading-[1.65] text-ink-2 text-pretty whitespace-pre-wrap"
-          ariaLabel="task.description"
-          (saved)="saveDescription($event)"
-        />
-      </section>
+      @if (fieldEnabled('description')) {
+        <section class="flex max-w-[720px] flex-col gap-2">
+          <h2 class="kap">{{ t('task.description') }}</h2>
+          <ui-inline-edit
+            [value]="detail()!.description"
+            [multiline]="true"
+            [rows]="5"
+            placeholder="composer.descriptionPlaceholder"
+            textClass="text-[13px] leading-[1.65] text-ink-2 text-pretty whitespace-pre-wrap"
+            ariaLabel="task.description"
+            (saved)="saveDescription($event)"
+          />
+        </section>
+      }
 
-      <section class="flex max-w-[720px] flex-col gap-2">
-        <h2 class="kap">{{ t('list.labels') }}</h2>
-        <div class="flex flex-wrap items-center gap-1.5">
-          @for (label of task.labels; track label) {
-            <span
-              class="flex h-7 items-center gap-1.5 rounded-full border border-line pr-1.5 pl-2.5 text-[11px] text-ink-2"
-            >
-              {{ label }}
+      @if (fieldEnabled('labels')) {
+        <section class="flex max-w-[720px] flex-col gap-2">
+          <h2 class="kap">{{ t('list.labels') }}</h2>
+          <div class="flex flex-wrap items-center gap-1.5">
+            @for (label of task.labels; track label) {
+              <span
+                class="flex h-7 items-center gap-1.5 rounded-full border border-line pr-1.5 pl-2.5 text-[11px] text-ink-2"
+              >
+                {{ label }}
+                <button
+                  type="button"
+                  class="hoverable flex h-4 w-4 items-center justify-center rounded-full text-ink-3"
+                  [attr.aria-label]="t('task.removeLabel', { label })"
+                  (click)="removeLabel(label)"
+                >
+                  <ui-icon name="x" [size]="11" />
+                </button>
+              </span>
+            }
+            @if (addingLabel()) {
+              <input
+                class="focus-ring h-7 w-36 rounded-full border border-line bg-surface px-2.5 text-[11px] outline-none"
+                [placeholder]="t('composer.newLabelPlaceholder')"
+                [value]="labelDraft()"
+                (input)="labelDraft.set($any($event.target).value)"
+                (keydown.enter)="$event.preventDefault(); addLabel()"
+                (keydown.escape)="addingLabel.set(false); labelDraft.set('')"
+                (blur)="addLabel()"
+                autofocus
+              />
+            } @else {
               <button
                 type="button"
-                class="hoverable flex h-4 w-4 items-center justify-center rounded-full text-ink-3"
-                [attr.aria-label]="t('task.removeLabel', { label })"
-                (click)="removeLabel(label)"
+                class="flex h-7 items-center gap-1 rounded-full border border-dashed border-line-strong px-2.5 text-[11px] text-ink-3"
+                (click)="startLabel()"
               >
-                <ui-icon name="x" [size]="11" />
+                <ui-icon name="plus" [size]="12" />
+                {{ t('composer.addLabel') }}
               </button>
-            </span>
-          }
-          @if (addingLabel()) {
-            <input
-              class="focus-ring h-7 w-36 rounded-full border border-line bg-surface px-2.5 text-[11px] outline-none"
-              [placeholder]="t('composer.newLabelPlaceholder')"
-              [value]="labelDraft()"
-              (input)="labelDraft.set($any($event.target).value)"
-              (keydown.enter)="$event.preventDefault(); addLabel()"
-              (keydown.escape)="addingLabel.set(false); labelDraft.set('')"
-              (blur)="addLabel()"
-              autofocus
-            />
-          } @else {
-            <button
-              type="button"
-              class="flex h-7 items-center gap-1 rounded-full border border-dashed border-line-strong px-2.5 text-[11px] text-ink-3"
-              (click)="startLabel()"
-            >
-              <ui-icon name="plus" [size]="12" />
-              {{ t('composer.addLabel') }}
-            </button>
-          }
-        </div>
-      </section>
+            }
+          </div>
+        </section>
+      }
 
       <section class="flex max-w-[720px] flex-col gap-2.5">
         <div class="flex items-center gap-2.5">
@@ -414,70 +422,80 @@
       class="flex w-full flex-none flex-col gap-5 border-t border-line bg-surface p-5 lg:w-[328px] lg:border-t-0 lg:border-l lg:overflow-y-auto lg:p-6 scroll-thin"
     >
       <div class="flex flex-col gap-0.5">
-        <div class="flex min-h-[34px] items-center gap-3">
-          <span class="w-24 flex-none text-xs text-ink-3">{{ t('common.assignee') }}</span>
-          <ui-menu
-            [items]="assigneeItems()"
-            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
-            triggerHeight="28px"
-            ariaLabel="common.assignee"
-            (selected)="pickAssignee($event)"
-          >
-            <ui-avatar [user]="assignee()" [size]="20" />
-            <span class="truncate">{{ assignee()?.shortName ?? t('common.unassigned') }}</span>
-          </ui-menu>
-        </div>
+        @if (fieldEnabled('assignee')) {
+          <div class="flex min-h-[34px] items-center gap-3">
+            <span class="w-24 flex-none text-xs text-ink-3">{{ t('common.assignee') }}</span>
+            <ui-menu
+              [items]="assigneeItems()"
+              triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+              triggerHeight="28px"
+              ariaLabel="common.assignee"
+              (selected)="pickAssignee($event)"
+            >
+              <ui-avatar [user]="assignee()" [size]="20" />
+              <span class="truncate">{{ assignee()?.shortName ?? t('common.unassigned') }}</span>
+            </ui-menu>
+          </div>
+        }
 
-        <div class="flex min-h-[34px] items-center gap-3">
-          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.reviewer') }}</span>
-          <ui-menu
-            [items]="reviewerItems()"
-            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
-            triggerHeight="28px"
-            ariaLabel="task.reviewer"
-            (selected)="pickReviewer($event)"
-          >
-            <ui-avatar [user]="reviewer()" [size]="20" />
-            <span class="truncate">{{ reviewer()?.shortName ?? t('common.none') }}</span>
-          </ui-menu>
-        </div>
+        @if (fieldEnabled('reviewer')) {
+          <div class="flex min-h-[34px] items-center gap-3">
+            <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.reviewer') }}</span>
+            <ui-menu
+              [items]="reviewerItems()"
+              triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+              triggerHeight="28px"
+              ariaLabel="task.reviewer"
+              (selected)="pickReviewer($event)"
+            >
+              <ui-avatar [user]="reviewer()" [size]="20" />
+              <span class="truncate">{{ reviewer()?.shortName ?? t('common.none') }}</span>
+            </ui-menu>
+          </div>
+        }
 
-        <div class="flex min-h-[34px] items-center gap-3">
-          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.dueDate') }}</span>
-          <input
-            type="date"
-            class="focus-ring h-7 flex-1 rounded-field bg-transparent px-1.5 font-mono text-[13px] outline-none"
-            [class.text-warn]="overdue()"
-            [value]="task.dueDate ?? ''"
-            [attr.aria-label]="t('task.dueDate')"
-            (change)="saveDueDate($any($event.target).value)"
-          />
-        </div>
+        @if (fieldEnabled('dueDate')) {
+          <div class="flex min-h-[34px] items-center gap-3">
+            <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.dueDate') }}</span>
+            <input
+              type="date"
+              class="focus-ring h-7 flex-1 rounded-field bg-transparent px-1.5 font-mono text-[13px] outline-none"
+              [class.text-warn]="overdue()"
+              [value]="task.dueDate ?? ''"
+              [attr.aria-label]="t('task.dueDate')"
+              (change)="saveDueDate($any($event.target).value)"
+            />
+          </div>
+        }
 
-        <div class="flex min-h-[34px] items-center gap-3">
-          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.estimate') }}</span>
-          <ui-inline-edit
-            class="flex-1"
-            [value]="estimateText()"
-            placeholder="composer.estimatePlaceholder"
-            textClass="font-mono text-[13px]"
-            ariaLabel="task.estimate"
-            (saved)="saveEstimate($event)"
-          />
-        </div>
+        @if (fieldEnabled('estimate')) {
+          <div class="flex min-h-[34px] items-center gap-3">
+            <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.estimate') }}</span>
+            <ui-inline-edit
+              class="flex-1"
+              [value]="estimateText()"
+              placeholder="composer.estimatePlaceholder"
+              textClass="font-mono text-[13px]"
+              ariaLabel="task.estimate"
+              (saved)="saveEstimate($event)"
+            />
+          </div>
+        }
 
-        <div class="flex min-h-[34px] items-center gap-3">
-          <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.epic') }}</span>
-          <ui-menu
-            [items]="epicItems()"
-            triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
-            triggerHeight="28px"
-            ariaLabel="task.epic"
-            (selected)="pickEpic($event)"
-          >
-            <span class="truncate">{{ epic()?.name ?? t('common.none') }}</span>
-          </ui-menu>
-        </div>
+        @if (fieldEnabled('epic')) {
+          <div class="flex min-h-[34px] items-center gap-3">
+            <span class="w-24 flex-none text-xs text-ink-3">{{ t('task.epic') }}</span>
+            <ui-menu
+              [items]="epicItems()"
+              triggerClass="hoverable flex min-h-7 flex-1 items-center gap-2 rounded-field px-1.5 text-left text-[13px]"
+              triggerHeight="28px"
+              ariaLabel="task.epic"
+              (selected)="pickEpic($event)"
+            >
+              <span class="truncate">{{ epic()?.name ?? t('common.none') }}</span>
+            </ui-menu>
+          </div>
+        }
       </div>
 
       @if (customRows().length) {

@@ -1,6 +1,7 @@
 package app.nowtask.workspace;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
@@ -14,6 +15,7 @@ import app.nowtask.shared.PatchBody;
 import app.nowtask.shared.Permission;
 import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
+import app.nowtask.shared.TaskField;
 import app.nowtask.shared.events.ConfigEvents;
 import app.nowtask.workspace.api.Workspace;
 import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
@@ -21,6 +23,7 @@ import app.nowtask.workspace.api.WorkspaceViews.EpicView;
 import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @Service
@@ -220,7 +223,10 @@ public class WorkspaceConfigService {
     }
 
     public void deleteCustomField(UUID id) {
-        requireCustomField(id);
+        CustomFieldView field = requireCustomField(id);
+        jdbc.sql("DELETE FROM task_field_setting WHERE field_key = ?")
+                .param(TaskField.customKey(field.fieldKey()))
+                .update();
         jdbc.sql("DELETE FROM custom_field WHERE id = ?").param(id).update();
     }
 
@@ -329,6 +335,72 @@ public class WorkspaceConfigService {
     public void deleteEpic(UUID id) {
         requireEpic(id);
         jdbc.sql("DELETE FROM epic WHERE id = ?").param(id).update();
+    }
+
+    public List<TaskFieldSettingView> updateTaskFieldSettings(UUID projectId, Map<String, Object> fields) {
+        OrganizationContextHolder.current().require(Permission.FIELDS_MANAGE);
+
+        if (projectId != null) {
+            requireProject(projectId);
+        }
+        if (fields == null || fields.isEmpty()) {
+            throw new IllegalArgumentException("Field list: a value is required");
+        }
+
+        fields.forEach((key, value) -> applyTaskFieldSetting(projectId, taskFieldKey(key), value));
+        return workspace.taskFieldSettings();
+    }
+
+    private void applyTaskFieldSetting(UUID projectId, String fieldKey, Object value) {
+        if (value == null) {
+            if (projectId == null) {
+                jdbc.sql("DELETE FROM task_field_setting WHERE project_id IS NULL AND field_key = ?")
+                        .param(fieldKey)
+                        .update();
+            } else {
+                jdbc.sql("DELETE FROM task_field_setting WHERE project_id = ? AND field_key = ?")
+                        .params(projectId, fieldKey)
+                        .update();
+            }
+            return;
+        }
+
+        boolean enabled = value instanceof Boolean logical ? logical : Boolean.parseBoolean(value.toString());
+        int updated = projectId == null
+                ? jdbc.sql("UPDATE task_field_setting SET enabled = ? WHERE project_id IS NULL AND field_key = ?")
+                        .params(enabled, fieldKey)
+                        .update()
+                : jdbc.sql("UPDATE task_field_setting SET enabled = ? WHERE project_id = ? AND field_key = ?")
+                        .params(enabled, projectId, fieldKey)
+                        .update();
+
+        if (updated > 0) {
+            return;
+        }
+
+        if (projectId == null) {
+            jdbc.sql("INSERT INTO task_field_setting (id, field_key, enabled) VALUES (?, ?, ?)")
+                    .params(UUID.randomUUID(), fieldKey, enabled)
+                    .update();
+        } else {
+            jdbc.sql("INSERT INTO task_field_setting (id, project_id, field_key, enabled) VALUES (?, ?, ?, ?)")
+                    .params(UUID.randomUUID(), projectId, fieldKey, enabled)
+                    .update();
+        }
+    }
+
+    private String taskFieldKey(String key) {
+        String value = required(key, "Field key");
+        if (TaskField.byKey(value).isPresent()) {
+            return value;
+        }
+        if (TaskField.isCustom(value)) {
+            String custom = TaskField.customFieldKey(value);
+            workspace.customFieldByKey(custom)
+                    .orElseThrow(() -> new RuleViolationException("Unknown custom field " + custom));
+            return value;
+        }
+        throw new RuleViolationException("Unknown task field " + value);
     }
 
     public SettingsView updateSettings(PatchBody patch) {

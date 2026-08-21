@@ -934,6 +934,56 @@
         }
       }
 
+      @case ('taskFields') {
+        <section class="flex flex-col gap-5">
+          <header class="flex flex-wrap items-start gap-4">
+            <div class="flex flex-1 flex-col gap-1">
+              <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
+                {{ t('settings.taskFields') }}
+              </h1>
+              <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('settings.taskFieldsLead') }}</p>
+            </div>
+            <ui-menu
+              [items]="fieldScopeItems()"
+              triggerClass="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
+              triggerHeight="32px"
+              ariaLabel="settings.taskFieldsScope"
+              align="end"
+              (selected)="fieldScope.set($any($event.id))"
+            >
+              <ui-icon name="layers" [size]="14" />
+              <span>{{ fieldScopeLabel() }}</span>
+            </ui-menu>
+          </header>
+
+          <div class="flex flex-col">
+            @for (row of taskFieldRows(); track row.key) {
+              <div class="flex min-h-[46px] items-center gap-4 border-b border-line">
+                <span class="flex-1 truncate text-[13px]" [class.text-ink-3]="!row.enabled">
+                  {{ row.label }}
+                </span>
+                @if (row.inherited) {
+                  <span class="text-xs text-ink-3">{{ t('settings.taskFieldInherited') }}</span>
+                } @else if (fieldScope()) {
+                  <button
+                    type="button"
+                    class="text-xs text-ink-2 underline"
+                    (click)="inheritTaskField(row)"
+                  >
+                    {{ t('settings.taskFieldInherit') }}
+                  </button>
+                }
+                <ui-switch
+                  [checked]="row.enabled"
+                  [label]="row.label"
+                  (toggled)="toggleTaskField(row)"
+                />
+              </div>
+            }
+          </div>
+        </section>
+      }
+
       @case ('flow') {
         <section class="flex flex-col gap-6">
           <header class="flex flex-col gap-1">

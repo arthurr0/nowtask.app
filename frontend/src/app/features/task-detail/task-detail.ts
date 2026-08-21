@@ -11,8 +11,9 @@ import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { dateTime, fullDate, isOverdue, money } from '../../core/format';
 import type { CustomFieldDto } from '../../core/api-types';
+import { customFieldKey, type TaskFieldKey } from '../../core/task-fields';
 import { SettingsStore, TaskDetailStore } from '../../data/feature.stores';
-import { WorkspaceStore } from '../../data/workspace.store';
+import { WorkspaceStore, type NewTaskInput } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { ConfirmService } from '../../ui/confirm.service';
 import { Icon } from '../../ui/icon';
@@ -99,18 +100,26 @@ export class TaskDetail {
 
   protected readonly canSeeProtected = (permission: string): boolean => this.store.can(permission);
 
+  protected fieldEnabled(field: TaskFieldKey): boolean {
+    return this.store.taskFieldEnabled(field, this.summary()?.projectId ?? null);
+  }
+
   protected readonly customRows = computed<CustomRow[]>(() => {
     const custom = this.detail()?.custom ?? {};
-    return this.settings.customFields().map((field) => {
-      const raw = field.fieldKey in custom ? custom[field.fieldKey] : null;
-      return {
-        field,
-        raw,
-        display: raw === null ? '' : this.renderValue(field, raw),
-        editable:
-          field.requiredPermission === null || this.canSeeProtected(field.requiredPermission),
-      };
-    });
+    const projectId = this.summary()?.projectId ?? null;
+    return this.settings
+      .customFields()
+      .filter((field) => this.store.taskFieldEnabled(customFieldKey(field.fieldKey), projectId))
+      .map((field) => {
+        const raw = field.fieldKey in custom ? custom[field.fieldKey] : null;
+        return {
+          field,
+          raw,
+          display: raw === null ? '' : this.renderValue(field, raw),
+          editable:
+            field.requiredPermission === null || this.canSeeProtected(field.requiredPermission),
+        };
+      });
   });
 
   protected readonly hasRestrictedField = computed(() =>
@@ -457,18 +466,22 @@ export class TaskDetail {
     const detail = this.detail();
     if (!task || !detail) return;
     await this.run(async () => {
-      const created = await this.store.createTask({
+      const input: NewTaskInput = {
         title: this.t('board.copyOf', { title: task.title }),
-        description: detail.description,
         statusId: task.statusId,
-        priority: task.priority,
-        assigneeId: task.assigneeId,
-        reviewerId: detail.reviewerId,
-        dueDate: task.dueDate,
-        estimate: task.estimate,
-        epicId: task.epicId,
-        labels: [...task.labels],
-      });
+        projectId: task.projectId,
+      };
+
+      if (this.fieldEnabled('description')) input.description = detail.description;
+      if (this.fieldEnabled('priority')) input.priority = task.priority;
+      if (this.fieldEnabled('assignee')) input.assigneeId = task.assigneeId;
+      if (this.fieldEnabled('reviewer')) input.reviewerId = detail.reviewerId;
+      if (this.fieldEnabled('dueDate')) input.dueDate = task.dueDate;
+      if (this.fieldEnabled('estimate')) input.estimate = task.estimate;
+      if (this.fieldEnabled('epic')) input.epicId = task.epicId;
+      if (this.fieldEnabled('labels')) input.labels = [...task.labels];
+
+      const created = await this.store.createTask(input);
       this.toast.success(this.t('composer.created', { key: created.key }), {
         action: {
           label: this.t('composer.openTask'),

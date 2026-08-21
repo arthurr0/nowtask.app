@@ -23,6 +23,7 @@ import app.nowtask.workspace.api.WorkspaceViews.MilestoneView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @RestController
@@ -60,6 +61,19 @@ class WorkspaceController {
     ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
         config.deleteProject(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/task-fields")
+    List<TaskFieldSettingView> taskFieldSettings() {
+        return workspace.taskFieldSettings();
+    }
+
+    record TaskFieldPatch(UUID projectId, Map<String, Object> fields) {
+    }
+
+    @PatchMapping("/task-fields")
+    List<TaskFieldSettingView> updateTaskFieldSettings(@RequestBody TaskFieldPatch request) {
+        return config.updateTaskFieldSettings(request.projectId(), request.fields());
     }
 
     @GetMapping("/statuses")

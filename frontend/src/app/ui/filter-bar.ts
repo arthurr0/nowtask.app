@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { I18nService } from '../core/i18n/i18n.service';
 import type { GroupBy, SortBy } from '../data/view-state';
-import { LIST_COLUMNS, ViewState } from '../data/view-state';
+import { GROUP_FIELDS, SORT_FIELDS, ViewState } from '../data/view-state';
 import { WorkspaceStore } from '../data/workspace.store';
 import { ColumnPicker } from './column-picker';
 import { Icon } from './icon';
@@ -56,36 +56,42 @@ const TOOL =
         }
       </span>
 
-      <ui-menu
-        [items]="assigneeItems()"
-        [triggerClass]="view.assigneeId() || view.unassigned() ? chipActive : chip"
-        triggerHeight="28px"
-        ariaLabel="common.assignee"
-        (selected)="pickAssignee($event)"
-      >
-        <ui-icon name="user" [size]="13" />
-        <span>{{ assigneeLabel() }}</span>
-      </ui-menu>
+      @if (fieldEnabled('assignee')) {
+        <ui-menu
+          [items]="assigneeItems()"
+          [triggerClass]="view.assigneeId() || view.unassigned() ? chipActive : chip"
+          triggerHeight="28px"
+          ariaLabel="common.assignee"
+          (selected)="pickAssignee($event)"
+        >
+          <ui-icon name="user" [size]="13" />
+          <span>{{ assigneeLabel() }}</span>
+        </ui-menu>
+      }
 
-      <ui-menu
-        [items]="labelItems()"
-        [triggerClass]="view.label() ? chipActive : chip"
-        triggerHeight="28px"
-        ariaLabel="common.label"
-        (selected)="pickLabel($event)"
-      >
-        <span>{{ view.label() ?? t('common.label') }}</span>
-      </ui-menu>
+      @if (fieldEnabled('labels')) {
+        <ui-menu
+          [items]="labelItems()"
+          [triggerClass]="view.label() ? chipActive : chip"
+          triggerHeight="28px"
+          ariaLabel="common.label"
+          (selected)="pickLabel($event)"
+        >
+          <span>{{ view.label() ?? t('common.label') }}</span>
+        </ui-menu>
+      }
 
-      <ui-menu
-        [items]="priorityItems()"
-        [triggerClass]="view.priority() ? chipActive : chip"
-        triggerHeight="28px"
-        ariaLabel="list.priority"
-        (selected)="pickPriority($event)"
-      >
-        <span>{{ view.priority() ? t('priority.' + view.priority()) : t('list.priority') }}</span>
-      </ui-menu>
+      @if (fieldEnabled('priority')) {
+        <ui-menu
+          [items]="priorityItems()"
+          [triggerClass]="view.priority() ? chipActive : chip"
+          triggerHeight="28px"
+          ariaLabel="list.priority"
+          (selected)="pickPriority($event)"
+        >
+          <span>{{ view.priority() ? t('priority.' + view.priority()) : t('list.priority') }}</span>
+        </ui-menu>
+      }
 
       @if (store.activeProjects().length > 1) {
         <ui-menu
@@ -99,7 +105,7 @@ const TOOL =
         </ui-menu>
       }
 
-      @if (store.sprints().length > 1) {
+      @if (store.sprints().length > 1 && fieldEnabled('sprint')) {
         <ui-menu
           [items]="sprintItems()"
           [triggerClass]="view.sprint() ? chipActive : chip"
@@ -111,7 +117,7 @@ const TOOL =
         </ui-menu>
       }
 
-      @if (store.epics().length) {
+      @if (store.epics().length && fieldEnabled('epic')) {
         <ui-menu
           [items]="epicItems()"
           [triggerClass]="view.epicId() ? chipActive : chip"
@@ -194,7 +200,7 @@ const TOOL =
           <span class="hidden 2xl:inline">{{ t('common.columns') }}</span>
           @if (view.hiddenColumnCount()) {
             <span class="font-mono text-[11px] text-ink-3"
-              >{{ view.visibleColumns().length }}/{{ columnCount }}</span
+              >{{ view.visibleColumns().length }}/{{ columnCount() }}</span
             >
           }
         </button>
@@ -243,7 +249,11 @@ export class FilterBar {
   readonly showColumns = input(false);
 
   protected readonly columnsOpen = signal(false);
-  protected readonly columnCount = LIST_COLUMNS.length;
+  protected readonly columnCount = computed(() => this.view.availableColumns().length);
+
+  protected fieldEnabled(fieldKey: string): boolean {
+    return this.store.taskFieldEnabled(fieldKey, this.view.projectId());
+  }
 
   protected readonly activeView = computed(
     () =>
@@ -352,40 +362,53 @@ export class FilterBar {
     return items;
   });
 
-  protected readonly extraItems = computed<MenuItem[]>(() => [
-    {
-      id: 'overdue',
-      label: this.t('filters.overdue'),
-      icon: 'clock',
-      checked: this.view.overdueOnly(),
-      keepOpen: true,
-    },
-    {
+  protected readonly extraItems = computed<MenuItem[]>(() => {
+    const items: MenuItem[] = [];
+
+    if (this.fieldEnabled('dueDate')) {
+      items.push({
+        id: 'overdue',
+        label: this.t('filters.overdue'),
+        icon: 'clock',
+        checked: this.view.overdueOnly(),
+        keepOpen: true,
+      });
+    }
+    items.push({
       id: 'automated',
       label: this.t('filters.automated'),
       icon: 'bolt',
       checked: this.view.automated(),
       keepOpen: true,
-    },
-    {
-      id: 'unassigned',
-      label: this.t('common.unassigned'),
-      icon: 'user',
-      checked: this.view.unassigned(),
-      keepOpen: true,
-    },
-  ]);
+    });
+    if (this.fieldEnabled('assignee')) {
+      items.push({
+        id: 'unassigned',
+        label: this.t('common.unassigned'),
+        icon: 'user',
+        checked: this.view.unassigned(),
+        keepOpen: true,
+      });
+    }
+
+    return items;
+  });
 
   protected readonly groupItems = computed<MenuItem[]>(() =>
-    GROUPS.map((group) => ({
-      id: group,
-      label: this.t('group.' + group),
-      checked: this.view.groupBy() === group,
-    })),
+    GROUPS.filter((group) => group === 'status' || this.fieldEnabled(GROUP_FIELDS[group])).map(
+      (group) => ({
+        id: group,
+        label: this.t('group.' + group),
+        checked: this.view.groupBy() === group,
+      }),
+    ),
   );
 
   protected readonly sortItems = computed<MenuItem[]>(() =>
-    SORTS.map((sort) => ({
+    SORTS.filter((sort) => {
+      const field = SORT_FIELDS[sort];
+      return !field || this.fieldEnabled(field);
+    }).map((sort) => ({
       id: sort,
       label: this.t('sort.' + sort),
       checked: this.view.sort() === sort,

@@ -23,6 +23,7 @@ import type {
   StatusDto,
   WorkspaceSettingsDto,
 } from '../../core/api-types';
+import { TASK_FIELDS, customFieldKey } from '../../core/task-fields';
 import { ViewState } from '../../data/view-state';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { SettingsStore } from '../../data/feature.stores';
@@ -52,8 +53,16 @@ type Section =
   | 'appearance'
   | 'language'
   | 'fields'
+  | 'taskFields'
   | 'flow'
   | 'epics';
+
+interface TaskFieldRow {
+  key: string;
+  label: string;
+  enabled: boolean;
+  inherited: boolean;
+}
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -100,6 +109,71 @@ export class Settings implements OnInit {
   protected readonly section = signal<Section>('profile');
   protected readonly workspaceSettings = signal<WorkspaceSettingsDto | null>(null);
 
+  protected readonly fieldScope = signal<string>('');
+
+  protected readonly fieldScopeItems = computed<MenuItem[]>(() => [
+    {
+      id: '',
+      label: this.t('settings.taskFieldsOrg'),
+      checked: this.fieldScope() === '',
+    },
+    ...this.store.activeProjects().map((project) => ({
+      id: project.id,
+      label: `${project.name} (${project.code})`,
+      checked: this.fieldScope() === project.id,
+    })),
+  ]);
+
+  protected readonly fieldScopeLabel = computed(() => {
+    const project = this.store.project(this.fieldScope() || null);
+    return project ? `${project.name} (${project.code})` : this.t('settings.taskFieldsOrg');
+  });
+
+  protected readonly taskFieldRows = computed<TaskFieldRow[]>(() => {
+    const scope = this.fieldScope() || null;
+    const builtin = TASK_FIELDS.map((field) =>
+      this.taskFieldRow(field.key, this.t(field.label), scope),
+    );
+    const custom = this.settings
+      .customFields()
+      .map((field) => this.taskFieldRow(customFieldKey(field.fieldKey), field.name, scope));
+    return [...builtin, ...custom];
+  });
+
+  private taskFieldRow(key: string, label: string, scope: string | null): TaskFieldRow {
+    const settings = this.store.taskFieldSettings();
+    const own = settings.find(
+      (setting) => setting.fieldKey === key && (setting.projectId ?? null) === scope,
+    );
+    const shared = settings.find(
+      (setting) => setting.fieldKey === key && setting.projectId === null,
+    );
+
+    return {
+      key,
+      label,
+      enabled: own ? own.enabled : shared ? shared.enabled : true,
+      inherited: scope !== null && !own,
+    };
+  }
+
+  protected async toggleTaskField(row: TaskFieldRow): Promise<void> {
+    await this.saveTaskField(row.key, !row.enabled);
+  }
+
+  protected async inheritTaskField(row: TaskFieldRow): Promise<void> {
+    await this.saveTaskField(row.key, null);
+  }
+
+  private async saveTaskField(key: string, value: boolean | null): Promise<void> {
+    try {
+      await this.store.updateTaskFieldSettings(this.fieldScope() || null, { [key]: value });
+      this.toast.success(this.t('settings.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
   protected readonly fieldDialogOpen = signal(false);
   protected readonly editedField = signal<CustomFieldDto | null>(null);
   protected readonly statusDialogOpen = signal(false);
@@ -120,6 +194,7 @@ export class Settings implements OnInit {
 
   protected readonly structureSections: readonly { id: Section; icon: string; label: string }[] = [
     { id: 'fields', icon: 'sliders', label: 'settings.customFields' },
+    { id: 'taskFields', icon: 'filter', label: 'settings.taskFields' },
     { id: 'flow', icon: 'board', label: 'settings.statusesFlow' },
     { id: 'epics', icon: 'layers', label: 'settings.epics' },
   ];
