@@ -343,7 +343,7 @@ export class OnboardingWizard {
     await this.onboarding.setStep('done');
     clearStoredPreset();
     await this.store.load(true);
-    await this.router.navigate(['/app/board']);
+    await this.router.navigate(['/app']);
   }
 }
 

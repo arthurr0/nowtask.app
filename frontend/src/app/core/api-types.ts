@@ -136,7 +136,17 @@ export interface WorkspaceSettingsDto {
 }
 
 export type NavItemCode =
-  'overview' | 'my-tasks' | 'board' | 'list' | 'timeline' | 'automations' | 'agents' | 'reports';
+  | 'overview'
+  | 'my-tasks'
+  | 'board'
+  | 'list'
+  | 'timeline'
+  | 'calendar'
+  | 'automations'
+  | 'agents'
+  | 'reports';
+
+export type TaskViewCode = 'board' | 'list' | 'timeline' | 'calendar';
 
 export interface NavItemDto {
   code: NavItemCode;
@@ -145,6 +155,12 @@ export interface NavItemDto {
 
 export interface TaskFieldSettingDto {
   fieldKey: string;
+  projectId: string | null;
+  enabled: boolean;
+}
+
+export interface TaskViewSettingDto {
+  viewCode: TaskViewCode;
   projectId: string | null;
   enabled: boolean;
 }
@@ -159,8 +175,10 @@ export interface BootstrapDto {
   epics: EpicDto[];
   savedViews: SavedViewDto[];
   taskFieldSettings: TaskFieldSettingDto[];
+  taskViewSettings: TaskViewSettingDto[];
   settings: WorkspaceSettingsDto;
   navigation: NavItemDto[];
+  defaultView: TaskViewCode;
   permissions: string[];
   sprints: string[];
   activeRuleCount: number;

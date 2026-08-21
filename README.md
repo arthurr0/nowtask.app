@@ -11,7 +11,8 @@
 
 <p>
   Task management for teams: configurable statuses and fields, an automation engine,<br>
-  board, list, timeline and dashboard views, dark and light theme, interface in three languages.
+  board, list, timeline, calendar and dashboard views, dark and light theme, interface in three
+  languages.
 </p>
 
 <p>
@@ -268,7 +269,7 @@ frontend/src/app/
 ├── core/           session, guard, interceptor, theme, preferences, i18n, models, date formatting
 ├── data/           workspace.store.ts and feature.stores.ts, the only place that calls the API
 ├── ui/             design system: fields, dialogs, menus, command palette, notifications, icons
-└── features/       landing, login, signup, shell, board, list, timeline, task-detail,
+└── features/       landing, login, signup, shell, board, list, timeline, calendar, task-detail,
                     task-composer, dashboard, automations, agents, settings, admin, system
 ```
 

@@ -1,0 +1,166 @@
+<ui-topbar>
+  <div class="flex min-w-0 items-center gap-1.5">
+    <span class="hidden text-xs text-ink-3 sm:inline">{{
+      store.project(view.projectId())?.name ?? t('projects.showAll')
+    }}</span>
+    <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.calendar') }}</span>
+    <span class="kap ml-1.5 rounded-full border border-line px-2 py-0.5">{{
+      monthTaskCount()
+    }}</span>
+  </div>
+
+  <span class="hidden flex-1 lg:block"></span>
+
+  <ui-view-controls />
+
+  <ui-notifications class="hidden sm:flex" />
+
+  <button
+    type="button"
+    class="flex h-[34px] items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+    (click)="composer.open()"
+  >
+    <ui-icon name="plus" [size]="16" />
+    <span class="hidden sm:inline">{{ t('common.newTask') }}</span>
+  </button>
+</ui-topbar>
+
+<ui-filter-bar class="hidden lg:block" [showGrouping]="false">
+  <ui-view-tabs />
+</ui-filter-bar>
+
+<div class="flex h-[50px] flex-none items-center gap-2 border-b border-line bg-surface px-4">
+  <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
+    <button
+      type="button"
+      class="flex h-[26px] w-[26px] items-center justify-center rounded-[5px] text-ink-2"
+      [attr.aria-label]="t('calendar.previousMonth')"
+      (click)="shiftMonth(-1)"
+    >
+      <ui-icon name="chevron-left" [size]="15" />
+    </button>
+    <button
+      type="button"
+      class="flex h-[26px] w-[26px] items-center justify-center rounded-[5px] text-ink-2"
+      [attr.aria-label]="t('calendar.nextMonth')"
+      (click)="shiftMonth(1)"
+    >
+      <ui-icon name="chevron-right" [size]="15" />
+    </button>
+  </div>
+
+  <span class="text-[15px] font-semibold tracking-[-0.01em] capitalize">{{ monthLabel() }}</span>
+
+  @if (offMonth()) {
+    <button
+      type="button"
+      class="flex h-[26px] items-center rounded-[7px] border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+      (click)="jumpToToday()"
+    >
+      {{ t('common.today') }}
+    </button>
+  }
+
+  <span class="flex-1"></span>
+
+  @if (undatedCount()) {
+    <span class="hidden text-xs text-ink-3 sm:inline">{{
+      t('calendar.undated', { count: undatedCount() })
+    }}</span>
+  }
+</div>
+
+@if (!dueDateEnabled()) {
+  <ui-empty-state
+    icon="calendar"
+    title="calendar.dueDateOff"
+    description="calendar.dueDateOffHint"
+  />
+} @else {
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <div class="flex flex-none border-b border-line bg-surface">
+      @for (weekday of weekdays(); track weekday) {
+        <span class="kap flex-1 px-2.5 py-2 capitalize">{{ weekday }}</span>
+      }
+    </div>
+
+    <div class="flex-1 overflow-auto scroll-thin" cdkDropListGroup>
+      <div class="grid h-full grid-cols-7 grid-rows-6">
+        @for (day of days(); track day.iso) {
+          <div
+            class="flex min-h-[104px] flex-col gap-1 border-r border-b border-line p-1.5"
+            [class.bg-surface-2]="day.weekend && !day.outside"
+            [class.opacity-50]="day.outside"
+            cdkDropList
+            [cdkDropListData]="day.iso"
+            [cdkDropListSortingDisabled]="true"
+            (cdkDropListDropped)="drop($event)"
+          >
+            <div class="flex flex-none items-center gap-1">
+              <span
+                class="flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 font-mono text-[11px]"
+                [class.bg-inv]="day.today"
+                [class.text-inv-ink]="day.today"
+                [class.font-medium]="day.today"
+                [class.text-ink-3]="!day.today"
+                >{{ day.dayOfMonth }}</span
+              >
+              <span class="flex-1"></span>
+              <button
+                type="button"
+                class="hoverable flex h-[22px] w-[22px] items-center justify-center rounded-[6px] text-ink-3 opacity-0 focus-visible:opacity-100 hover:opacity-100"
+                [attr.aria-label]="t('board.addTask')"
+                (click)="newTaskOn(day)"
+              >
+                <ui-icon name="plus" [size]="14" />
+              </button>
+            </div>
+
+            @for (task of tasksOf(day); track task.key) {
+              <button
+                type="button"
+                class="flex flex-none items-center gap-1.5 rounded-[6px] border border-line bg-surface px-1.5 py-1 text-left"
+                cdkDrag
+                [cdkDragData]="task.key"
+                [attr.title]="task.key + ' ' + task.title"
+                (click)="open(task)"
+              >
+                <span
+                  class="h-2 w-2 flex-none rounded-sm"
+                  [style.background]="statusSwatch(task)"
+                ></span>
+                <span
+                  class="min-w-0 flex-1 truncate text-[11px]"
+                  [class.text-warn]="overdue(day, task)"
+                  >{{ task.title }}</span
+                >
+                @if (store.user(task.assigneeId); as assignee) {
+                  <ui-avatar [user]="assignee" [size]="16" class="flex-none" />
+                }
+              </button>
+            }
+
+            @if (hiddenCount(day); as hidden) {
+              <button
+                type="button"
+                class="flex-none px-1.5 text-left text-[11px] text-ink-3 underline"
+                (click)="toggleDay(day.iso)"
+              >
+                {{ t('calendar.more', { count: hidden }) }}
+              </button>
+            } @else if (expandedDay() === day.iso && day.tasks.length > visiblePerDay) {
+              <button
+                type="button"
+                class="flex-none px-1.5 text-left text-[11px] text-ink-3 underline"
+                (click)="toggleDay(day.iso)"
+              >
+                {{ t('calendar.less') }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

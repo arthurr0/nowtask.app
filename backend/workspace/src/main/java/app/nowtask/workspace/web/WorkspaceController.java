@@ -24,6 +24,7 @@ import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
 import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskViewSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @RestController
@@ -74,6 +75,19 @@ class WorkspaceController {
     @PatchMapping("/task-fields")
     List<TaskFieldSettingView> updateTaskFieldSettings(@RequestBody TaskFieldPatch request) {
         return config.updateTaskFieldSettings(request.projectId(), request.fields());
+    }
+
+    @GetMapping("/task-views")
+    List<TaskViewSettingView> taskViewSettings() {
+        return workspace.taskViewSettings();
+    }
+
+    record TaskViewPatch(UUID projectId, Map<String, Object> views) {
+    }
+
+    @PatchMapping("/task-views")
+    List<TaskViewSettingView> updateTaskViewSettings(@RequestBody TaskViewPatch request) {
+        return config.updateTaskViewSettings(request.projectId(), request.views());
     }
 
     @GetMapping("/statuses")

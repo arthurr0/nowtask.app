@@ -54,7 +54,7 @@ export class Login implements OnInit {
     try {
       await this.auth.login(this.email(), this.password());
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-      await this.router.navigateByUrl(returnUrl ?? '/app/board');
+      await this.router.navigateByUrl(returnUrl ?? '/app');
     } catch (error) {
       const unauthorised = error instanceof HttpErrorResponse && error.status === 401;
       this.error.set(unauthorised ? this.t('login.badCredentials') : this.t('state.errorTitle'));

@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { onboardingGuard, orgGuard } from './core/org.guard';
+import { defaultViewGuard, taskViewGuard } from './core/view.guard';
 
 export const routes: Routes = [
   {
@@ -57,7 +58,12 @@ export const routes: Routes = [
     canActivate: [authGuard, orgGuard, onboardingGuard],
     loadComponent: () => import('./features/shell/shell').then((m) => m.Shell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'board' },
+      {
+        path: '',
+        pathMatch: 'full',
+        canActivate: [defaultViewGuard],
+        loadComponent: () => import('./features/board/board').then((m) => m.Board),
+      },
       {
         path: 'overview',
         data: { mode: 'overview' },
@@ -70,10 +76,12 @@ export const routes: Routes = [
       },
       {
         path: 'board',
+        canActivate: [taskViewGuard('board')],
         loadComponent: () => import('./features/board/board').then((m) => m.Board),
       },
       {
         path: 'list',
+        canActivate: [taskViewGuard('list')],
         loadComponent: () => import('./features/list/list').then((m) => m.TaskList),
       },
       {
@@ -83,7 +91,13 @@ export const routes: Routes = [
       },
       {
         path: 'timeline',
+        canActivate: [taskViewGuard('timeline')],
         loadComponent: () => import('./features/timeline/timeline').then((m) => m.Timeline),
+      },
+      {
+        path: 'calendar',
+        canActivate: [taskViewGuard('calendar')],
+        loadComponent: () => import('./features/calendar/calendar').then((m) => m.Calendar),
       },
       {
         path: 'tasks/:key',

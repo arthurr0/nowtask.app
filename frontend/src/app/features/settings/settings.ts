@@ -16,7 +16,8 @@ import { OrgService } from '../../core/org.service';
 import { PrefsService } from '../../core/prefs.service';
 import { dateTime } from '../../core/format';
 import type { Accent, Density, Lang, RadiusStep, ThemeChoice } from '../../core/models';
-import type { NotificationPrefDto, SessionDto } from '../../core/api-types';
+import type { NotificationPrefDto, SessionDto, TaskViewCode } from '../../core/api-types';
+import { TASK_VIEWS } from '../../core/task-views';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { ConfirmService } from '../../ui/confirm.service';
 import { Avatar } from '../../ui/avatar';
@@ -28,7 +29,7 @@ import { ViewControls } from '../../ui/view-controls';
 import { TextField } from '../../ui/text-field';
 import { DeleteAccountDialog, EmailChangeDialog, type EmailChangeDraft } from './account-dialogs';
 
-type Section = 'profile' | 'security' | 'notifications' | 'appearance' | 'language';
+type Section = 'profile' | 'security' | 'notifications' | 'appearance' | 'views' | 'language';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -69,6 +70,7 @@ export class Settings implements OnInit {
 
   protected readonly personalSections: readonly { id: Section; icon: string; label: string }[] = [
     { id: 'appearance', icon: 'sun', label: 'settings.appearance' },
+    { id: 'views', icon: 'board', label: 'settings.views' },
     { id: 'language', icon: 'globe', label: 'settings.language' },
   ];
 
@@ -93,6 +95,26 @@ export class Settings implements OnInit {
   ];
 
   protected readonly radii: readonly RadiusStep[] = ['0', '4', '8', '14'];
+
+  protected readonly viewChoices = computed(() =>
+    TASK_VIEWS.filter((view) => this.store.taskViewEnabled(view.code, null)),
+  );
+
+  protected readonly defaultViewSaving = signal(false);
+
+  async selectDefaultView(code: TaskViewCode): Promise<void> {
+    if (this.store.defaultView() === code || this.defaultViewSaving()) return;
+
+    this.defaultViewSaving.set(true);
+    try {
+      await this.store.saveDefaultView(code);
+      this.toast.success(this.t('common.saved'));
+    } catch {
+      this.toast.error(this.t('common.actionFailed'));
+    } finally {
+      this.defaultViewSaving.set(false);
+    }
+  }
 
   protected readonly previewRows = computed(() =>
     this.store
@@ -317,7 +339,7 @@ export class Settings implements OnInit {
       const memberships = await this.orgs.refresh(true);
 
       if (memberships.length) {
-        window.location.assign('/app/board');
+        window.location.assign('/app');
       } else {
         await this.router.navigate(['/orgs/new']);
       }

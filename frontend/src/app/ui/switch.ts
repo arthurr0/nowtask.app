@@ -9,7 +9,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       role="switch"
       [attr.aria-checked]="checked()"
       [attr.aria-label]="label()"
-      class="flex h-5 w-[34px] items-center rounded-full p-0.5 transition-colors"
+      [disabled]="disabled()"
+      class="flex h-5 w-[34px] items-center rounded-full p-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       [class.bg-inv]="checked()"
       [class.justify-end]="checked()"
       [class.bg-surface-3]="!checked()"
@@ -27,5 +28,6 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 export class Switch {
   readonly checked = input(false);
   readonly label = input('');
+  readonly disabled = input(false);
   readonly toggled = output<void>();
 }

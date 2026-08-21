@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { I18nService } from '../core/i18n/i18n.service';
+import { TASK_VIEWS } from '../core/task-views';
+import { ViewState } from '../data/view-state';
+import { WorkspaceStore } from '../data/workspace.store';
 import { Icon } from './icon';
 
 @Component({
@@ -12,7 +15,7 @@ import { Icon } from './icon';
       class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5"
       data-tour="views"
     >
-      @for (tab of tabs; track tab.path) {
+      @for (tab of tabs(); track tab.path) {
         <a
           [routerLink]="tab.path"
           routerLinkActive="bg-surface !text-ink font-medium shadow-card"
@@ -26,11 +29,11 @@ import { Icon } from './icon';
   `,
 })
 export class ViewTabs {
+  private readonly store = inject(WorkspaceStore);
+  private readonly view = inject(ViewState);
   protected readonly t = inject(I18nService).t;
 
-  protected readonly tabs = [
-    { path: '/app/board', icon: 'board', label: 'nav.board' },
-    { path: '/app/list', icon: 'list', label: 'nav.list' },
-    { path: '/app/timeline', icon: 'timeline', label: 'nav.timeline' },
-  ] as const;
+  protected readonly tabs = computed(() =>
+    TASK_VIEWS.filter((tab) => this.store.taskViewEnabled(tab.code, this.view.projectId())),
+  );
 }

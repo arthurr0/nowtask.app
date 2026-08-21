@@ -16,6 +16,7 @@ import app.nowtask.shared.Permission;
 import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
 import app.nowtask.shared.TaskField;
+import app.nowtask.shared.TaskView;
 import app.nowtask.shared.events.ConfigEvents;
 import app.nowtask.workspace.api.Workspace;
 import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
@@ -24,6 +25,7 @@ import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
 import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskViewSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @Service
@@ -401,6 +403,85 @@ public class WorkspaceConfigService {
             return value;
         }
         throw new RuleViolationException("Unknown task field " + value);
+    }
+
+    public List<TaskViewSettingView> updateTaskViewSettings(UUID projectId, Map<String, Object> views) {
+        OrganizationContextHolder.current().require(Permission.SETTINGS_MANAGE);
+
+        if (projectId != null) {
+            requireProject(projectId);
+        }
+        if (views == null || views.isEmpty()) {
+            throw new IllegalArgumentException("View list: a value is required");
+        }
+
+        views.forEach((code, value) -> applyTaskViewSetting(projectId, taskViewCode(code), value));
+        requireEnabledView();
+
+        return workspace.taskViewSettings();
+    }
+
+    private void applyTaskViewSetting(UUID projectId, String viewCode, Object value) {
+        if (value == null) {
+            if (projectId == null) {
+                jdbc.sql("DELETE FROM task_view_setting WHERE project_id IS NULL AND view_code = ?")
+                        .param(viewCode)
+                        .update();
+            } else {
+                jdbc.sql("DELETE FROM task_view_setting WHERE project_id = ? AND view_code = ?")
+                        .params(projectId, viewCode)
+                        .update();
+            }
+            return;
+        }
+
+        boolean enabled = value instanceof Boolean logical ? logical : Boolean.parseBoolean(value.toString());
+        int updated = projectId == null
+                ? jdbc.sql("UPDATE task_view_setting SET enabled = ? WHERE project_id IS NULL AND view_code = ?")
+                        .params(enabled, viewCode)
+                        .update()
+                : jdbc.sql("UPDATE task_view_setting SET enabled = ? WHERE project_id = ? AND view_code = ?")
+                        .params(enabled, projectId, viewCode)
+                        .update();
+
+        if (updated > 0) {
+            return;
+        }
+
+        if (projectId == null) {
+            jdbc.sql("INSERT INTO task_view_setting (id, view_code, enabled) VALUES (?, ?, ?)")
+                    .params(UUID.randomUUID(), viewCode, enabled)
+                    .update();
+        } else {
+            jdbc.sql("INSERT INTO task_view_setting (id, project_id, view_code, enabled) VALUES (?, ?, ?, ?)")
+                    .params(UUID.randomUUID(), projectId, viewCode, enabled)
+                    .update();
+        }
+    }
+
+    private void requireEnabledView() {
+        int total = TaskView.codes().size();
+
+        if (workspace.disabledTaskViews(null).size() >= total) {
+            throw new RuleViolationException("At least one task view has to stay enabled");
+        }
+
+        for (ProjectView project : workspace.projects()) {
+            if (project.archived()) {
+                continue;
+            }
+            if (workspace.disabledTaskViews(project.id()).size() >= total) {
+                throw new RuleViolationException(
+                        "The project " + project.name() + " would be left without a single task view");
+            }
+        }
+    }
+
+    private String taskViewCode(String code) {
+        String value = required(code, "View code");
+        return TaskView.byCode(value)
+                .map(TaskView::code)
+                .orElseThrow(() -> new RuleViolationException("Unknown task view " + value));
     }
 
     public SettingsView updateSettings(PatchBody patch) {

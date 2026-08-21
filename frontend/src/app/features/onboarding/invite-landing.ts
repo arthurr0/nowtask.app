@@ -113,7 +113,7 @@ export class InviteLanding {
       this.store.clear();
       await this.store.load(true);
 
-      await this.router.navigate(['/app/board'], {
+      await this.router.navigate(['/app'], {
         queryParams: { joined: result.organizationId },
       });
     } catch (error) {

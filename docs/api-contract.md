@@ -152,6 +152,8 @@ GET    /api/workspace/settings            -> WorkspaceSettingsDto
 PATCH  /api/workspace/settings            {dateFormat?,timeFormat?,firstDayOfWeek?,timeZone?,currency?,allowUserOverride?,blockDisallowedDrag?}
 GET    /api/workspace/task-fields         -> TaskFieldSettingDto[]
 PATCH  /api/workspace/task-fields         {projectId?, fields: {key: true|false|null}} -> TaskFieldSettingDto[]
+GET    /api/workspace/task-views          -> TaskViewSettingDto[]
+PATCH  /api/workspace/task-views          {projectId?, views: {code: true|false|null}} -> TaskViewSettingDto[]
 GET    /api/workspace/epics, POST, PATCH, DELETE
 ```
 
@@ -421,6 +423,36 @@ transitions, fields, view codes and rules, and is what the wizard preview shows.
 `SavedViewDto` gains a third class of view: `origin` is `builtin`, `preset` or `user`. Only a
 `builtin` view refuses deletion with a `422`.
 
+## Task views on and off
+
+`TaskViewSettingDto` is `{viewCode, projectId, enabled}` and it says which task visualisations the
+organization offers. `viewCode` is one of `board`, `list`, `timeline`, `calendar`. The levels work
+like the task fields: `projectId = null` is the setting for the whole organization, a row with a
+`projectId` overrides it for that one project, a view with no row anywhere is on. `GET /api/bootstrap`
+carries the list as `taskViewSettings`.
+
+In `PATCH` a `true` or `false` writes a setting at the chosen level and `null` removes it, so a
+project goes back to inheriting and the organization goes back to the default. The call requires
+`settings.manage`, an unknown code ends in a 422, and so does a change that would leave the
+organization or any active project without a single enabled view.
+
+A view that is off disappears from the side panel, from the view tabs and from the command palette,
+and its route sends the person to the first view still available. `my-tasks` is a personal shortcut,
+not one of the four visualisations, so it stays reachable whatever is turned off.
+
+## The default view of a user
+
+```
+GET    /api/me/default-view          -> {view}
+PUT    /api/me/default-view          {view} -> {view}
+```
+
+`view` is one of `board`, `list`, `timeline`, `calendar`. It says which view opens on `/app`, the
+setting is personal and stored per user and per organization. An unknown code ends in a 400.
+`GET /api/bootstrap` carries it in the `defaultView` field. When the organization turns the chosen
+view off, the interface falls back to the first view that is still available; the stored preference
+stays as it was and comes back once the view is on again.
+
 ## To add: navigation personalization
 
 ```
@@ -429,7 +461,8 @@ PUT    /api/me/navigation            {items: NavItemDto[]} -> NavItemDto[]
 ```
 
 `NavItemDto`: `{ code, hidden }`, where `code` is one of the items in the "Navigation" section of the
-side panel: `overview`, `my-tasks`, `board`, `list`, `timeline`, `automations`, `agents`, `reports`.
+side panel: `overview`, `my-tasks`, `board`, `list`, `timeline`, `calendar`, `automations`, `agents`,
+`reports`.
 The order of the array is the order of the items in the panel. The setting is personal, stored per
 user.
 

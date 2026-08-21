@@ -356,6 +356,13 @@ export const en: Dictionary = {
   'settings.rowHighlight': 'Highlight row under cursor',
   'settings.singleKey': 'Single-key shortcuts',
   'settings.allProjects': 'All projects',
+  'settings.views': 'Task views',
+  'settings.viewsLead':
+    'Pick the view that opens when you enter the app. The list holds only the views the organization keeps on.',
+  'settings.defaultView': 'Default view',
+  'settings.defaultViewHint':
+    'If the organization turns the chosen view off, the app opens the first available one.',
+  'settings.viewOpensFirst': 'opens first',
   'settings.language': 'Language',
   'settings.langLead':
     'Interface language is independent of task content. Translations load as separate bundles.',
@@ -379,6 +386,10 @@ export const en: Dictionary = {
   'organization.taskFieldsOrg': 'Whole organization',
   'organization.taskFieldInherited': 'Inherited',
   'organization.taskFieldInherit': 'Inherit',
+  'organization.taskViews': 'Task views',
+  'organization.taskViewsLead':
+    'Decide which task visualisations the organization offers. A view that is off disappears from the navigation and the tabs, and its address sends people to the first view still available.',
+  'organization.taskViewsLast': 'At least one view has to stay on.',
   'organization.permissionOnly': 'Only: {permission}',
   'organization.statusesFlow': 'Statuses and flow',
   'organization.statusesLead':
@@ -633,6 +644,15 @@ export const en: Dictionary = {
   'timeline.legendTask': 'Task',
   'timeline.legendEpic': 'Epic',
   'timeline.legendMilestone': 'Milestone',
+  'calendar.previousMonth': 'Previous month',
+  'calendar.nextMonth': 'Next month',
+  'calendar.more': '{count} more',
+  'calendar.less': 'show less',
+  'calendar.undated': 'no due date: {count}',
+  'calendar.moved': 'Task {key} has a new due date',
+  'calendar.dueDateOff': 'The due date field is off',
+  'calendar.dueDateOffHint':
+    'The calendar lays tasks out by their due date. Turn the due date field on in the organization settings to use it.',
   'timeline.march': 'March 2026',
   'timeline.april': 'April',
 

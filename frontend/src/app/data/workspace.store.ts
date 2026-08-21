@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../core/i18n/i18n.service';
+import { TASK_VIEWS } from '../core/task-views';
 import { OnboardingService } from '../core/onboarding.service';
 import { firstValueFrom } from 'rxjs';
 import type {
@@ -16,6 +17,8 @@ import type {
   TaskPageDto,
   TaskFieldSettingDto,
   TaskQueryDto,
+  TaskViewCode,
+  TaskViewSettingDto,
   TeamDto,
   TransitionDto,
   UserDto,
@@ -116,6 +119,80 @@ export class WorkspaceStore {
       this.http.patch<TaskFieldSettingDto[]>('/api/workspace/task-fields', { projectId, fields }),
     );
     await this.load(true);
+  }
+
+  readonly taskViewSettings = computed<TaskViewSettingDto[]>(
+    () => this.bootstrapSignal()?.taskViewSettings ?? [],
+  );
+
+  taskViewEnabled(viewCode: TaskViewCode, projectId: string | null | undefined): boolean {
+    if (projectId) return this.resolveTaskView(viewCode, projectId);
+
+    const projects = this.activeProjects();
+    if (!projects.length) return this.resolveTaskView(viewCode, null);
+    return projects.some((project) => this.resolveTaskView(viewCode, project.id));
+  }
+
+  private resolveTaskView(viewCode: TaskViewCode, projectId: string | null): boolean {
+    const settings = this.taskViewSettings();
+    if (projectId) {
+      const own = settings.find(
+        (setting) => setting.projectId === projectId && setting.viewCode === viewCode,
+      );
+      if (own) return own.enabled;
+    }
+    const shared = settings.find(
+      (setting) => setting.projectId === null && setting.viewCode === viewCode,
+    );
+    return shared ? shared.enabled : true;
+  }
+
+  enabledViews(projectId: string | null | undefined): TaskViewCode[] {
+    const enabled = TASK_VIEWS.filter((view) => this.taskViewEnabled(view.code, projectId)).map(
+      (view) => view.code,
+    );
+    return enabled.length ? enabled : [TASK_VIEWS[0].code];
+  }
+
+  async updateTaskViewSettings(
+    projectId: string | null,
+    views: Record<string, boolean | null>,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<TaskViewSettingDto[]>('/api/workspace/task-views', { projectId, views }),
+    );
+    await this.load(true);
+  }
+
+  readonly defaultView = computed<TaskViewCode>(
+    () => this.bootstrapSignal()?.defaultView ?? 'board',
+  );
+
+  readonly resolvedDefaultView = computed<TaskViewCode>(() => {
+    const wanted = this.defaultView();
+    const available = this.enabledViews(null);
+    return available.includes(wanted) ? wanted : available[0];
+  });
+
+  async saveDefaultView(view: TaskViewCode): Promise<void> {
+    const previous = this.bootstrapSignal()?.defaultView;
+    this.patchDefaultView(view);
+
+    try {
+      const saved = await firstValueFrom(
+        this.http.put<{ view: TaskViewCode }>('/api/me/default-view', { view }),
+      );
+      this.patchDefaultView(saved.view);
+    } catch (error) {
+      if (previous) this.patchDefaultView(previous);
+      throw error;
+    }
+  }
+
+  private patchDefaultView(defaultView: TaskViewCode): void {
+    this.bootstrapSignal.update((bootstrap) =>
+      bootstrap ? { ...bootstrap, defaultView } : bootstrap,
+    );
   }
 
   readonly permissions = computed<readonly string[]>(

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import app.nowtask.automation.api.Automations;
+import app.nowtask.shared.TaskView;
 import app.nowtask.identity.OnboardingService;
 import app.nowtask.identity.api.NavItemView;
 import app.nowtask.identity.api.NavPreferences;
@@ -15,12 +16,14 @@ import app.nowtask.identity.api.OnboardingView;
 import app.nowtask.identity.api.TeamView;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
+import app.nowtask.identity.api.ViewPreferences;
 import app.nowtask.workspace.api.Workspace;
 import app.nowtask.workspace.api.WorkspaceViews.EpicView;
 import app.nowtask.workspace.api.WorkspaceViews.ProjectView;
 import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
 import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskViewSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @RestController
@@ -28,6 +31,7 @@ import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 class BootstrapController {
     private final UserDirectory users;
     private final NavPreferences navPreferences;
+    private final ViewPreferences viewPreferences;
     private final Workspace workspace;
     private final Automations automations;
     private final Tasks tasks;
@@ -36,12 +40,14 @@ class BootstrapController {
     BootstrapController(
             UserDirectory users,
             NavPreferences navPreferences,
+            ViewPreferences viewPreferences,
             Workspace workspace,
             Automations automations,
             Tasks tasks,
             OnboardingService onboarding) {
         this.users = users;
         this.navPreferences = navPreferences;
+        this.viewPreferences = viewPreferences;
         this.workspace = workspace;
         this.automations = automations;
         this.tasks = tasks;
@@ -58,8 +64,10 @@ class BootstrapController {
             List<EpicView> epics,
             List<SavedViewView> savedViews,
             List<TaskFieldSettingView> taskFieldSettings,
+            List<TaskViewSettingView> taskViewSettings,
             SettingsView settings,
             List<NavItemView> navigation,
+            TaskView defaultView,
             List<String> permissions,
             List<String> sprints,
             int activeRuleCount,
@@ -78,8 +86,10 @@ class BootstrapController {
                 workspace.epics(),
                 workspace.savedViews(),
                 workspace.taskFieldSettings(),
+                workspace.taskViewSettings(),
                 workspace.settings(),
                 navPreferences.currentNavigation(),
+                viewPreferences.currentDefaultView(),
                 app.nowtask.shared.OrganizationContextHolder.current().permissions().stream()
                         .map(app.nowtask.shared.Permission::code)
                         .sorted()

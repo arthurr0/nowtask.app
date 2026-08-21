@@ -354,6 +354,13 @@ export const pl = {
   'settings.rowHighlight': 'Podświetlanie wiersza pod kursorem',
   'settings.singleKey': 'Skróty klawiszowe jednoklawiszowe',
   'settings.allProjects': 'Wszystkie projekty',
+  'settings.views': 'Widoki zadań',
+  'settings.viewsLead':
+    'Wybierz widok, który otwiera się po wejściu do aplikacji. Lista zawiera tylko widoki włączone w organizacji.',
+  'settings.defaultView': 'Domyślny widok',
+  'settings.defaultViewHint':
+    'Jeśli organizacja wyłączy wybrany widok, aplikacja otworzy pierwszy dostępny.',
+  'settings.viewOpensFirst': 'otwiera się jako pierwszy',
   'settings.language': 'Język',
   'settings.langLead':
     'Język interfejsu jest niezależny od treści zadań. Tłumaczenia dociągają się osobnymi paczkami.',
@@ -377,6 +384,10 @@ export const pl = {
   'organization.taskFieldsOrg': 'Cała organizacja',
   'organization.taskFieldInherited': 'Dziedziczone',
   'organization.taskFieldInherit': 'Dziedzicz',
+  'organization.taskViews': 'Widoki zadań',
+  'organization.taskViewsLead':
+    'Zdecyduj, które formy wizualizacji zadań są dostępne w organizacji. Wyłączony widok znika z nawigacji i zakładek, a wejście na jego adres przenosi do pierwszego dostępnego.',
+  'organization.taskViewsLast': 'Przynajmniej jeden widok musi zostać włączony.',
   'organization.permissionOnly': 'Tylko: {permission}',
   'organization.statusesFlow': 'Statusy i przepływ',
   'organization.statusesLead':
@@ -628,6 +639,15 @@ export const pl = {
   'timeline.legendTask': 'Zadanie',
   'timeline.legendEpic': 'Epik',
   'timeline.legendMilestone': 'Kamień milowy',
+  'calendar.previousMonth': 'Poprzedni miesiąc',
+  'calendar.nextMonth': 'Następny miesiąc',
+  'calendar.more': 'jeszcze {count}',
+  'calendar.less': 'zwiń',
+  'calendar.undated': 'bez terminu: {count}',
+  'calendar.moved': 'Zadanie {key} ma nowy termin',
+  'calendar.dueDateOff': 'Pole terminu jest wyłączone',
+  'calendar.dueDateOffHint':
+    'Kalendarz układa zadania według terminu. Włącz pole terminu w ustawieniach organizacji, żeby z niego korzystać.',
   'timeline.march': 'Marzec 2026',
   'timeline.april': 'Kwiecień',
 

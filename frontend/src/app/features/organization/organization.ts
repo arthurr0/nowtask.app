@@ -16,11 +16,13 @@ import type {
   PermissionDto,
   RoleDto,
   StatusDto,
+  TaskViewCode,
   TeamDto,
   UserDto,
   WorkspaceSettingsDto,
 } from '../../core/api-types';
 import { TASK_FIELDS, customFieldKey } from '../../core/task-fields';
+import { TASK_VIEWS } from '../../core/task-views';
 import {
   OrganizationStore,
   IntegrationsStore,
@@ -54,6 +56,7 @@ type Section =
   | 'roles'
   | 'fields'
   | 'taskFields'
+  | 'taskViews'
   | 'flow'
   | 'epics'
   | 'regional'
@@ -74,6 +77,14 @@ interface TaskFieldRow {
   inherited: boolean;
 }
 
+interface TaskViewRow {
+  code: TaskViewCode;
+  label: string;
+  icon: string;
+  enabled: boolean;
+  inherited: boolean;
+}
+
 const SECTION_GROUPS: readonly { label: string; items: readonly SectionItem[] }[] = [
   {
     label: 'organization.people',
@@ -87,6 +98,7 @@ const SECTION_GROUPS: readonly { label: string; items: readonly SectionItem[] }[
     items: [
       { id: 'fields', icon: 'sliders', label: 'organization.customFields' },
       { id: 'taskFields', icon: 'filter', label: 'organization.taskFields' },
+      { id: 'taskViews', icon: 'calendar', label: 'organization.taskViews' },
       { id: 'flow', icon: 'board', label: 'organization.statusesFlow' },
       { id: 'epics', icon: 'layers', label: 'organization.epics' },
     ],
@@ -153,6 +165,7 @@ export class Organization implements OnInit {
 
   protected readonly workspaceSettings = signal<WorkspaceSettingsDto | null>(null);
   protected readonly fieldScope = signal<string>('');
+  protected readonly viewScope = signal<string>('');
   protected readonly fieldDialogOpen = signal(false);
   protected readonly editedField = signal<CustomFieldDto | null>(null);
   protected readonly statusDialogOpen = signal(false);
@@ -606,6 +619,64 @@ export class Organization implements OnInit {
   private async saveTaskField(key: string, value: boolean | null): Promise<void> {
     await this.run(() =>
       this.store.updateTaskFieldSettings(this.fieldScope() || null, { [key]: value }),
+    );
+  }
+
+  protected readonly viewScopeItems = computed<MenuItem[]>(() => [
+    {
+      id: '',
+      label: this.t('organization.taskFieldsOrg'),
+      checked: this.viewScope() === '',
+    },
+    ...this.store.activeProjects().map((project) => ({
+      id: project.id,
+      label: `${project.name} (${project.code})`,
+      checked: this.viewScope() === project.id,
+    })),
+  ]);
+
+  protected readonly viewScopeLabel = computed(() => {
+    const project = this.store.project(this.viewScope() || null);
+    return project ? `${project.name} (${project.code})` : this.t('organization.taskFieldsOrg');
+  });
+
+  protected readonly taskViewRows = computed<TaskViewRow[]>(() => {
+    const scope = this.viewScope() || null;
+    const settings = this.store.taskViewSettings();
+
+    return TASK_VIEWS.map((view) => {
+      const own = settings.find(
+        (setting) => setting.viewCode === view.code && (setting.projectId ?? null) === scope,
+      );
+      const shared = settings.find(
+        (setting) => setting.viewCode === view.code && setting.projectId === null,
+      );
+
+      return {
+        code: view.code,
+        label: this.t(view.label),
+        icon: view.icon,
+        enabled: own ? own.enabled : shared ? shared.enabled : true,
+        inherited: scope !== null && !own,
+      };
+    });
+  });
+
+  protected readonly lastEnabledView = computed(
+    () => this.taskViewRows().filter((row) => row.enabled).length <= 1,
+  );
+
+  async toggleTaskView(row: TaskViewRow): Promise<void> {
+    await this.saveTaskView(row.code, !row.enabled);
+  }
+
+  async inheritTaskView(row: TaskViewRow): Promise<void> {
+    await this.saveTaskView(row.code, null);
+  }
+
+  private async saveTaskView(code: TaskViewCode, value: boolean | null): Promise<void> {
+    await this.run(() =>
+      this.store.updateTaskViewSettings(this.viewScope() || null, { [code]: value }),
     );
   }
 

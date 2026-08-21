@@ -497,7 +497,7 @@ export class TaskDetail {
     try {
       await this.store.deleteTask(this.key());
       this.toast.success(this.t('board.deleted', { key: this.key() }));
-      void this.router.navigate(['/app/board']);
+      void this.router.navigate(['/app']);
     } catch (error) {
       this.toast.error(this.errorText(error));
     }

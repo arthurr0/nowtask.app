@@ -14,6 +14,7 @@ import { RulesStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { AuthService } from '../../core/auth.service';
 import { ActiveOrgService } from '../../core/active-org';
+import { TASK_VIEWS } from '../../core/task-views';
 import { OrgService } from '../../core/org.service';
 import { OnboardingService } from '../../core/onboarding.service';
 import { Avatar } from '../../ui/avatar';
@@ -42,6 +43,7 @@ const NAV_ENTRIES: readonly NavEntry[] = [
   { code: 'board', path: '/app/board', icon: 'board', label: 'nav.board' },
   { code: 'list', path: '/app/list', icon: 'list', label: 'nav.list' },
   { code: 'timeline', path: '/app/timeline', icon: 'timeline', label: 'nav.timeline' },
+  { code: 'calendar', path: '/app/calendar', icon: 'calendar', label: 'nav.calendar' },
   { code: 'automations', path: '/app/automations', icon: 'bolt', label: 'nav.automations' },
   { code: 'agents', path: '/app/agents', icon: 'agent', label: 'nav.agents' },
   { code: 'reports', path: '/app/reports', icon: 'chart', label: 'nav.reports' },
@@ -138,21 +140,29 @@ export class Shell implements OnInit {
       ),
   );
 
+  private available(code: NavItemCode): boolean {
+    const view = TASK_VIEWS.find((item) => item.code === code);
+    return view === undefined || this.store.taskViewEnabled(view.code, null);
+  }
+
   protected readonly nav = computed<NavEntry[]>(() =>
     this.navItems()
-      .filter((item) => !item.hidden)
+      .filter((item) => !item.hidden && this.available(item.code))
       .map((item) => entry(item.code))
       .filter((item): item is NavEntry => item !== null),
   );
 
   protected readonly mobileNav = computed(() =>
-    MOBILE_NAV.filter((item) => item.code === null || !this.hiddenCodes().has(item.code)),
+    MOBILE_NAV.filter(
+      (item) =>
+        item.code === null || (!this.hiddenCodes().has(item.code) && this.available(item.code)),
+    ),
   );
 
   protected readonly navMenu = computed<MenuItem[]>(() => {
     const items: MenuItem[] = this.navItems().flatMap((item) => {
       const known = entry(item.code);
-      if (!known) return [];
+      if (!known || !this.available(item.code)) return [];
       return [
         {
           id: known.code,
@@ -198,7 +208,7 @@ export class Shell implements OnInit {
     if (item.id === this.organization()?.organizationId) return;
     try {
       await this.orgs.switchTo(item.id);
-      window.location.assign('/app/board');
+      window.location.assign('/app');
     } catch (error) {
       this.toast.error(this.errorText(error));
     }
@@ -321,7 +331,7 @@ export class Shell implements OnInit {
   selectProject(project: ProjectDto): void {
     const already = this.state.projectId() === project.id;
     this.state.projectId.set(already ? null : project.id);
-    if (!already) void this.router.navigate(['/app/board']);
+    if (!already) void this.router.navigate(['/app']);
   }
 
   clearProject(): void {

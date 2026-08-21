@@ -12,6 +12,7 @@ import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
 import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskViewSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 public interface Workspace {
@@ -47,6 +48,10 @@ public interface Workspace {
     List<TaskFieldSettingView> taskFieldSettings();
 
     Set<String> disabledTaskFields(UUID projectId);
+
+    List<TaskViewSettingView> taskViewSettings();
+
+    Set<String> disabledTaskViews(UUID projectId);
 
     boolean transitionAllowed(UUID fromStatus, UUID toStatus);
 }

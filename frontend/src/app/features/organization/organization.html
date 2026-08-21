@@ -474,6 +474,69 @@
           </section>
         }
 
+        @case ('taskViews') {
+          <section class="flex flex-col gap-5">
+            <header class="flex flex-wrap items-start gap-4">
+              <div class="flex flex-1 flex-col gap-1">
+                <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
+                  {{ t('organization.taskViews') }}
+                </h1>
+                <p class="max-w-[720px] text-[13px] text-ink-2">
+                  {{ t('organization.taskViewsLead') }}
+                </p>
+              </div>
+              <ui-menu
+                [items]="viewScopeItems()"
+                triggerClass="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
+                triggerHeight="32px"
+                ariaLabel="organization.taskFieldsScope"
+                align="end"
+                (selected)="viewScope.set($any($event.id))"
+              >
+                <ui-icon name="layers" [size]="14" />
+                <span>{{ viewScopeLabel() }}</span>
+              </ui-menu>
+            </header>
+
+            <div class="flex flex-col">
+              @for (row of taskViewRows(); track row.code) {
+                <div class="flex min-h-[46px] items-center gap-4 border-b border-line">
+                  <ui-icon
+                    [name]="row.icon"
+                    [size]="16"
+                    [class.text-ink-3]="!row.enabled"
+                    [class.text-ink-2]="row.enabled"
+                  />
+                  <span class="flex-1 truncate text-[13px]" [class.text-ink-3]="!row.enabled">
+                    {{ row.label }}
+                  </span>
+                  @if (row.inherited) {
+                    <span class="text-xs text-ink-3">{{
+                      t('organization.taskFieldInherited')
+                    }}</span>
+                  } @else if (viewScope()) {
+                    <button
+                      type="button"
+                      class="text-xs text-ink-2 underline"
+                      (click)="inheritTaskView(row)"
+                    >
+                      {{ t('organization.taskFieldInherit') }}
+                    </button>
+                  }
+                  <ui-switch
+                    [checked]="row.enabled"
+                    [label]="row.label"
+                    [disabled]="row.enabled && lastEnabledView()"
+                    (toggled)="toggleTaskView(row)"
+                  />
+                </div>
+              }
+            </div>
+
+            <p class="text-xs text-ink-3">{{ t('organization.taskViewsLast') }}</p>
+          </section>
+        }
+
         @case ('flow') {
           <section class="flex flex-col gap-6">
             <header class="flex flex-col gap-1">

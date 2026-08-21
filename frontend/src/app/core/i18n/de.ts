@@ -356,6 +356,13 @@ export const de: Dictionary = {
   'settings.rowHighlight': 'Zeile unter dem Cursor hervorheben',
   'settings.singleKey': 'Ein-Tasten-Kürzel',
   'settings.allProjects': 'Alle Projekte',
+  'settings.views': 'Aufgabenansichten',
+  'settings.viewsLead':
+    'Wähle die Ansicht, die beim Start der App erscheint. Die Liste enthält nur Ansichten, die die Organisation aktiviert hat.',
+  'settings.defaultView': 'Standardansicht',
+  'settings.defaultViewHint':
+    'Schaltet die Organisation die gewählte Ansicht ab, öffnet die App die erste verfügbare.',
+  'settings.viewOpensFirst': 'öffnet sich zuerst',
   'settings.language': 'Sprache',
   'settings.langLead':
     'Die Interface-Sprache ist unabhängig vom Aufgabeninhalt. Übersetzungen laden als eigene Pakete.',
@@ -378,6 +385,10 @@ export const de: Dictionary = {
   'organization.taskFieldsOrg': 'Gesamte Organisation',
   'organization.taskFieldInherited': 'Geerbt',
   'organization.taskFieldInherit': 'Erben',
+  'organization.taskViews': 'Aufgabenansichten',
+  'organization.taskViewsLead':
+    'Lege fest, welche Aufgabenansichten die Organisation anbietet. Eine abgeschaltete Ansicht verschwindet aus Navigation und Reitern, ihre Adresse führt zur ersten verfügbaren Ansicht.',
+  'organization.taskViewsLast': 'Mindestens eine Ansicht muss aktiv bleiben.',
   'organization.permissionOnly': 'Nur: {permission}',
   'organization.statusesFlow': 'Status und Ablauf',
   'organization.statusesLead':
@@ -631,6 +642,15 @@ export const de: Dictionary = {
   'timeline.legendTask': 'Aufgabe',
   'timeline.legendEpic': 'Epic',
   'timeline.legendMilestone': 'Meilenstein',
+  'calendar.previousMonth': 'Voriger Monat',
+  'calendar.nextMonth': 'Nächster Monat',
+  'calendar.more': '{count} weitere',
+  'calendar.less': 'weniger anzeigen',
+  'calendar.undated': 'ohne Termin: {count}',
+  'calendar.moved': 'Aufgabe {key} hat einen neuen Termin',
+  'calendar.dueDateOff': 'Das Terminfeld ist abgeschaltet',
+  'calendar.dueDateOffHint':
+    'Der Kalender ordnet Aufgaben nach ihrem Termin. Schalte das Terminfeld in den Organisationseinstellungen ein, um ihn zu nutzen.',
   'timeline.march': 'März 2026',
   'timeline.april': 'April',
 

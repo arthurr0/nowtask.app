@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService } from '../core/i18n/i18n.service';
+import { TASK_VIEWS } from '../core/task-views';
 import type { SearchResultDto } from '../data/workspace.store';
 import { ViewState } from '../data/view-state';
 import { WorkspaceStore } from '../data/workspace.store';
@@ -206,30 +207,14 @@ export class CommandPaletteDialog {
         icon: 'plus',
         run: () => this.composer.open(),
       },
-      {
-        id: 'action-board',
+      ...TASK_VIEWS.filter((view) => this.store.taskViewEnabled(view.code, null)).map((view) => ({
+        id: 'action-' + view.code,
         group: 'palette.actions',
-        label: this.t('nav.board'),
+        label: this.t(view.label),
         hint: '',
-        icon: 'board',
-        run: () => void this.router.navigate(['/app/board']),
-      },
-      {
-        id: 'action-list',
-        group: 'palette.actions',
-        label: this.t('nav.list'),
-        hint: '',
-        icon: 'list',
-        run: () => void this.router.navigate(['/app/list']),
-      },
-      {
-        id: 'action-timeline',
-        group: 'palette.actions',
-        label: this.t('nav.timeline'),
-        hint: '',
-        icon: 'timeline',
-        run: () => void this.router.navigate(['/app/timeline']),
-      },
+        icon: view.icon,
+        run: () => void this.router.navigate([view.path]),
+      })),
       {
         id: 'action-automations',
         group: 'palette.actions',

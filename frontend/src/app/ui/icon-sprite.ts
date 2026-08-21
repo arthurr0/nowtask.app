@@ -51,6 +51,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
         </symbol>
         <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></symbol>
         <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m10 7 5 5-5 5" /></symbol>
+        <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5" /></symbol>
         <symbol id="i-dots" viewBox="0 0 24 24">
           <circle cx="6" cy="12" r="1.3" style="fill: currentColor; stroke: none" />
           <circle cx="12" cy="12" r="1.3" style="fill: currentColor; stroke: none" />

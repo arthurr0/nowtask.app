@@ -61,6 +61,9 @@ public final class WorkspaceViews {
     public record TaskFieldSettingView(String fieldKey, UUID projectId, boolean enabled) {
     }
 
+    public record TaskViewSettingView(String viewCode, UUID projectId, boolean enabled) {
+    }
+
     public record SettingsView(
             String dateFormat,
             String timeFormat,

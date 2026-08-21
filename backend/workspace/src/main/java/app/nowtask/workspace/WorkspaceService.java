@@ -23,6 +23,7 @@ import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 import app.nowtask.workspace.api.WorkspaceViews.SettingsView;
 import app.nowtask.workspace.api.WorkspaceViews.StatusView;
 import app.nowtask.workspace.api.WorkspaceViews.TaskFieldSettingView;
+import app.nowtask.workspace.api.WorkspaceViews.TaskViewSettingView;
 import app.nowtask.workspace.api.WorkspaceViews.TransitionView;
 
 @Service
@@ -188,6 +189,32 @@ class WorkspaceService implements Workspace {
                 effective.putIfAbsent(setting.fieldKey(), setting.enabled());
             } else if (setting.projectId().equals(projectId)) {
                 effective.put(setting.fieldKey(), setting.enabled());
+            }
+        }
+        return effective.entrySet().stream()
+                .filter(entry -> !entry.getValue())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public List<TaskViewSettingView> taskViewSettings() {
+        return jdbc.sql("SELECT view_code, project_id, enabled FROM task_view_setting ORDER BY project_id, view_code")
+                .query((rs, rowNum) -> new TaskViewSettingView(
+                        rs.getString("view_code"),
+                        rs.getObject("project_id", UUID.class),
+                        rs.getBoolean("enabled")))
+                .list();
+    }
+
+    @Override
+    public Set<String> disabledTaskViews(UUID projectId) {
+        Map<String, Boolean> effective = new HashMap<>();
+        for (TaskViewSettingView setting : taskViewSettings()) {
+            if (setting.projectId() == null) {
+                effective.putIfAbsent(setting.viewCode(), setting.enabled());
+            } else if (setting.projectId().equals(projectId)) {
+                effective.put(setting.viewCode(), setting.enabled());
             }
         }
         return effective.entrySet().stream()

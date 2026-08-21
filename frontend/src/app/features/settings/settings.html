@@ -664,6 +664,43 @@
         </section>
       }
 
+      @case ('views') {
+        <section class="flex flex-col gap-6">
+          <header class="flex flex-col gap-1">
+            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">{{ t('settings.views') }}</h1>
+            <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('settings.viewsLead') }}</p>
+          </header>
+
+          <div class="flex w-full max-w-[620px] flex-col gap-2.5">
+            <span class="kap">{{ t('settings.defaultView') }}</span>
+            <div class="flex flex-wrap gap-3">
+              @for (choice of viewChoices(); track choice.code) {
+                <button
+                  type="button"
+                  class="flex w-[142px] flex-col gap-2 rounded-panel border p-3 text-left"
+                  [class.border-ink]="store.defaultView() === choice.code"
+                  [class.ring-1]="store.defaultView() === choice.code"
+                  [class.ring-ink]="store.defaultView() === choice.code"
+                  [class.border-line]="store.defaultView() !== choice.code"
+                  [disabled]="defaultViewSaving()"
+                  [attr.aria-pressed]="store.defaultView() === choice.code"
+                  (click)="selectDefaultView(choice.code)"
+                >
+                  <span
+                    class="flex h-8 w-8 items-center justify-center rounded-[7px] bg-surface-2 text-ink-2"
+                  >
+                    <ui-icon [name]="choice.icon" [size]="17" />
+                  </span>
+                  <span class="text-[13px] font-medium">{{ t(choice.label) }}</span>
+                  <span class="text-xs text-ink-3">{{ t('settings.viewOpensFirst') }}</span>
+                </button>
+              }
+            </div>
+            <p class="text-xs text-ink-3">{{ t('settings.defaultViewHint') }}</p>
+          </div>
+        </section>
+      }
+
       @case ('language') {
         <section class="flex flex-col gap-6">
           <header class="flex flex-col gap-1">

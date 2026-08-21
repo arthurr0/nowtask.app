@@ -10,6 +10,7 @@ public enum NavItemCode {
     BOARD("board"),
     LIST("list"),
     TIMELINE("timeline"),
+    CALENDAR("calendar"),
     AUTOMATIONS("automations"),
     AGENTS("agents"),
     REPORTS("reports");
