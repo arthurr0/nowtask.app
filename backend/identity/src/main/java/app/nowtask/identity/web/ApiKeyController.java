@@ -25,7 +25,8 @@ import app.nowtask.identity.api.ApiKeyView;
 import app.nowtask.identity.api.ApiKeys;
 import app.nowtask.identity.api.AuditLog;
 import app.nowtask.identity.api.UserDirectory;
-import app.nowtask.shared.RoleId;
+import app.nowtask.shared.OrganizationContextHolder;
+import app.nowtask.shared.Permission;
 
 @RestController
 @RequestMapping("/api/admin/api-keys")
@@ -82,8 +83,8 @@ class ApiKeyController {
         if (authentication != null && authentication.getPrincipal() instanceof ApiKeyIdentity) {
             throw new AccessDeniedException("An API key cannot manage API keys");
         }
-        if (directory.currentUser().role() != RoleId.ADMIN) {
-            throw new AccessDeniedException("Managing API keys requires the administrator role");
+        if (!OrganizationContextHolder.current().can(Permission.APIKEYS_MANAGE)) {
+            throw new AccessDeniedException("Managing API keys requires the apikeys.manage permission");
         }
     }
 }

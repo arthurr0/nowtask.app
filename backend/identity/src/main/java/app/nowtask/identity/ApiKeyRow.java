@@ -5,6 +5,8 @@ import java.util.UUID;
 
 record ApiKeyRow(
         UUID id,
+        UUID organizationId,
+        UUID roleId,
         String prefix,
         String label,
         String tokenHash,

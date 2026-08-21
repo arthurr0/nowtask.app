@@ -7,7 +7,7 @@ public final class PermissionsAccess {
     private PermissionsAccess() {
     }
 
-    public static List<PermissionView> all() {
-        return Permissions.ALL;
+    public static List<PermissionView> catalog() {
+        return Permissions.CATALOG;
     }
 }

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 class ApiKeyRepository {
-    private static final String COLUMNS =
-            "id, prefix, label, token_hash, scopes, owner_id, last_used_at, created_at, expires_at, revoked_at";
+    private static final String COLUMNS = "id, organization_id, role_id, prefix, label, token_hash,"
+            + " scopes, owner_id, last_used_at, created_at, expires_at, revoked_at";
 
     private final JdbcClient jdbc;
 
@@ -28,7 +28,7 @@ class ApiKeyRepository {
     }
 
     Optional<ApiKeyRow> findByPrefix(String prefix) {
-        return jdbc.sql("SELECT " + COLUMNS + " FROM api_key WHERE prefix = :prefix")
+        return jdbc.sql("SELECT " + COLUMNS + " FROM api_key_lookup(:prefix)")
                 .param("prefix", prefix)
                 .query(ApiKeyRepository::map)
                 .optional();
@@ -43,10 +43,14 @@ class ApiKeyRepository {
 
     void insert(ApiKeyRow row, UUID createdBy) {
         jdbc.sql("""
-                INSERT INTO api_key (id, prefix, label, token_hash, scopes, owner_id, created_by, created_at, expires_at)
-                VALUES (:id, :prefix, :label, :tokenHash, :scopes, :ownerId, :createdBy, :createdAt, :expiresAt)
+                INSERT INTO api_key (id, organization_id, role_id, prefix, label, token_hash, scopes,
+                                     owner_id, created_by, created_at, expires_at)
+                VALUES (:id, :organizationId, :roleId, :prefix, :label, :tokenHash, :scopes,
+                        :ownerId, :createdBy, :createdAt, :expiresAt)
                 """)
                 .param("id", row.id())
+                .param("organizationId", row.organizationId())
+                .param("roleId", row.roleId())
                 .param("prefix", row.prefix())
                 .param("label", row.label())
                 .param("tokenHash", row.tokenHash())
@@ -66,15 +70,18 @@ class ApiKeyRepository {
     }
 
     void touch(UUID id, Instant at) {
-        jdbc.sql("UPDATE api_key SET last_used_at = :at WHERE id = :id")
-                .param("at", Timestamp.from(at))
+        jdbc.sql("SELECT api_key_touch(:id, :at)")
                 .param("id", id)
-                .update();
+                .param("at", Timestamp.from(at))
+                .query(String.class)
+                .list();
     }
 
     private static ApiKeyRow map(ResultSet rs, int rowNum) throws SQLException {
         return new ApiKeyRow(
                 rs.getObject("id", UUID.class),
+                rs.getObject("organization_id", UUID.class),
+                rs.getObject("role_id", UUID.class),
                 rs.getString("prefix"),
                 rs.getString("label"),
                 rs.getString("token_hash"),

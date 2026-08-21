@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import app.nowtask.identity.MemberService;
+import app.nowtask.identity.RoleService;
+import app.nowtask.identity.api.RoleView;
 import app.nowtask.identity.api.Audits;
 import app.nowtask.identity.api.PermissionView;
 import app.nowtask.identity.api.TeamView;
@@ -29,11 +31,13 @@ class AdminController {
     private final UserDirectory directory;
     private final Audits audits;
     private final MemberService members;
+    private final RoleService roles;
 
-    AdminController(UserDirectory directory, Audits audits, MemberService members) {
+    AdminController(UserDirectory directory, Audits audits, MemberService members, RoleService roles) {
         this.directory = directory;
         this.audits = audits;
         this.members = members;
+        this.roles = roles;
     }
 
     @GetMapping("/members")
@@ -104,9 +108,12 @@ class AdminController {
         return members.removeMember(id, userId);
     }
 
+    record PermissionCatalog(List<PermissionView> catalog, List<RoleView> roles) {
+    }
+
     @GetMapping("/permissions")
-    List<PermissionView> permissions() {
-        return app.nowtask.identity.PermissionsAccess.all();
+    PermissionCatalog permissions() {
+        return new PermissionCatalog(app.nowtask.identity.PermissionsAccess.catalog(), roles.list());
     }
 
     @GetMapping("/audit")

@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public record ApiKeyIdentity(
         UUID keyId,
+        UUID organizationId,
+        UUID roleId,
         String prefix,
         String label,
         UUID ownerId,

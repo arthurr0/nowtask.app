@@ -14,6 +14,8 @@ import app.nowtask.identity.api.ApiKeyView;
 import app.nowtask.identity.api.ApiKeys;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.RuleViolationException;
 
 @Service
@@ -51,8 +53,12 @@ class ApiKeyService implements ApiKeys, ApiKeyAuthenticator {
         Instant now = Instant.now();
         String token = ApiKeyTokens.generate();
 
+        OrganizationContext context = OrganizationContextHolder.current();
+
         ApiKeyRow row = new ApiKeyRow(
                 UUID.randomUUID(),
+                context.requireOrganizationId(),
+                context.roleId(),
                 ApiKeyTokens.prefixOf(token),
                 trimmed,
                 ApiKeyTokens.hash(token),
@@ -101,8 +107,14 @@ class ApiKeyService implements ApiKeys, ApiKeyAuthenticator {
         }
 
         keys.touch(row.id(), now);
+        if (row.organizationId() == null) {
+            return Optional.empty();
+        }
+
         return Optional.of(new ApiKeyIdentity(
                 row.id(),
+                row.organizationId(),
+                row.roleId(),
                 row.prefix(),
                 row.label(),
                 row.ownerId(),
