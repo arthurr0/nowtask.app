@@ -197,11 +197,13 @@ export function registerAllTools(server: McpServer, client: NowtaskClient): void
       'Create a new task and return it, including the task key that nowtask assigns. ' +
       'Only the title is mandatory; everything else is optional and can be filled in later with nowtask_task_update. ' +
       'Write the title as a short imperative sentence in the language the workspace uses. ' +
-      'Do not invent UUIDs: take statusId, assigneeId, reviewerId and epicId from nowtask_workspace, or leave them out.',
+      'Do not invent UUIDs: take statusId, projectId, assigneeId, reviewerId and epicId from nowtask_workspace, or leave them out.',
     inputSchema: {
       title: z.string().min(1).max(300).describe('Short title, one line, no trailing period.'),
       description: z.string().optional().describe('Longer description. Plain text, newlines allowed.'),
       statusId: uuid('Starting status. Omitted means the first status of the workflow.').optional(),
+      projectId: uuid('Project the task belongs to. Omitted means the first project of the workspace.').optional(),
+      sprintCode: z.string().optional().describe('Sprint code the task starts in, for example "2026-S3".'),
       priority: z.enum(['critical', 'high', 'medium', 'low']).optional().describe('Priority. Defaults to medium.'),
       assigneeId: uuid('Person responsible for the work.').optional(),
       reviewerId: uuid('Person who reviews the result.').optional(),

@@ -165,7 +165,7 @@ Beyond scopes there are hard boundaries that no scope unlocks:
 | `nowtask_task_get` | `tasks:read` | task details with subtasks and links |
 | `nowtask_task_comments` | `tasks:read` | |
 | `nowtask_task_history` | `tasks:read` | |
-| `nowtask_task_create` | `tasks:write` | |
+| `nowtask_task_create` | `tasks:write` | without `projectId` the task lands in the first project of the workspace |
 | `nowtask_task_update` | `tasks:write` | an omitted field stays unchanged, `null` clears it |
 | `nowtask_task_set_status` | `tasks:write` | accepts `statusCode` or `statusId` |
 | `nowtask_task_add_comment` | `tasks:write` | a comment cannot be changed or deleted later |
