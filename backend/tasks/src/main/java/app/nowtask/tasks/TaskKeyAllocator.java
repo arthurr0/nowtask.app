@@ -33,7 +33,7 @@ class TaskKeyAllocator {
         jdbc.sql("""
                         INSERT INTO task_key_sequence (project_id, next_value)
                         VALUES (?, 1)
-                        ON CONFLICT (project_id) DO NOTHING
+                        ON CONFLICT (organization_id, project_id) DO NOTHING
                         """)
                 .param(projectId)
                 .update();

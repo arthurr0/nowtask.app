@@ -56,7 +56,7 @@ class TaskController {
 
     @GetMapping("/{key}")
     TaskDetail detail(@PathVariable String key) {
-        return tasks.detail(key, users.currentUser().role());
+        return tasks.detail(key);
     }
 
     @PatchMapping("/{key}")
@@ -148,7 +148,7 @@ class TaskController {
     @PutMapping("/{key}/custom/{fieldKey}")
     TaskDetail setCustomValue(
             @PathVariable String key, @PathVariable String fieldKey, @RequestBody CustomValue request) {
-        return tasks.setCustomValue(key, fieldKey, request.value(), users.currentUser().role());
+        return tasks.setCustomValue(key, fieldKey, request.value());
     }
 
     record Watching(boolean watching) {

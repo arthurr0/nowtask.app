@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import app.nowtask.automation.api.AutomationViews.RuleUsage;
@@ -16,7 +17,10 @@ import app.nowtask.automation.api.AutomationViews.RunView;
 import app.nowtask.automation.api.Automations;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.RuleViolationException;
+import app.nowtask.shared.events.ConfigEvents;
 
 @Service
 @Transactional
@@ -25,13 +29,15 @@ public class AutomationService implements Automations {
     private final AutomationRunRepository runs;
     private final RuleEngine engine;
     private final UserDirectory users;
+    private final ApplicationEventPublisher events;
 
     AutomationService(AutomationRuleRepository rules, AutomationRunRepository runs, RuleEngine engine,
-            UserDirectory users) {
+            UserDirectory users, ApplicationEventPublisher events) {
         this.rules = rules;
         this.runs = runs;
         this.engine = engine;
         this.users = users;
+        this.events = events;
     }
 
     public record RunReport(int matched, int applied, int skipped, List<String> taskKeys) {
@@ -173,6 +179,13 @@ public class AutomationService implements Automations {
     public RuleView toggle(UUID id) {
         AutomationRule rule = rules.findById(id).orElseThrow(() -> NotFoundException.of("Rule", id));
         rule.setEnabled(!rule.isEnabled());
+
+        OrganizationContext context = OrganizationContextHolder.currentOrNull();
+        if (context != null && context.hasOrganization()) {
+            events.publishEvent(new ConfigEvents.RuleToggled(
+                    context.organizationId(), rule.getId(), rule.isEnabled(), context.userId()));
+        }
+
         return toView(rule);
     }
 

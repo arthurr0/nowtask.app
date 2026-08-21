@@ -21,7 +21,8 @@ import app.nowtask.shared.NotFoundException;
 import app.nowtask.shared.ActorContext;
 import app.nowtask.shared.PatchBody;
 import app.nowtask.shared.Priority;
-import app.nowtask.shared.RoleId;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
 import app.nowtask.shared.TaskQuery;
@@ -89,7 +90,7 @@ public class TaskService implements Tasks {
     }
 
     @Transactional(readOnly = true)
-    public TaskDetail detail(String key, RoleId viewerRole) {
+    public TaskDetail detail(String key) {
         Task task = require(key);
         List<SubtaskView> subtaskViews = subtaskViews(task);
 
@@ -101,7 +102,7 @@ public class TaskService implements Tasks {
                 task.getAttachmentCount(),
                 watchers.countByTaskId(task.getId()),
                 watchers.findByTaskIdAndUserId(task.getId(), users.currentUser().id()).isPresent(),
-                visibleCustomFields(task, viewerRole),
+                visibleCustomFields(task),
                 subtaskViews,
                 relationsOf(task.getId()));
     }
@@ -373,12 +374,13 @@ public class TaskService implements Tasks {
         return relationsOf(task.getId());
     }
 
-    public TaskDetail setCustomValue(String key, String fieldKey, Object value, RoleId viewerRole) {
+    public TaskDetail setCustomValue(String key, String fieldKey, Object value) {
         Task task = require(key);
         CustomFieldView field = workspace.customFieldByKey(fieldKey)
                 .orElseThrow(() -> NotFoundException.of("Custom field", fieldKey));
 
-        if (field.restrictedToRole() != null && !viewerRole.seesProtectedFields()) {
+        if (field.requiredPermission() != null
+                && !OrganizationContextHolder.current().can(field.requiredPermission())) {
             throw new RuleViolationException("Field " + field.name() + " is not available to this role");
         }
 
@@ -393,7 +395,7 @@ public class TaskService implements Tasks {
         task.touch();
         record(task, "custom." + fieldKey, null, value == null ? null : value.toString(), users.currentUser().id());
 
-        return detail(key, viewerRole);
+        return detail(key);
     }
 
     public boolean toggleWatch(String key) {
@@ -703,15 +705,18 @@ public class TaskService implements Tasks {
                 .list();
     }
 
-    private Map<String, Object> visibleCustomFields(Task task, RoleId viewerRole) {
-        if (viewerRole.seesProtectedFields()) {
-            return task.getCustom();
-        }
+    private Map<String, Object> visibleCustomFields(Task task) {
+        OrganizationContext context = OrganizationContextHolder.current();
 
         List<String> restricted = workspace.customFields().stream()
-                .filter(field -> field.restrictedToRole() != null)
+                .filter(field -> field.requiredPermission() != null)
+                .filter(field -> !context.can(field.requiredPermission()))
                 .map(CustomFieldView::fieldKey)
                 .toList();
+
+        if (restricted.isEmpty()) {
+            return task.getCustom();
+        }
 
         Map<String, Object> visible = new LinkedHashMap<>(task.getCustom());
         restricted.forEach(visible::remove);
