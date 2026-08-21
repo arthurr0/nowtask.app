@@ -102,6 +102,129 @@
       </div>
     </section>
 
+    <section id="compare" class="scroll-mt-20 border-b border-line">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="flex max-w-[760px] flex-col gap-4">
+          <span class="kap">{{ copy.compare.eyebrow }}</span>
+          <h2
+            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+          >
+            {{ copy.compare.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.compare.body }}</p>
+        </div>
+
+        <div class="mt-12 overflow-hidden rounded-panel border border-line">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] border-separate border-spacing-0 text-left">
+              <caption class="sr-only">
+                {{
+                  copy.compare.title
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    class="kap sticky left-0 z-10 min-w-[280px] border-r border-line bg-surface px-5 py-4 text-left"
+                  >
+                    {{ copy.compare.featureHeading }}
+                  </th>
+                  @for (column of copy.compare.columns; track column; let first = $first) {
+                    <th
+                      scope="col"
+                      class="min-w-[112px] px-4 py-4 text-center text-[13px]"
+                      [class]="
+                        first
+                          ? 'bg-surface-2 font-semibold text-ink'
+                          : 'bg-surface font-medium text-ink-2'
+                      "
+                    >
+                      @if (first) {
+                        <span class="inline-flex items-center gap-2">
+                          <ui-logo [size]="17" [tile]="false" />
+                          {{ column }}
+                        </span>
+                      } @else {
+                        {{ column }}
+                      }
+                    </th>
+                  }
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (row of copy.compare.rows; track row.label) {
+                  <tr>
+                    <th
+                      scope="row"
+                      class="sticky left-0 z-10 border-t border-r border-line bg-bg px-5 py-4 text-[13px] leading-[1.6] font-normal text-ink-2"
+                    >
+                      {{ row.label }}
+                    </th>
+                    @for (value of row.values; track $index; let first = $first) {
+                      <td
+                        class="border-t border-line px-4 py-4 text-center"
+                        [class.bg-surface]="first"
+                      >
+                        <span class="inline-flex items-center justify-center">
+                          @switch (value) {
+                            @case ('yes') {
+                              <ui-icon name="check" [size]="18" class="text-done-ink" />
+                            }
+                            @case ('partial') {
+                              <span class="block h-px w-3.5 rounded-full bg-ink-3"></span>
+                            }
+                            @default {
+                              <ui-icon name="x" [size]="16" class="text-ink-3 opacity-55" />
+                            }
+                          }
+                          <span class="sr-only">{{ stateLabel(value) }}</span>
+                        </span>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            @for (item of copy.compare.legend; track item.state) {
+              <span class="flex items-center gap-2 text-[12px] text-ink-3">
+                @switch (item.state) {
+                  @case ('yes') {
+                    <ui-icon name="check" [size]="15" class="text-done-ink" />
+                  }
+                  @case ('partial') {
+                    <span class="block h-px w-3 rounded-full bg-ink-3"></span>
+                  }
+                  @default {
+                    <ui-icon name="x" [size]="14" class="opacity-55" />
+                  }
+                }
+                {{ item.label }}
+              </span>
+            }
+          </div>
+
+          <a
+            href="#pricing"
+            class="flex flex-none items-center gap-2 text-[13px] font-medium text-ink hover:text-ink"
+          >
+            {{ copy.compare.cta }}
+            <ui-icon name="arrow-right" [size]="15" />
+          </a>
+        </div>
+
+        <p class="mt-4 max-w-[760px] font-mono text-[11px] leading-[1.7] text-ink-3">
+          {{ copy.compare.footnote }}
+        </p>
+      </div>
+    </section>
+
     <section id="features" class="scroll-mt-20 border-b border-line">
       <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
         <div class="flex max-w-[720px] flex-col gap-4">

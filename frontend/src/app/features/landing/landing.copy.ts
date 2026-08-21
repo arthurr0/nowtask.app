@@ -1,16 +1,16 @@
 const GITHUB = 'https://github.com/arthurr0/nowtask.app';
-const CONTACT = 'mailto:kontakt@nowtask.app';
+const CONTACT = 'mailto:biuro@minecodes.pl';
 
 export const LANDING_LINKS = {
   github: GITHUB,
   issues: `${GITHUB}/issues`,
   discussions: `${GITHUB}/discussions`,
-  deployGuide: `${GITHUB}#uruchomienie`,
-  agentGuide: `${GITHUB}/blob/main/docs/ai-agents.md`,
-  mcpServer: `${GITHUB}/tree/main/mcp`,
+  deployGuide: `${GITHUB}#running`,
+  agentGuide: `${GITHUB}/blob/master/docs/ai-agents.md`,
+  mcpServer: `${GITHUB}/tree/master/mcp`,
   contact: CONTACT,
   repoLabel: 'github.com/arthurr0/nowtask.app',
-  contactLabel: 'kontakt@nowtask.app',
+  contactLabel: 'biuro@minecodes.pl',
 } as const;
 
 export const LANDING_COPY = {
@@ -19,6 +19,7 @@ export const LANDING_COPY = {
   nav: {
     links: [
       { href: '#features', label: 'Features' },
+      { href: '#compare', label: 'Comparison' },
       { href: '#automations', label: 'Automations' },
       { href: '#ai-agents', label: 'AI agents' },
       { href: '#pricing', label: 'Pricing' },
@@ -44,6 +45,60 @@ export const LANDING_COPY = {
     { icon: 'globe', label: 'Interface in Polish, English and German' },
     { icon: 'shield', label: 'Self-hosted with a single command' },
   ],
+
+  compare: {
+    eyebrow: 'Comparison',
+    title: 'How nowtask stands next to the tools you are using today',
+    body: 'Views, rules, agent access and export are all here from the first day, with no plan to upgrade for each of them separately. This is what comes included, and what usually costs extra somewhere else.',
+    featureHeading: 'What you get',
+    columns: ['nowtask', 'Jira', 'Trello', 'Asana', 'Notion'],
+    rows: [
+      {
+        label: 'Board, list, timeline and calendar over one set of tasks',
+        values: ['yes', 'yes', 'partial', 'partial', 'yes'],
+      },
+      {
+        label: 'Automation rules with nested conditions',
+        values: ['yes', 'yes', 'partial', 'partial', 'partial'],
+      },
+      {
+        label: 'Run log and audit trail without an upgrade',
+        values: ['yes', 'partial', 'partial', 'partial', 'partial'],
+      },
+      {
+        label: 'MCP server for AI agents at no extra cost',
+        values: ['yes', 'partial', 'no', 'partial', 'partial'],
+      },
+      {
+        label: 'Permissions down to a single field',
+        values: ['yes', 'partial', 'no', 'partial', 'no'],
+      },
+      {
+        label: 'Self-hosting the same product you see here',
+        values: ['yes', 'partial', 'no', 'no', 'no'],
+      },
+      {
+        label: 'Public source code',
+        values: ['yes', 'no', 'no', 'no', 'no'],
+      },
+      {
+        label: 'Free for a team of up to 25 people',
+        values: ['yes', 'partial', 'partial', 'partial', 'partial'],
+      },
+      {
+        label: 'Full export of tasks, comments and configuration',
+        values: ['yes', 'yes', 'partial', 'partial', 'yes'],
+      },
+    ],
+    legend: [
+      { state: 'yes', label: 'Included' },
+      { state: 'partial', label: 'Limited, paid or through an add-on' },
+      { state: 'no', label: 'Not available' },
+    ],
+    footnote:
+      'Based on the public plans and documentation of each tool, checked in August 2026. Every vendor changes their offer, so it is worth confirming before you decide. Jira, Trello, Asana and Notion belong to their owners.',
+    cta: 'See what the plans cost',
+  },
 
   features: {
     eyebrow: 'Features',

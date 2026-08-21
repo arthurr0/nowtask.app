@@ -17,6 +17,10 @@ export class Landing {
   protected readonly year = new Date().getFullYear();
   protected readonly openFaq = signal(0);
 
+  protected stateLabel(state: string): string {
+    return this.copy.compare.legend.find((item) => item.state === state)?.label ?? state;
+  }
+
   toggleFaq(index: number): void {
     this.openFaq.set(this.openFaq() === index ? -1 : index);
   }
