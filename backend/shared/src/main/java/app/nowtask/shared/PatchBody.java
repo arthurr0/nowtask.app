@@ -66,6 +66,19 @@ public record PatchBody(Map<String, Object> values) {
         return Boolean.valueOf(value.toString());
     }
 
+    public java.util.List<String> strings(String field) {
+        Object value = values.get(field);
+        if (value == null) {
+            return java.util.List.of();
+        }
+        if (value instanceof Iterable<?> items) {
+            java.util.List<String> texts = new java.util.ArrayList<>();
+            items.forEach(item -> texts.add(item == null ? null : item.toString()));
+            return texts;
+        }
+        throw new IllegalArgumentException("Field " + field + " is not a list: " + value);
+    }
+
     public LocalDate date(String field) {
         String value = text(field);
         if (value == null) {
