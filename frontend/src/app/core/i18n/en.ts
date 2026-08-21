@@ -22,6 +22,7 @@ export const en: Dictionary = {
   'nav.organization': 'Organization',
   'nav.system': 'Design system',
   'nav.customize': 'Customize navigation',
+  'nav.switchOrg': 'Switch organization',
   'nav.hide': 'Hide',
   'nav.restoreDefaults': 'Restore defaults',
   'nav.applyView': 'Apply view',

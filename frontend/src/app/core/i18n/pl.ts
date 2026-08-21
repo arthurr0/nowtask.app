@@ -20,6 +20,7 @@ export const pl = {
   'nav.organization': 'Organizacja',
   'nav.system': 'System designu',
   'nav.customize': 'Dostosuj nawigację',
+  'nav.switchOrg': 'Przełącz organizację',
   'nav.hide': 'Ukryj',
   'nav.restoreDefaults': 'Przywróć domyślne',
   'nav.applyView': 'Zastosuj widok',

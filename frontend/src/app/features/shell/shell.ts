@@ -13,6 +13,8 @@ import { ViewState } from '../../data/view-state';
 import { RulesStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { AuthService } from '../../core/auth.service';
+import { ActiveOrgService } from '../../core/active-org';
+import { OrgService } from '../../core/org.service';
 import { OnboardingService } from '../../core/onboarding.service';
 import { Avatar } from '../../ui/avatar';
 import { CommandPalette, CommandPaletteDialog } from '../../ui/command-palette';
@@ -90,6 +92,8 @@ export class Shell implements OnInit {
   protected readonly state = inject(ViewState);
   protected readonly palette = inject(CommandPalette);
   protected readonly auth = inject(AuthService);
+  private readonly orgs = inject(OrgService);
+  private readonly activeOrg = inject(ActiveOrgService);
   protected readonly onboarding = inject(OnboardingService);
   private readonly confirm = inject(ConfirmService);
   private readonly prompt = inject(PromptService);
@@ -97,6 +101,25 @@ export class Shell implements OnInit {
   private readonly router = inject(Router);
   protected readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
+
+  protected readonly organization = computed(() => {
+    const memberships = this.orgs.memberships();
+    const active = this.activeOrg.id();
+    return memberships.find((item) => item.organizationId === active) ?? memberships[0] ?? null;
+  });
+
+  protected readonly orgHandle = computed(() => {
+    const organization = this.organization();
+    return organization ? `@${organization.slug}` : '';
+  });
+
+  protected readonly orgMenu = computed<MenuItem[]>(() =>
+    this.orgs.memberships().map((item) => ({
+      id: item.organizationId,
+      label: `@${item.slug}`,
+      checked: item.organizationId === this.organization()?.organizationId,
+    })),
+  );
 
   private readonly navItems = computed<NavItemDto[]>(() => {
     const stored = this.store.navigation().filter((item) => entry(item.code) !== null);
@@ -169,6 +192,16 @@ export class Shell implements OnInit {
 
   reload(): void {
     void this.store.load(true);
+  }
+
+  async onOrgMenu(item: MenuItem): Promise<void> {
+    if (item.id === this.organization()?.organizationId) return;
+    try {
+      await this.orgs.switchTo(item.id);
+      window.location.assign('/app/board');
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
   }
 
   navItemMenu(code: NavItemCode): MenuItem[] {

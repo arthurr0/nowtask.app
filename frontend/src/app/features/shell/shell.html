@@ -1,13 +1,29 @@
 <div class="flex h-dvh overflow-hidden bg-bg text-ink">
   <aside class="hidden w-[232px] flex-none flex-col border-r border-line bg-surface lg:flex">
-    <div class="flex h-14 flex-none items-center gap-2.5 border-b border-line px-4">
-      <ui-logo [size]="22" [tile]="false" />
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="text-[13px] font-semibold lowercase tracking-[-0.02em]">{{
-          t('app.name')
-        }}</span>
-        <span class="text-[11px] text-ink-3">{{ t('app.workspace') }}</span>
-      </span>
+    <div class="flex h-14 flex-none items-center border-b border-line px-3">
+      <ui-menu
+        class="w-full"
+        [items]="orgMenu()"
+        [disabled]="orgMenu().length < 2"
+        triggerClass="hoverable flex w-full items-center gap-2.5 rounded-field px-1 text-left"
+        triggerHeight="40px"
+        ariaLabel="nav.switchOrg"
+        [minWidth]="208"
+        (selected)="onOrgMenu($event)"
+      >
+        <ui-logo [size]="22" [tile]="false" />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="text-[13px] font-semibold lowercase tracking-[-0.02em]">{{
+            t('app.name')
+          }}</span>
+          <span class="truncate text-[11px] text-ink-3">{{
+            orgHandle() || t('app.workspace')
+          }}</span>
+        </span>
+        @if (orgMenu().length > 1) {
+          <ui-icon name="chevron-down" [size]="14" class="flex-none text-ink-3" />
+        }
+      </ui-menu>
     </div>
 
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-thin">
