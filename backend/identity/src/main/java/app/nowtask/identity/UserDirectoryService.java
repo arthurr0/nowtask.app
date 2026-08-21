@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import app.nowtask.identity.api.ApiKeyIdentity;
 import app.nowtask.identity.api.RoleRefView;
 import app.nowtask.identity.api.TeamView;
 import app.nowtask.identity.api.UserDirectory;
@@ -124,6 +125,12 @@ class UserDirectoryService implements UserDirectory {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new NotFoundException("No signed-in user");
+        }
+
+        if (authentication.getPrincipal() instanceof ApiKeyIdentity identity) {
+            AppUser owner = users.findById(identity.ownerId())
+                    .orElseThrow(() -> NotFoundException.of("User", identity.ownerId()));
+            return toView(owner, currentRole(owner.getId()));
         }
 
         AppUser user = users.findByEmailIgnoreCase(authentication.getName())
