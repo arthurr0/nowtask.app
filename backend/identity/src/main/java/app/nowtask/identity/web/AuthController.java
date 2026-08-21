@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
-import app.nowtask.identity.RegistrationService;
+import app.nowtask.identity.PasswordResetService;
+import app.nowtask.identity.SignupService;
 import app.nowtask.identity.api.ApiKeyIdentity;
 import app.nowtask.identity.api.ApiKeyScope;
+import app.nowtask.identity.api.SignupResultView;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
 
@@ -30,17 +32,20 @@ class AuthController {
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository contextRepository;
     private final UserDirectory directory;
-    private final RegistrationService registrations;
+    private final SignupService signups;
+    private final PasswordResetService passwordResets;
 
     AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository contextRepository,
             UserDirectory directory,
-            RegistrationService registrations) {
+            SignupService signups,
+            PasswordResetService passwordResets) {
         this.authenticationManager = authenticationManager;
         this.contextRepository = contextRepository;
         this.directory = directory;
-        this.registrations = registrations;
+        this.signups = signups;
+        this.passwordResets = passwordResets;
     }
 
     record LoginRequest(@NotBlank String email, @NotBlank String password) {
@@ -63,13 +68,31 @@ class AuthController {
     }
 
     @PostMapping("/signup")
-    ResponseEntity<UserView> signup(
+    ResponseEntity<SignupResultView> signup(
             @RequestBody SignupRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        UserView created = registrations.register(request.name(), request.email(), request.password());
-        openSession(created.email(), request.password(), httpRequest, httpResponse);
+        SignupResultView created = signups.signup(request.name(), request.email(), request.password());
+        openSession(created.user().email(), request.password(), httpRequest, httpResponse);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    record ForgotPasswordRequest(@NotBlank String email) {
+    }
+
+    @PostMapping("/forgot-password")
+    ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        passwordResets.request(request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    record ResetPasswordRequest(@NotBlank String token, @NotBlank String password) {
+    }
+
+    @PostMapping("/reset-password")
+    ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        passwordResets.reset(request.token(), request.password());
+        return ResponseEntity.noContent().build();
     }
 
     private void openSession(
