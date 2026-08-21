@@ -1,5 +1,10 @@
 import { inject } from '@angular/core';
-import { Router, type ActivatedRouteSnapshot, type CanActivateFn, type RouterStateSnapshot } from '@angular/router';
+import {
+  Router,
+  type ActivatedRouteSnapshot,
+  type CanActivateFn,
+  type RouterStateSnapshot,
+} from '@angular/router';
 import { AuthService } from './auth.service';
 
 export const authGuard: CanActivateFn = async (

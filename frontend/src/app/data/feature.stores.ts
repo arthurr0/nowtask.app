@@ -238,7 +238,11 @@ export class AgentsStore extends LoadableStore {
     expiresInDays: number | null,
   ): Promise<IssuedApiKeyDto> {
     const issued = await firstValueFrom(
-      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', { label, scopes, expiresInDays }),
+      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', {
+        label,
+        scopes,
+        expiresInDays,
+      }),
     );
     await this.load();
     return issued;
@@ -335,12 +339,16 @@ export class OrganizationStore extends LoadableStore {
   }
 
   async addTeamMember(id: string, userId: string): Promise<void> {
-    await firstValueFrom(this.http.post<TeamDto>(`/api/organization/teams/${id}/members`, { userId }));
+    await firstValueFrom(
+      this.http.post<TeamDto>(`/api/organization/teams/${id}/members`, { userId }),
+    );
     await this.load();
   }
 
   async removeTeamMember(id: string, userId: string): Promise<void> {
-    await firstValueFrom(this.http.delete<TeamDto>(`/api/organization/teams/${id}/members/${userId}`));
+    await firstValueFrom(
+      this.http.delete<TeamDto>(`/api/organization/teams/${id}/members/${userId}`),
+    );
     await this.load();
   }
 
@@ -350,7 +358,11 @@ export class OrganizationStore extends LoadableStore {
     expiresInDays: number | null,
   ): Promise<IssuedApiKeyDto> {
     const issued = await firstValueFrom(
-      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', { label, scopes, expiresInDays }),
+      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', {
+        label,
+        scopes,
+        expiresInDays,
+      }),
     );
     await this.load();
     return issued;

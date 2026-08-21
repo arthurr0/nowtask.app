@@ -590,7 +590,8 @@ export const de: Dictionary = {
   'settings.epicDeleted': 'Epic gelöscht',
   'settings.sunday': 'Sonntag',
 
-  'organization.inviteLead': 'Die Person erhält ein ausstehendes Konto, bis sie ein Passwort setzt.',
+  'organization.inviteLead':
+    'Die Person erhält ein ausstehendes Konto, bis sie ein Passwort setzt.',
   'organization.personName': 'Vollständiger Name',
   'organization.personNamePlaceholder': 'z. B. Anna Kowalska',
   'organization.personEmail': 'E-Mail-Adresse',
@@ -605,7 +606,8 @@ export const de: Dictionary = {
   'organization.activate': 'Konto aktivieren',
   'organization.suspend': 'Konto sperren',
   'organization.removeMember': 'Person entfernen',
-  'organization.removeMemberHint': '{name} verliert den Zugang, die Aufgaben werden nicht zugewiesen.',
+  'organization.removeMemberHint':
+    '{name} verliert den Zugang, die Aufgaben werden nicht zugewiesen.',
   'organization.newTeam': 'Neues Team',
   'organization.teamName': 'Teamname',
   'organization.teamNamePlaceholder': 'z. B. Backend',
@@ -650,7 +652,8 @@ export const de: Dictionary = {
   'organization.integrationUrlPlaceholder': 'https://beispiel.de/webhook',
   'organization.integrationUrlRequired': 'Gib eine Adresse an, die mit http beginnt.',
   'organization.integrationSecret': 'Secret',
-  'organization.integrationSecretPlaceholder': 'Signiert die Anfrage mit dem Header X-Nowtask-Signature',
+  'organization.integrationSecretPlaceholder':
+    'Signiert die Anfrage mit dem Header X-Nowtask-Signature',
   'organization.integrationTo': 'Empfänger',
   'organization.integrationToPlaceholder': 'team@firma.de',
   'organization.integrationToRequired': 'Gib die Empfängeradresse an.',

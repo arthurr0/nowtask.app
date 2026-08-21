@@ -40,7 +40,9 @@
             class="text-[12px] text-ink-2 underline-offset-2 hover:underline"
             (click)="togglePreview(preset.code)"
           >
-            {{ previewOpen() === preset.code ? t('onboarding.hidePreview') : t('onboarding.preview') }}
+            {{
+              previewOpen() === preset.code ? t('onboarding.hidePreview') : t('onboarding.preview')
+            }}
             {{ presetLabel(preset.code) }}
           </button>
         }

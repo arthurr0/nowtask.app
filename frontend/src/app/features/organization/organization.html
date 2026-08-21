@@ -1,7 +1,12 @@
 <ui-topbar>
   <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.organization') }}</span>
   <span class="font-mono text-[11px] text-ink-3">
-    {{ t('organization.headcount', { people: organization.members().length, teams: organization.teams().length }) }}
+    {{
+      t('organization.headcount', {
+        people: organization.members().length,
+        teams: organization.teams().length,
+      })
+    }}
   </span>
   <span class="hidden flex-1 lg:block"></span>
   <ui-view-controls />
@@ -18,7 +23,11 @@
 </ui-topbar>
 
 @if (organization.loading() || organization.error()) {
-  <ui-page-state [loading]="organization.loading()" [error]="organization.error()" (retry)="reload()" />
+  <ui-page-state
+    [loading]="organization.loading()"
+    [error]="organization.error()"
+    (retry)="reload()"
+  />
 } @else {
   <div class="flex flex-1 overflow-hidden">
     <nav
@@ -362,7 +371,9 @@
               <ui-icon name="agent" [size]="16" class="flex-none text-ink-2" />
               <span class="flex min-w-0 flex-1 flex-col gap-1">
                 <span class="text-[13px] font-medium">{{ t('organization.agents') }}</span>
-                <span class="text-xs leading-[1.7] text-ink-2">{{ t('organization.agentsLead') }}</span>
+                <span class="text-xs leading-[1.7] text-ink-2">{{
+                  t('organization.agentsLead')
+                }}</span>
               </span>
               <span class="flex flex-none items-center gap-1.5 text-xs">
                 {{ t('organization.agentsOpen') }}
@@ -464,7 +475,9 @@
                     [class.text-warn]="!integration.enabled"
                     [class.text-ink-3]="integration.enabled"
                     >{{
-                      integration.enabled ? t('organization.integrationOn') : t('organization.integrationOff')
+                      integration.enabled
+                        ? t('organization.integrationOn')
+                        : t('organization.integrationOff')
                     }}</span
                   >
                   <span class="w-[190px] flex-none truncate text-ink-3">
@@ -493,7 +506,9 @@
                   }
                 </div>
               } @empty {
-                <p class="py-8 text-center text-xs text-ink-3">{{ t('organization.noIntegrations') }}</p>
+                <p class="py-8 text-center text-xs text-ink-3">
+                  {{ t('organization.noIntegrations') }}
+                </p>
               }
             </div>
           </section>
@@ -504,7 +519,9 @@
             <div class="flex flex-wrap items-center gap-2.5">
               <h2 class="kap">{{ t('organization.auditLog') }}</h2>
               <span class="h-px flex-1 bg-line"></span>
-              <span class="font-mono text-[11px] text-ink-3">{{ organization.audit()?.total ?? 0 }}</span>
+              <span class="font-mono text-[11px] text-ink-3">{{
+                organization.audit()?.total ?? 0
+              }}</span>
               <button
                 type="button"
                 class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"

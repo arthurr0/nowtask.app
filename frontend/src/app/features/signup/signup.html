@@ -39,132 +39,132 @@
 
   <section class="flex flex-1 items-center justify-center p-6 lg:p-10">
     @if (suggestion(); as org) {
-    <div class="flex w-full max-w-[372px] flex-col gap-5">
-      <header class="flex flex-col gap-1.5">
-        <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.suggestTitle') }}</h2>
-        <p class="text-[13px] text-ink-2">{{ t('signup.suggestBody', { name: org.name }) }}</p>
-      </header>
+      <div class="flex w-full max-w-[372px] flex-col gap-5">
+        <header class="flex flex-col gap-1.5">
+          <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.suggestTitle') }}</h2>
+          <p class="text-[13px] text-ink-2">{{ t('signup.suggestBody', { name: org.name }) }}</p>
+        </header>
 
-      <div class="flex flex-col gap-2.5">
-        <p class="rounded-card border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-2">
-          {{ t('signup.suggestAsk') }}
-        </p>
-        <button
-          type="button"
-          class="flex h-[46px] items-center justify-center rounded-card border border-line text-sm"
-          (click)="continueToOwnOrg()"
-        >
-          {{ t('signup.suggestOwn') }}
-        </button>
-      </div>
-    </div>
-    } @else {
-    <form class="flex w-full max-w-[372px] flex-col gap-5" (submit)="submit($event)">
-      <header class="flex flex-col gap-1.5">
-        <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.title') }}</h2>
-        <p class="text-[13px] text-ink-2">{{ t('signup.subtitle') }}</p>
-      </header>
-
-      <div class="flex flex-col gap-3.5">
-        <label class="flex flex-col gap-1.5">
-          <span class="text-xs text-ink-2">{{ t('signup.name') }}</span>
-          <input
-            type="text"
-            name="name"
-            autocomplete="name"
-            class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
-            [ngModel]="name()"
-            (ngModelChange)="name.set($event)"
-          />
-        </label>
-
-        <label class="flex flex-col gap-1.5">
-          <span class="text-xs text-ink-2">{{ t('login.email') }}</span>
-          <input
-            type="email"
-            name="email"
-            autocomplete="email"
-            class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
-            [ngModel]="email()"
-            (ngModelChange)="email.set($event)"
-          />
-        </label>
-
-        <div class="flex flex-col gap-1.5">
-          <span class="text-xs text-ink-2">{{ t('login.password') }}</span>
-          <div
-            class="flex h-11 items-center gap-2.5 rounded-card border border-line bg-surface px-3.5"
+        <div class="flex flex-col gap-2.5">
+          <p class="rounded-card border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-2">
+            {{ t('signup.suggestAsk') }}
+          </p>
+          <button
+            type="button"
+            class="flex h-[46px] items-center justify-center rounded-card border border-line text-sm"
+            (click)="continueToOwnOrg()"
           >
-            <input
-              [type]="showPassword() ? 'text' : 'password'"
-              name="password"
-              autocomplete="new-password"
-              [attr.minlength]="minPasswordLength"
-              class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              [ngModel]="password()"
-              (ngModelChange)="password.set($event)"
-            />
-            <button
-              type="button"
-              class="text-ink-3"
-              [attr.aria-label]="t('login.showPassword')"
-              [attr.aria-pressed]="showPassword()"
-              (click)="showPassword.set(!showPassword())"
-            >
-              <ui-icon name="eye" [size]="17" />
-            </button>
-          </div>
-
-          <div class="flex items-center gap-2.5">
-            <div class="flex h-1 flex-1 items-stretch gap-1" aria-hidden="true">
-              @for (step of [0, 1, 2, 3]; track step) {
-                <span
-                  class="flex-1 rounded-full"
-                  [class.bg-line]="password().length === 0 || strength() < step"
-                  [class.bg-accent]="password().length > 0 && strength() >= step"
-                ></span>
-              }
-            </div>
-            <span class="text-[11px] text-ink-3">
-              @if (password().length) {
-                {{ t('signup.strength') }}: {{ strengthLabel() }}
-              } @else {
-                {{ t('signup.passwordHint') }}
-              }
-            </span>
-          </div>
+            {{ t('signup.suggestOwn') }}
+          </button>
         </div>
       </div>
+    } @else {
+      <form class="flex w-full max-w-[372px] flex-col gap-5" (submit)="submit($event)">
+        <header class="flex flex-col gap-1.5">
+          <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.title') }}</h2>
+          <p class="text-[13px] text-ink-2">{{ t('signup.subtitle') }}</p>
+        </header>
 
-      @if (error()) {
-        <p
-          class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+        <div class="flex flex-col gap-3.5">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs text-ink-2">{{ t('signup.name') }}</span>
+            <input
+              type="text"
+              name="name"
+              autocomplete="name"
+              class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+              [ngModel]="name()"
+              (ngModelChange)="name.set($event)"
+            />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs text-ink-2">{{ t('login.email') }}</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+              [ngModel]="email()"
+              (ngModelChange)="email.set($event)"
+            />
+          </label>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-xs text-ink-2">{{ t('login.password') }}</span>
+            <div
+              class="flex h-11 items-center gap-2.5 rounded-card border border-line bg-surface px-3.5"
+            >
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                name="password"
+                autocomplete="new-password"
+                [attr.minlength]="minPasswordLength"
+                class="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                [ngModel]="password()"
+                (ngModelChange)="password.set($event)"
+              />
+              <button
+                type="button"
+                class="text-ink-3"
+                [attr.aria-label]="t('login.showPassword')"
+                [attr.aria-pressed]="showPassword()"
+                (click)="showPassword.set(!showPassword())"
+              >
+                <ui-icon name="eye" [size]="17" />
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-1 flex-1 items-stretch gap-1" aria-hidden="true">
+                @for (step of [0, 1, 2, 3]; track step) {
+                  <span
+                    class="flex-1 rounded-full"
+                    [class.bg-line]="password().length === 0 || strength() < step"
+                    [class.bg-accent]="password().length > 0 && strength() >= step"
+                  ></span>
+                }
+              </div>
+              <span class="text-[11px] text-ink-3">
+                @if (password().length) {
+                  {{ t('signup.strength') }}: {{ strengthLabel() }}
+                } @else {
+                  {{ t('signup.passwordHint') }}
+                }
+              </span>
+            </div>
+          </div>
+        </div>
+
+        @if (error()) {
+          <p
+            class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+          >
+            <ui-icon name="alert" [size]="15" />
+            <span>{{ error() }}</span>
+          </p>
+        }
+
+        <button
+          type="submit"
+          class="flex h-[46px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
+          [disabled]="submitting() || !complete()"
         >
-          <ui-icon name="alert" [size]="15" />
-          <span>{{ error() }}</span>
+          {{ submitting() ? t('state.loading') : t('signup.submit') }}
+        </button>
+
+        <p class="text-[13px] text-ink-2">
+          {{ t('signup.haveAccount') }}
+          <a routerLink="/login" class="font-medium underline-offset-2 hover:underline">{{
+            t('login.signIn')
+          }}</a>
         </p>
-      }
 
-      <button
-        type="submit"
-        class="flex h-[46px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
-        [disabled]="submitting() || !complete()"
-      >
-        {{ submitting() ? t('state.loading') : t('signup.submit') }}
-      </button>
-
-      <p class="text-[13px] text-ink-2">
-        {{ t('signup.haveAccount') }}
-        <a routerLink="/login" class="font-medium underline-offset-2 hover:underline">{{
-          t('login.signIn')
-        }}</a>
-      </p>
-
-      <div class="flex items-center gap-2.5 pt-1.5">
-        <ui-icon name="globe" [size]="15" class="text-ink-3" />
-        <ui-view-controls />
-      </div>
-    </form>
+        <div class="flex items-center gap-2.5 pt-1.5">
+          <ui-icon name="globe" [size]="15" class="text-ink-3" />
+          <ui-view-controls />
+        </div>
+      </form>
     }
   </section>
 </div>

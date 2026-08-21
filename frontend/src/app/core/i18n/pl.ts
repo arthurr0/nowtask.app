@@ -880,7 +880,8 @@ export const pl = {
 
   'dash.lastDays': 'Ostatnie {days} dni',
 
-  'organization.workloadHint': 'Punkty z niezakończonych zadań wobec dostępności ustawionej dla osoby.',
+  'organization.workloadHint':
+    'Punkty z niezakończonych zadań wobec dostępności ustawionej dla osoby.',
 
   'task.addRelates': 'Powiąż z zadaniem',
   'task.addBlocks': 'To zadanie blokuje…',

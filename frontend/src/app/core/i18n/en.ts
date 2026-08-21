@@ -650,12 +650,14 @@ export const en: Dictionary = {
   'organization.integrationUrlPlaceholder': 'https://example.com/webhook',
   'organization.integrationUrlRequired': 'Enter an address starting with http.',
   'organization.integrationSecret': 'Secret',
-  'organization.integrationSecretPlaceholder': 'Signs the request with the X-Nowtask-Signature header',
+  'organization.integrationSecretPlaceholder':
+    'Signs the request with the X-Nowtask-Signature header',
   'organization.integrationTo': 'Recipient',
   'organization.integrationToPlaceholder': 'team@company.com',
   'organization.integrationToRequired': 'Enter the recipient address.',
   'organization.integrationEvents': 'Events',
-  'organization.integrationEventsHint': 'With no event selected the integration receives all of them.',
+  'organization.integrationEventsHint':
+    'With no event selected the integration receives all of them.',
   'organization.event.taskCreated': 'New task',
   'organization.event.taskStatusChanged': 'Status change',
   'organization.event.taskAssigned': 'Assignment',
@@ -664,7 +666,8 @@ export const en: Dictionary = {
   'organization.integrationEnable': 'Enable',
   'organization.integrationDisable': 'Disable',
   'organization.integrationRemove': 'Remove integration',
-  'organization.integrationRemoveLead': 'Integration {name} goes away together with its delivery log.',
+  'organization.integrationRemoveLead':
+    'Integration {name} goes away together with its delivery log.',
   'organization.integrationTestOk': 'Test delivery succeeded: {detail}',
   'organization.integrationTestFailed': 'Test delivery failed: {detail}',
   'organization.integrationOn': 'enabled',
@@ -883,7 +886,8 @@ export const en: Dictionary = {
 
   'dash.lastDays': 'Last {days} days',
 
-  'organization.workloadHint': 'Points from unfinished tasks against the capacity set for each person.',
+  'organization.workloadHint':
+    'Points from unfinished tasks against the capacity set for each person.',
 
   'task.addRelates': 'Link a related task',
   'task.addBlocks': 'This task blocks…',

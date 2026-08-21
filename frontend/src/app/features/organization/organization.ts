@@ -34,8 +34,6 @@ import { ApiKeyDialog, type ApiKeyDraft } from '../agents/api-key-dialog';
 
 type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
 
-
-
 @Component({
   selector: 'app-organization',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -143,7 +141,9 @@ export class Organization implements OnInit {
       { id: 'test', label: 'organization.integrationTest', icon: 'play' },
       {
         id: 'toggle',
-        label: integration.enabled ? 'organization.integrationDisable' : 'organization.integrationEnable',
+        label: integration.enabled
+          ? 'organization.integrationDisable'
+          : 'organization.integrationEnable',
         icon: integration.enabled ? 'lock' : 'check',
       },
       {
@@ -209,15 +209,17 @@ export class Organization implements OnInit {
     return role.permissions.includes(permission.code);
   }
 
-  protected readonly permissionGroups = computed<{ group: string; items: PermissionDto[] }[]>(() => {
-    const groups = new Map<string, PermissionDto[]>();
-    for (const permission of this.organization.permissions()) {
-      const items = groups.get(permission.group) ?? [];
-      items.push(permission);
-      groups.set(permission.group, items);
-    }
-    return [...groups].map(([group, items]) => ({ group, items }));
-  });
+  protected readonly permissionGroups = computed<{ group: string; items: PermissionDto[] }[]>(
+    () => {
+      const groups = new Map<string, PermissionDto[]>();
+      for (const permission of this.organization.permissions()) {
+        const items = groups.get(permission.group) ?? [];
+        items.push(permission);
+        groups.set(permission.group, items);
+      }
+      return [...groups].map(([group, items]) => ({ group, items }));
+    },
+  );
 
   memberMenu(user: UserDto): MenuItem[] {
     const items: MenuItem[] = this.organization.roles().map((role) => ({
@@ -388,7 +390,11 @@ export class Organization implements OnInit {
 
   async createKey(draft: ApiKeyDraft): Promise<void> {
     try {
-      const issued = await this.organization.createApiKey(draft.label, draft.scopes, draft.expiresInDays);
+      const issued = await this.organization.createApiKey(
+        draft.label,
+        draft.scopes,
+        draft.expiresInDays,
+      );
       this.keyOpen.set(false);
       this.issuedKey.set(issued.key);
     } catch (error) {

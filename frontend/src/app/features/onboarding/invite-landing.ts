@@ -100,9 +100,7 @@ export class InviteLanding {
       const result = await firstValueFrom(
         this.http.post<AcceptedInviteDto>(
           `/api/invites/${encodeURIComponent(this.token())}/accept`,
-          this.sameAccount()
-            ? {}
-            : { name: this.name().trim() || null, password: this.password() },
+          this.sameAccount() ? {} : { name: this.name().trim() || null, password: this.password() },
         ),
       );
 

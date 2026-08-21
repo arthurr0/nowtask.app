@@ -81,7 +81,9 @@ export class WorkspaceStore {
   readonly currentSprint = computed(() => this.settings()?.currentSprint ?? '');
   readonly activeRuleCount = computed(() => this.bootstrapSignal()?.activeRuleCount ?? 0);
 
-  readonly permissions = computed<readonly string[]>(() => this.bootstrapSignal()?.permissions ?? []);
+  readonly permissions = computed<readonly string[]>(
+    () => this.bootstrapSignal()?.permissions ?? [],
+  );
 
   can(permission: string): boolean {
     return this.permissions().includes(permission);

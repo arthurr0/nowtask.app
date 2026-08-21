@@ -170,9 +170,7 @@ export class OnboardingWizard {
     this.preview.set(null);
 
     try {
-      const detail = await firstValueFrom(
-        this.http.get<PresetDetailDto>(`/api/presets/${code}`),
-      );
+      const detail = await firstValueFrom(this.http.get<PresetDetailDto>(`/api/presets/${code}`));
       this.preview.set(detail);
     } catch {
       this.preview.set(null);
