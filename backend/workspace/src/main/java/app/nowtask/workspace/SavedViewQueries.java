@@ -15,7 +15,7 @@ import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 class SavedViewQueries {
 
     private static final String SELECT = """
-            SELECT v.id, v.name, v.code, v.query, v.shared, v.owner_id,
+            SELECT v.id, v.name, v.code, v.query, v.shared, v.owner_id, v.origin,
                    CASE v.code
                        WHEN 'view.atRisk' THEN (
                            SELECT count(*) FROM task t
@@ -69,10 +69,10 @@ class SavedViewQueries {
                 0,
                 rs.getBoolean("shared"),
                 rs.getObject("owner_id", UUID.class));
-        return new Row(view, rs.getInt("builtin_count"));
+        return new Row(view, rs.getInt("builtin_count"), rs.getString("origin"));
     }
 
-    record Row(SavedViewView view, int builtinCount) {
+    record Row(SavedViewView view, int builtinCount, String origin) {
 
         SavedViewView withCount(int count) {
             return new SavedViewView(
@@ -80,7 +80,7 @@ class SavedViewQueries {
         }
 
         boolean builtin() {
-            return view.code() != null;
+            return "builtin".equals(origin);
         }
     }
 }

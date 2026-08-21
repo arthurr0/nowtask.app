@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import app.nowtask.shared.NotFoundException;
-import app.nowtask.shared.RoleId;
+import app.nowtask.shared.Permission;
 import app.nowtask.shared.StatusCategory;
 import app.nowtask.workspace.api.Workspace;
 import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
@@ -115,7 +115,7 @@ class WorkspaceService implements Workspace {
     @Override
     public List<CustomFieldView> customFields() {
         return jdbc.sql("""
-                        SELECT id, name, field_key, type, scope_label, restricted_to_role
+                        SELECT id, name, field_key, type, scope_label, required_permission
                         FROM custom_field
                         ORDER BY position
                         """)
@@ -192,8 +192,8 @@ class WorkspaceService implements Workspace {
                 rs.getString("field_key"),
                 rs.getString("type"),
                 rs.getString("scope_label"),
-                rs.getString("restricted_to_role") == null
+                rs.getString("required_permission") == null
                         ? null
-                        : RoleId.of(rs.getString("restricted_to_role")));
+                        : Permission.of(rs.getString("required_permission")));
     }
 }

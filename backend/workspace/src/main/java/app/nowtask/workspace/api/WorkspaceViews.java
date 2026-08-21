@@ -2,7 +2,7 @@ package app.nowtask.workspace.api;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import app.nowtask.shared.RoleId;
+import app.nowtask.shared.Permission;
 import app.nowtask.shared.StatusCategory;
 import app.nowtask.shared.TaskQuery;
 
@@ -42,7 +42,7 @@ public final class WorkspaceViews {
             String fieldKey,
             String type,
             String scopeLabel,
-            RoleId restrictedToRole) {
+            Permission requiredPermission) {
     }
 
     public record SavedViewView(

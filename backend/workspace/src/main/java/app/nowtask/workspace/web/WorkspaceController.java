@@ -121,14 +121,14 @@ class WorkspaceController {
         return workspace.customFields();
     }
 
-    record NewCustomField(String name, String fieldKey, String type, String scopeLabel, String restrictedToRole) {
+    record NewCustomField(String name, String fieldKey, String type, String scopeLabel, String requiredPermission) {
     }
 
     @PostMapping("/custom-fields")
     @ResponseStatus(HttpStatus.CREATED)
     CustomFieldView createCustomField(@RequestBody NewCustomField request) {
         return config.createCustomField(
-                request.name(), request.fieldKey(), request.type(), request.scopeLabel(), request.restrictedToRole());
+                request.name(), request.fieldKey(), request.type(), request.scopeLabel(), request.requiredPermission());
     }
 
     @PatchMapping("/custom-fields/{id}")

@@ -3,14 +3,18 @@ package app.nowtask.workspace;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.PatchBody;
-import app.nowtask.shared.RoleId;
+import app.nowtask.shared.Permission;
 import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
+import app.nowtask.shared.events.ConfigEvents;
 import app.nowtask.workspace.api.Workspace;
 import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
 import app.nowtask.workspace.api.WorkspaceViews.EpicView;
@@ -30,10 +34,28 @@ public class WorkspaceConfigService {
 
     private final JdbcClient jdbc;
     private final Workspace workspace;
+    private final ApplicationEventPublisher events;
 
-    WorkspaceConfigService(JdbcClient jdbc, Workspace workspace) {
+    WorkspaceConfigService(JdbcClient jdbc, Workspace workspace, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.workspace = workspace;
+        this.events = events;
+    }
+
+    private void announceFlowChange() {
+        OrganizationContext context = OrganizationContextHolder.currentOrNull();
+        if (context == null || !context.hasOrganization()) {
+            return;
+        }
+
+        UUID projectId = workspace.projects().stream()
+                .filter(project -> !project.archived())
+                .findFirst()
+                .map(project -> project.id())
+                .orElse(null);
+
+        events.publishEvent(new ConfigEvents.StatusFlowChanged(
+                context.organizationId(), projectId, context.userId()));
     }
 
     public StatusView createStatus(String code, String label, String category, Integer wipLimit, Integer position) {
@@ -54,6 +76,7 @@ public class WorkspaceConfigService {
                         position == null ? nextStatusPosition() : position, DEFAULT_SWATCH)
                 .update();
 
+        announceFlowChange();
         return requireStatus(id);
     }
 
@@ -85,6 +108,7 @@ public class WorkspaceConfigService {
             update(id, "swatch", patch.text("swatch"));
         }
 
+        announceFlowChange();
         return requireStatus(id);
     }
 
@@ -98,6 +122,7 @@ public class WorkspaceConfigService {
         }
 
         jdbc.sql("DELETE FROM status_def WHERE id = ?").param(id).update();
+        announceFlowChange();
     }
 
     public List<StatusView> reorderStatuses(List<UUID> ids) {
@@ -110,6 +135,7 @@ public class WorkspaceConfigService {
             jdbc.sql("UPDATE status_def SET position = ? WHERE id = ?").params(position, ids.get(position)).update();
         }
 
+        announceFlowChange();
         return workspace.statuses();
     }
 
@@ -144,7 +170,7 @@ public class WorkspaceConfigService {
     }
 
     public CustomFieldView createCustomField(
-            String name, String fieldKey, String type, String scopeLabel, String restrictedToRole) {
+            String name, String fieldKey, String type, String scopeLabel, String requiredPermission) {
         String key = required(fieldKey, "Field key");
 
         if (workspace.customFieldByKey(key).isPresent()) {
@@ -158,12 +184,12 @@ public class WorkspaceConfigService {
 
         jdbc.sql("""
                         INSERT INTO custom_field
-                            (id, project_id, name, field_key, type, scope_label, restricted_to_role, position)
+                            (id, project_id, name, field_key, type, scope_label, required_permission, position)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """)
                 .params(id, projectFor(scopeLabel), required(name, "Field name"), key,
                         fieldType(type), scopeLabel == null ? ALL_PROJECTS : scopeLabel,
-                        role(restrictedToRole), position)
+                        permission(requiredPermission), position)
                 .update();
 
         return requireCustomField(id);
@@ -186,8 +212,8 @@ public class WorkspaceConfigService {
             updateField(id, "scope_label", scopeLabel == null ? ALL_PROJECTS : scopeLabel);
             updateField(id, "project_id", projectFor(scopeLabel));
         }
-        if (patch.has("restrictedToRole")) {
-            updateField(id, "restricted_to_role", role(patch.text("restrictedToRole")));
+        if (patch.has("requiredPermission")) {
+            updateField(id, "required_permission", permission(patch.text("requiredPermission")));
         }
 
         return requireCustomField(id);
@@ -364,8 +390,8 @@ public class WorkspaceConfigService {
         return value;
     }
 
-    private String role(String code) {
-        return code == null ? null : RoleId.of(code).code();
+    private String permission(String code) {
+        return code == null || code.isBlank() ? null : Permission.of(code).code();
     }
 
     private boolean flag(PatchBody patch, String field) {
