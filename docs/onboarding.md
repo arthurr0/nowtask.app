@@ -160,10 +160,10 @@ meant to show what the user actually did, not what they clicked away.
 
 - **We do not create an `app_user` when an invitation is issued.** Today the demo data has
   `hanna@kontrahent.pl` as a `pending = TRUE` account. After the change the account is created only
-  at the moment of acceptance. `GET /api/admin/members` merges members with open invitations and for
+  at the moment of acceptance. `GET /api/organization/members` merges members with open invitations and for
   the latter returns a `UserDto` with `pending: true`, an `id` equal to the invitation identifier
   and a `name` equal to the email address. The DTO shape does not change, and
-  `DELETE /api/admin/invites/{id}` from `docs/api-contract.md` takes exactly that `id`.
+  `DELETE /api/organization/invites/{id}` from `docs/api-contract.md` takes exactly that `id`.
 - **There is no separate "team" concept in the wizard.** Teams (`team`) are created later, in
   administration. A wizard that makes you invent a team structure up front gets abandoned.
 
@@ -335,7 +335,7 @@ inactive. `Skip for now` always works.
 The default role: `member`. The dropdown has `manager`, `member`, `guest`. The `admin` role is not in
 the wizard, it is granted later in administration, with a deliberate click.
 
-Errors on individual addresses do not block the whole thing: `POST /api/admin/invites/bulk` returns a
+Errors on individual addresses do not block the whole thing: `POST /api/organization/invites/bulk` returns a
 list of results and the interface marks in red only the ones that failed (bad format, address
 already in the organization, address with an open invitation).
 
@@ -573,7 +573,7 @@ The new paths are open to the world, so:
 | `POST /api/auth/login` | 10 per 15 minutes per email address, then a growing delay |
 | `GET /api/invites/{token}` | 20 per hour per IP address |
 | `POST /api/auth/resend-verification` | 3 per hour per account |
-| `POST /api/admin/invites` and `/bulk` | 50 invitations per day per organization |
+| `POST /api/organization/invites` and `/bulk` | 50 invitations per day per organization |
 
 The last limit protects against using the product as a mail relay.
 
@@ -697,13 +697,13 @@ to `invited_by`. Limit: once per day per invitation.
 
 ### Invitations, the organization side
 
-`docs/api-contract.md` already has `POST /api/admin/invites {email, role} -> UserDto` and
-`DELETE /api/admin/invites/{id}`. We add three operations:
+`docs/api-contract.md` already has `POST /api/organization/invites {email, role} -> UserDto` and
+`DELETE /api/organization/invites/{id}`. We add three operations:
 
 ```
-GET    /api/admin/invites             ?state= -> InviteDto[]
-POST   /api/admin/invites/bulk        {emails: string[], role} -> BulkInviteResultDto
-POST   /api/admin/invites/{id}/resend -> InviteDto
+GET    /api/organization/invites             ?state= -> InviteDto[]
+POST   /api/organization/invites/bulk        {emails: string[], role} -> BulkInviteResultDto
+POST   /api/organization/invites/{id}/resend -> InviteDto
 ```
 
 `InviteDto`: `{ id, email, role, state, invitedById, createdAt, expiresAt }`.
@@ -785,10 +785,10 @@ I am not modifying that file. The list of what has to be added to it.
    `POST /api/invites/{token}/accept`, `POST /api/invites/{token}/request-new`.
    Add to the shared rules that these paths work without a session but still require
    `X-XSRF-TOKEN` on state changing methods.
-2. **`GET /api/admin/invites`, `POST /api/admin/invites/bulk`, `POST /api/admin/invites/{id}/resend`.**
-3. **`POST /api/admin/invites` returns `InviteDto`, not `UserDto`.** The contract says "pending
+2. **`GET /api/organization/invites`, `POST /api/organization/invites/bulk`, `POST /api/organization/invites/{id}/resend`.**
+3. **`POST /api/organization/invites` returns `InviteDto`, not `UserDto`.** The contract says "pending
    account" today, and after the change no account is created when an invitation is issued.
-   `GET /api/admin/members` still returns a `UserDto` with `pending: true` for open invitations so
+   `GET /api/organization/members` still returns a `UserDto` with `pending: true` for open invitations so
    that the administration screen needs no rebuild, but issuing an invitation returns the
    invitation.
 4. **`GET /api/onboarding`, `PATCH /api/onboarding`** and the `onboarding` field in `BootstrapDto`.

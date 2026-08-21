@@ -132,7 +132,7 @@ its entries corresponds to a real check in the code, and a permission nobody che
 the administrator. Adding a permission means a code change, defining a role does not.
 
 The starting point is `Permissions.ALL` from `identity`, today a static matrix that
-`GET /api/admin/permissions` only displays and nothing enforces. Those eleven entries become real
+`GET /api/organization/permissions` only displays and nothing enforces. Those eleven entries become real
 permissions, plus seven that enforcement needs and the matrix never had:
 
 | Permission | Replaces / guards |
@@ -153,7 +153,7 @@ permissions, plus seven that enforcement needs and the matrix never had:
 | `projects.manage` | projects, statuses, transitions, epics, milestones |
 | `settings.manage` | `workspace_settings` |
 | `integrations.manage` | `/api/integrations/**` |
-| `audit.read` | `GET /api/admin/audit` |
+| `audit.read` | `GET /api/organization/audit` |
 | `org.manage` | renaming and deleting the organization, `sso_domain` |
 
 **The `conditional` value disappears.** Today the matrix gives `manager` a `conditional` on
@@ -233,7 +233,7 @@ controls only the role, the state and the allocation.
 **The list is moving.** Agents working in the `V3` to `V39` range keep adding tables. While this
 document was being written, `V30__api_key_auth.sql` (six columns on `api_key`, including `owner_id`
 and `token_hash`) and `V31__audit_event.sql` (the `audit_event` table, required by
-`GET /api/admin/audit` from `docs/api-contract.md`) arrived. Before `V41` is written the tables in
+`GET /api/organization/audit` from `docs/api-contract.md`) arrived. Before `V41` is written the tables in
 the database have to be recounted. That is exactly what `TenantSchemaTest` from point 4.6 is for: a
 table created after this document that did not get an `organization_id` fails the build instead of
 being silently skipped.
@@ -595,8 +595,8 @@ keeps declarative rules working in `SecurityConfig`, only they stop naming roles
 
 ```java
 .requestMatchers("/api/integrations/**").hasAuthority("PERM_INTEGRATIONS_MANAGE")
-.requestMatchers(HttpMethod.GET, "/api/admin/audit").hasAuthority("PERM_AUDIT_READ")
-.requestMatchers("/api/admin/roles/**").hasAuthority("PERM_ROLES_MANAGE")
+.requestMatchers(HttpMethod.GET, "/api/organization/audit").hasAuthority("PERM_AUDIT_READ")
+.requestMatchers("/api/organization/roles/**").hasAuthority("PERM_ROLES_MANAGE")
 ```
 
 The filter runs after authentication and before `AuthorizationFilter`, in the same place
@@ -820,10 +820,10 @@ Every module listed exists in `backend/settings.gradle.kts`.
 | Module | What is added | What has to be fixed | Risk |
 | --- | --- | --- | --- |
 | `shared` | `Permission` (the enum from point 2.2.1), `OrganizationContext` (a record plus a `ThreadLocal` holder), `ForbiddenException`, `OrganizationEvents` (`OrganizationCreated`, `MemberJoined`, `MemberRemoved`, `RoleChanged`) | **`RoleId` is deleted**, every module importing it has to move to `Permission`; `StatusCategory` unchanged | **high**, `RoleId` reaches into four modules |
-| `identity` | the `Organization`, `OrganizationRole`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `RoleService`, `OrgController`, `RoleController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting authorities; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears; **`Permissions.ALL` stops being a static matrix** and `GET /api/admin/permissions` starts returning the catalog plus the organization's roles; `MemberService.adminCount()` is replaced by the invariant query from point 2.2.1 | **high**, this is where the whole role model changes |
+| `identity` | the `Organization`, `OrganizationRole`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `RoleService`, `OrgController`, `RoleController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting authorities; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears; **`Permissions.ALL` stops being a static matrix** and `GET /api/organization/permissions` starts returning the catalog plus the organization's roles; `MemberService.adminCount()` is replaced by the invariant query from point 2.2.1 | **high**, this is where the whole role model changes |
 | `app` | `OrganizationContextFilter` (fills the holder and rebuilds the request authorities), `OrganizationContextTransactionListener`, a second data source for Flyway, `BootstrapController` returns the organization, the organization list and the caller's permissions | `SecurityConfig` drops both `hasRole("ADMIN")` rules for `hasAuthority("PERM_...")`, and lets `/api/auth/signup`, `/api/invites/**`, `/api/orgs` through when signed in without an organization | **high**, this is where authorization changes shape |
 | `workspace` | `organization_id` in writes, `projectId` as a read parameter | `WorkspaceService.statuses()`, `transitions()`, `epics()`, `customFields()`, `milestones()` **do not filter by project even today**; `nextStatusPosition()` computes `MAX(position)` across the whole table; `createEpic` and `createCustomField` do the same; `updateSettings` does an `UPDATE` without a `WHERE` (only correct under RLS); `defaultProject()` throws `NotFoundException` for an organization without a project | **high**, two scope levels at once (organization and project) |
-| `tasks` | `organization_id` in the entities, the task key assigned from `task_key_sequence` per organization and project, `visibleCustomFields` asks the context for `required_permission`, `tasks.delete` and `tasks.status_outside_flow` become real checks | `TaskService.CURRENT_SPRINT = "S24"` is a constant in the code, for a new organization no sprint with that code exists and the board will be empty; `TaskRepository.findByKey` has to hit the (organization, key) pair, because the key stops being globally unique | **high** |
+| `tasks` | `organization_id` in the entities, the task key assigned from `task_key_sequence` per organization and project, `visibleCustomFields` asks the context for `required_permission`, `tasks.delete` and `tasks.status_outside_flow` become real checks | the current sprint sits in `workspace_settings.current_sprint`, a new organization starts without one and new tasks get no sprint code until it is set; `TaskRepository.findByKey` has to hit the (organization, key) pair, because the key stops being globally unique | **high** |
 | `automation` | `organization_id` on `automation_rule` and `automation_run` | `TaskEventListener` receives events from `tasks` by a text key; the key stops being globally unique, so the records in `shared.events.TaskEvents` have to get an `organizationId`; a rule engine running asynchronously has to set the context itself before writing `automation_run` | **high**, a module boundary without a dependency on `tasks` |
 | `analytics` | filtering metrics by organization | `MetricsService.burndown()` and `throughput()` read whole tables without a `WHERE`; under RLS they will start returning organization data, but still not project or sprint data | medium |
 | `integrations` | `organization_id` on integrations and notifications (the tables do not exist yet, they will be created in the V20 to V29 range) | an outgoing webhook must not reveal another company's identifiers; sending mail has to take the sender from the organization settings | medium |
@@ -1030,21 +1030,21 @@ GET    /api/orgs/current/export         -> a ZIP of CSVs, Content-Disposition
 GET    /api/orgs/slug-available?slug=   -> {available: boolean, suggestion?: string}
 POST   /api/orgs/{id}/switch            -> BootstrapDto
 
-GET    /api/admin/permissions           -> {catalog: PermissionDto[], roles: RoleDto[]}
-GET    /api/admin/roles                 -> RoleDto[]
-POST   /api/admin/roles                 {code, name, permissions[]} -> RoleDto
-PATCH  /api/admin/roles/{id}            {name?, permissions?, position?} -> RoleDto
-DELETE /api/admin/roles/{id}            {reassignTo} -> 204
+GET    /api/organization/permissions           -> {catalog: PermissionDto[], roles: RoleDto[]}
+GET    /api/organization/roles                 -> RoleDto[]
+POST   /api/organization/roles                 {code, name, permissions[]} -> RoleDto
+PATCH  /api/organization/roles/{id}            {name?, permissions?, position?} -> RoleDto
+DELETE /api/organization/roles/{id}            {reassignTo} -> 204
 ```
 
 `RoleDto` is `{id, code, name, position, protected, permissions: string[], memberCount}`.
 `PermissionDto` is `{code, group}`, the catalog from point 2.2.1, identical for every organization.
 
-`DELETE /api/admin/roles/{id}` requires `reassignTo`, the identifier of the role its members move
+`DELETE /api/organization/roles/{id}` requires `reassignTo`, the identifier of the role its members move
 to, because `organization_member.role_id` is `ON DELETE RESTRICT`. Deleting a role with no members
 still requires the field, and ignores it. A `protected` role cannot be deleted at all.
 
-All five paths require `PERM_ROLES_MANAGE`, except `GET /api/admin/permissions`, which every member
+All five paths require `PERM_ROLES_MANAGE`, except `GET /api/organization/permissions`, which every member
 may read, because the interface shows the caller their own permissions.
 
 `GET /api/orgs` is the only endpoint available when signed in without a selected organization,
@@ -1059,7 +1059,7 @@ There is no `GET /api/orgs/{id}` or `PATCH /api/orgs/{id}`. Only the active orga
 managed, through `/api/orgs/current`. That way Spring's mapping has no ambiguity between the literal
 `current` and the `{id}` template, and authorization has a single place.
 
-Members, teams, invitations and API keys are still managed by the existing `/api/admin/*` paths from
+Members, teams, invitations and API keys are still managed by the existing `/api/organization/*` paths from
 `docs/api-contract.md`. They operate on the active organization. **We do not duplicate them under
 `/api/orgs/{id}/members`.**
 
@@ -1068,9 +1068,9 @@ Changed behavior of existing paths, without a change of shape:
 | Path | Was | Is |
 | --- | --- | --- |
 | `GET /api/bootstrap` | everything in the installation | everything in the active organization, plus `organization` and `organizations` |
-| `GET /api/admin/members` | all accounts | members of the active organization, `role` an object from the membership |
-| `GET /api/admin/permissions` | a static matrix of four roles | the permission catalog plus the organization's roles, editable |
-| `GET /api/admin/api-keys` | all keys | keys of the active organization |
+| `GET /api/organization/members` | all accounts | members of the active organization, `role` an object from the membership |
+| `GET /api/organization/permissions` | a static matrix of four roles | the permission catalog plus the organization's roles, editable |
+| `GET /api/organization/api-keys` | all keys | keys of the active organization |
 | `GET /api/workspace/*` | the whole installation | the active organization |
 | `GET /api/tasks/{key}` | a globally unique key | a key unique within the organization |
 

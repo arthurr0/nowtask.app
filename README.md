@@ -193,7 +193,7 @@ cd nowtask.app/mcp && npm install && npm run build
 Scopes are disjoint and do not contain one another: `tasks:write` grants no right to delete, and
 `tasks:delete` has to be granted explicitly. They are checked by the API, not by the MCP server, so
 going around it with a custom client gains nothing. Beyond scopes there are hard boundaries:
-`/api/admin/**` and `/api/auth/**` are closed to keys, workspace configuration is read only, and a
+`/api/organization/**` and `/api/auth/**` are closed to keys, workspace configuration is read only, and a
 path outside the list is closed by default.
 
 Every write made with a key leaves a trace. In task history the entry has `ruleName` in the form
@@ -229,7 +229,7 @@ backend/
 
 Endpoints: `/api/auth`, `/api/me`, `/api/bootstrap`, `/api/tasks`, `/api/workspace`, `/api/rules`,
 `/api/views`, `/api/search`, `/api/timeline`, `/api/metrics`, `/api/notifications`,
-`/api/integrations`, `/api/export`, `/api/admin`. The contract is described in
+`/api/integrations`, `/api/export`, `/api/organization`. The contract is described in
 `docs/api-contract.md` and is binding for both sides.
 
 Authentication has two paths: a cookie session with CSRF protection for the browser, and an
@@ -299,7 +299,7 @@ so it follows the theme without a second file.
 
 Assigning a task creates a notification for the assignee, and the bell in the header shows the
 unread count and the list on click. Outgoing channels are separate, configured in
-**Administration → Integrations**: a webhook receives a `POST` with an `X-Nowtask-Signature` header
+**Organization → Integrations**: a webhook receives a `POST` with an `X-Nowtask-Signature` header
 (HMAC SHA-256 of the body, when you set a secret), a mail integration sends a message over SMTP.
 A channel can be named in the "Notify channel" rule action. Every delivery attempt lands in the
 integration log together with its result, and delivery happens off the request thread, so a silent

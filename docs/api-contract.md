@@ -36,7 +36,7 @@ GET    /api/rules, /api/rules/{id}, /api/rules/{id}/runs, /api/rules/touching/{k
 POST   /api/rules/{id}/toggle
 GET    /api/metrics/overview
 GET    /api/timeline
-GET    /api/admin/members, /teams, /permissions, /api-keys
+GET    /api/organization/members, /teams, /permissions, /api-keys
 GET    /api/workspace/statuses, /transitions, /custom-fields, /milestones
 ```
 
@@ -159,16 +159,16 @@ transition returns a 422 when `blockDisallowedDrag` is on.
 ## To add: people and access
 
 ```
-PATCH  /api/admin/members/{id}       {role} -> UserDto
-DELETE /api/admin/members/{id}
-POST   /api/admin/teams              {name} -> TeamDto
-PATCH  /api/admin/teams/{id}
-DELETE /api/admin/teams/{id}
-POST   /api/admin/teams/{id}/members {userId}
-DELETE /api/admin/teams/{id}/members/{userId}
-POST   /api/admin/api-keys           {label, scopes?, expiresInDays?} -> {key, view: ApiKeyDto}
-DELETE /api/admin/api-keys/{id}
-GET    /api/admin/audit              ?page=&size= -> { items: AuditDto[], total }
+PATCH  /api/organization/members/{id}       {role} -> UserDto
+DELETE /api/organization/members/{id}
+POST   /api/organization/teams              {name} -> TeamDto
+PATCH  /api/organization/teams/{id}
+DELETE /api/organization/teams/{id}
+POST   /api/organization/teams/{id}/members {userId}
+DELETE /api/organization/teams/{id}/members/{userId}
+POST   /api/organization/api-keys           {label, scopes?, expiresInDays?} -> {key, view: ApiKeyDto}
+DELETE /api/organization/api-keys/{id}
+GET    /api/organization/audit              ?page=&size= -> { items: AuditDto[], total }
 GET    /api/auth/api-key             -> {prefix, label, scopes[], owner: UserDto}
 ```
 
@@ -177,7 +177,7 @@ state }`, where `state` is `active | expired | revoked`. The full key is returne
 only its hash is stored in the database.
 
 `GET /api/auth/api-key` works only under key authentication and lets an agent learn its own
-permissions without access to `/api/admin/**`. For a session it returns a 404.
+permissions without access to `/api/organization/**`. For a session it returns a 404.
 
 `AuditDto`: `{ id, at, actorId, apiKeyId, actorLabel, action, subject, detail }`. The event log
 records administrative operations, configuration changes and every agent request and denial.
@@ -190,7 +190,7 @@ with `reason: "invalid_api_key"` and never silently falls back to the session.
 
 Scopes: `tasks:read`, `tasks:write`, `tasks:delete`, `rules:read`, `rules:run`, `rules:write`,
 `metrics:read`, `workspace:read`. Omitting `scopes` at creation grants only the four read ones.
-`tasks:delete` is never granted by default. `/api/admin/**` paths are closed to keys regardless of
+`tasks:delete` is never granted by default. `/api/organization/**` paths are closed to keys regardless of
 scopes, and a path not described in the rules is closed by default.
 
 A denial caused by a missing scope returns a 403 with `requiredScope` and `grantedScopes`.
@@ -205,8 +205,8 @@ GET    /api/agents                   ?activity= -> { agents: AgentDto[], activit
 ```
 
 `AgentDto`: `{ id, prefix, label, scopes[], lastUsedAt, expiresAt, state }`. This is the same set of
-keys as `/api/admin/api-keys`, without `ownerId` and without creation fields, so that the agents
-screen can be available to every signed-in role. Key management stays in `/api/admin/api-keys` and
+keys as `/api/organization/api-keys`, without `ownerId` and without creation fields, so that the agents
+screen can be available to every signed-in role. Key management stays in `/api/organization/api-keys` and
 still requires an administrator.
 
 `AgentActivityDto`: `{ id, at, agent, action, method, path, status }`, where `action` is
@@ -253,6 +253,61 @@ Whether signup is open is decided by `nowtask.signup.mode` (`open`, `invite-only
 Address verification does not block the wizard. It blocks sending invitations
 (`422 EMAIL_NOT_VERIFIED`).
 
+## Account settings
+
+Everything a person can change about their own account. The whole `/api/account` path works without
+an organization, so it stays reachable after the last membership is gone. API keys have no access.
+
+```
+PATCH  /api/account/profile           {name?, shortName?, initials?} -> UserDto
+POST   /api/account/password          {currentPassword, newPassword} -> 204
+POST   /api/account/email             {email, password} -> EmailChangeDto
+GET    /api/account/email-change      -> EmailChangeDto | 204
+DELETE /api/account/email-change      -> 204
+GET    /api/account/sessions          -> SessionDto[]
+DELETE /api/account/sessions/{id}     -> 204
+POST   /api/account/sessions/revoke-others -> { closed }
+POST   /api/account/leave             -> 204
+POST   /api/account/delete            {password} -> 204
+POST   /api/auth/confirm-email-change {token} -> UserDto
+```
+
+`PATCH /api/account/profile` recomputes the short name and the initials from `name`, unless the body
+carries them explicitly. Initials are cut to three characters.
+
+`POST /api/account/password` checks the current password, applies the same rules as signup, and
+closes every other session of that account. Error codes: `422 PASSWORD_INVALID`,
+`422 PASSWORD_REUSED`, `422 PASSWORD_TOO_COMMON`, `422 PASSWORD_NOT_SET` for an account that signs in
+without a password, `400` when the new password is shorter than ten characters.
+
+Changing the address is a two-step flow. `POST /api/account/email` verifies the password and sends a
+confirmation link to the **new** address, valid for 24 hours, at most three times an hour. The old
+address stays in force until `POST /api/auth/confirm-email-change` is called, which is an open path
+like the other token endpoints. Confirming closes every session of that account, so the next sign-in
+uses the new address, and sends a notice to the previous one. Error codes: `409 EMAIL_TAKEN`,
+`422 EMAIL_UNCHANGED`, `422 EMAIL_DISPOSABLE`, `422 TOKEN_INVALID`, `422 TOKEN_USED`,
+`422 TOKEN_EXPIRED`.
+
+`EmailChangeDto`: `{ newEmail, requestedAt, expiresAt }`. `GET /api/account/email-change` answers
+`204` when nothing is pending.
+
+`SessionDto`: `{ id, createdAt, lastSeenAt, ip, userAgent, current }`. The list holds the sessions
+seen within `server.servlet.session.timeout` (30 minutes by default); older rows are dropped by an
+hourly cleanup. Every request refreshes `last_seen_at` at most once every 30 seconds, and a session
+marked as revoked is closed on its next request with `401 SESSION_REVOKED`. Signing out deletes the
+row of the current session.
+
+`POST /api/account/leave` removes the membership of the active organization: assignments are dropped,
+comments stay. When the person is the last one able to manage members and roles, the answer is `422`
+and the membership stays. When they are the only member, the organization is closed
+(`organization.state = 'deleted'`).
+
+`POST /api/account/delete` verifies the password, leaves every organization by the same rules, and
+then anonymizes the account: the name becomes `Deleted account`, the address is replaced with an
+address in the `nowtask.invalid` domain, the password hash and the OIDC subject are cleared and
+`app_user.state` becomes `deleted`, which blocks signing in. The row itself stays so that comments,
+history and the event log keep an author.
+
 ## Invitations and joining
 
 The invitee side, all three paths open without a session:
@@ -283,11 +338,11 @@ notifies the person who issued it.
 The organization side, all paths require `PERM_MEMBERS_INVITE` and a verified address:
 
 ```
-GET    /api/admin/invites             ?state= -> InviteDto[]
-POST   /api/admin/invites             {email, role} -> InviteDto
-POST   /api/admin/invites/bulk        {emails: string[], role} -> BulkInviteResultDto
-POST   /api/admin/invites/{id}/resend -> InviteDto
-DELETE /api/admin/invites/{id}
+GET    /api/organization/invites             ?state= -> InviteDto[]
+POST   /api/organization/invites             {email, role} -> InviteDto
+POST   /api/organization/invites/bulk        {emails: string[], role} -> BulkInviteResultDto
+POST   /api/organization/invites/{id}/resend -> InviteDto
+DELETE /api/organization/invites/{id}
 ```
 
 `InviteDto`: `{ id, email, roleCode, roleName, roleId, state, invitedById, invitedByName, createdAt,
@@ -298,10 +353,10 @@ An invitation is valid for 14 days, the limit is 50 per day per organization, an
 out once, 7 days after it was issued. The reminder rotates the token, so the earlier link stops
 working.
 
-**Issuing an invitation no longer creates an account.** `GET /api/admin/members` merges members with
+**Issuing an invitation no longer creates an account.** `GET /api/organization/members` merges members with
 open invitations and returns a `UserDto` with `pending: true`, an `id` equal to the invitation
 identifier and a `name` equal to the address, so the administration screen needs no rebuild.
-`DELETE /api/admin/members/{id}` with such an identifier revokes the invitation.
+`DELETE /api/organization/members/{id}` with such an identifier revokes the invitation.
 
 ## Onboarding
 
@@ -377,6 +432,19 @@ Notifications are personal: the list returns the 50 most recent entries of the s
 `unreadOnly=true` narrows it to unread ones, and `read-all` responds with
 `{ read: <number marked> }`. Trying to mark someone else's entry ends in a `404`. API keys have no
 access to this path.
+
+Each person decides which of them reach them and how:
+
+```
+GET    /api/account/notifications  -> NotificationPrefDto[]
+PUT    /api/account/notifications  NotificationPrefDto[] -> NotificationPrefDto[]
+```
+
+`NotificationPrefDto`: `{ kind, inApp, email }`, where `kind` is `assigned` or `inviteRenewal`. The
+default is an entry in the app without a mail. With `email` on, the same message also goes out as a
+mail through the `notification` template. An unknown `kind` ends in `422 NOTIFICATION_UNKNOWN`.
+Preferences hold for the whole account, across organizations. Security mails, such as a password or
+address change, are sent regardless of the settings.
 
 ## Export and integrations
 

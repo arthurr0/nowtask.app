@@ -18,7 +18,7 @@ ten things presets cannot be expressed.
 
 | Gap | State today | What I add |
 | --- | --- | --- |
-| Sprints do not exist as an entity | `task.sprint_code TEXT` with no table, `TaskService.CURRENT_SPRINT = "S24"` as a constant in the code | a `sprint` table, `task.sprint_id` |
+| Sprints do not exist as an entity | `task.sprint_code TEXT` with no table, the current sprint as an optional `workspace_settings.current_sprint` | a `sprint` table, `task.sprint_id` |
 | A `select` custom field has no value list | `custom_field` has `type = 'select'`, but the allowed values live nowhere; the frontend has no `options` in `CustomField` either | a `custom_field_option` table |
 | An estimate has no unit | `task.estimate INTEGER`, no telling whether it is points, hours or days | `project.estimate_unit` |
 | A saved view does not know its project | `saved_view` only has `code`, `query`, `position`, `shared`, `owner_id` | `saved_view.project_id` |
@@ -104,7 +104,7 @@ The partial index enforces one active sprint per project. That is a scrum rule a
 guarded by the database than by the service layer.
 
 `task.sprint_code` stays for the duration of the migration and disappears only in `V56`. At that
-point `TaskService.CURRENT_SPRINT` stops existing, and "the current sprint" becomes
+point `workspace_settings.current_sprint` stops existing, and "the current sprint" becomes
 `SELECT id FROM sprint WHERE project_id = ? AND state = 'active'`.
 
 **Irreversible:** once `task.sprint_code` is dropped, sprint membership exists only as a foreign

@@ -14,7 +14,7 @@ Server code and startup details: [`../mcp/README.md`](../mcp/README.md).
 
 Keys are created by a workspace administrator. Other roles get a 403 from the endpoint.
 
-**In the interface:** the **AI agents** screen → **New key** (the same dialog is in Administration →
+**In the interface:** the **AI agents** screen → **New key** (the same dialog is in Organization →
 API keys). The agents screen walks through the whole setup in four steps: building the server, the
 key, client configuration with the instance address and a fresh key already filled in, and finally a
 view of whether the key has been used. The configuration can be copied or downloaded as a file, and
@@ -33,7 +33,7 @@ The same from the command line, if you prefer (requires a signed-in session and 
 
 ```bash
 curl -b jar.txt -H "X-XSRF-TOKEN: $XSRF" -H "Content-Type: application/json" \
-  -X POST http://localhost:8081/api/admin/api-keys \
+  -X POST http://localhost:8081/api/organization/api-keys \
   -d '{"label":"Team assistant","scopes":["tasks:read","tasks:write","workspace:read"],"expiresInDays":90}'
 ```
 
@@ -48,7 +48,7 @@ Response:
 }
 ```
 
-Revoking a key: `DELETE /api/admin/api-keys/{id}`. The key stops working immediately, the entry
+Revoking a key: `DELETE /api/organization/api-keys/{id}`. The key stops working immediately, the entry
 stays on the list with state `revoked` so that it is visible what existed and when.
 
 Without `scopes` a key gets a read only set:
@@ -148,7 +148,7 @@ scope ends in a 403 with `requiredScope` and `grantedScopes` fields in the respo
 
 Beyond scopes there are hard boundaries that no scope unlocks:
 
-- `/api/admin/**` is closed to API keys. An agent cannot generate itself a key, read the key list,
+- `/api/organization/**` is closed to API keys. An agent cannot generate itself a key, read the key list,
   change roles or read the event log.
 - `/api/auth/login` and `/api/auth/logout` are closed to keys. An agent cannot open a session.
 - Workspace configuration (`/api/workspace/**`, `/api/views`) is read only for keys. An agent cannot
@@ -202,7 +202,7 @@ Every change made with a key is recognizable in two places.
 points at the account the key was issued for. Entries made by a human have an empty `ruleName`, so
 telling them apart is unambiguous.
 
-**Event log** (`GET /api/admin/audit`, for signed-in humans only): every write request made with a
+**Event log** (`GET /api/organization/audit`, for signed-in humans only): every write request made with a
 key goes into the log together with the key identifier, method, path and response code. Denials
 caused by a missing scope are recorded too, as `agent.denied`, so attempts to step outside the
 permissions are visible. Operations on the keys themselves also land in the log: `api-key.created`

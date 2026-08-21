@@ -106,7 +106,7 @@ Modules: `shared`, `identity`, `app`. Migrations: `V40`, `V41`, `V42`.
 
 At the end of the phase the application works exactly as it did before it, with one organization and
 the four seeded role templates reproducing today's behavior, and additionally exposes `/api/orgs`
-and `/api/admin/roles`. `app_user.role` is still read, but `identity` prefers the
+and `/api/organization/roles`. `app_user.role` is still read, but `identity` prefers the
 value from the membership when one exists.
 
 **Exit gate:** `TenantSchemaTest` passes for `V40` to `V42` in the version that only checks column
@@ -200,7 +200,7 @@ Order within the phase:
    Up to this point a preset is only a "starter set" and there is no preset change yet.
 3. Enforcing `requirement` (ten codes) and `wip_limit` in `tasks`.
 4. Sprints: `V51` is already there, `SprintService` is added, six `/api/sprints` paths, the
-   `SprintStarted` and `SprintCompleted` events. `TaskService.CURRENT_SPRINT` disappears.
+   `SprintStarted` and `SprintCompleted` events. `workspace_settings.current_sprint` disappears.
 5. `V56` (dropping `task.sprint_code`).
 6. `V55` plus the preset change algorithm: preview, apply, undo.
 7. Frontend: the preset change wizard, the screen from `docs/work-presets.md`, point 6.3.
@@ -422,7 +422,7 @@ Four changes in the "Exists (do not change the shape)" section:
 | `BootstrapDto` gets `organization`, `organizations`, `onboarding` | multi-tenancy, onboarding | required |
 | `UserDto.role` becomes the role in the organization, `emailVerified` is added | multi-tenancy, onboarding | required |
 | `GET /api/workspace/*` gets a required `?projectId=` | presets, multi-tenancy | required |
-| `GET /api/admin/members` returns organization members, not all accounts | multi-tenancy | required |
+| `GET /api/organization/members` returns organization members, not all accounts | multi-tenancy | required |
 
 Changes in the shared rules:
 

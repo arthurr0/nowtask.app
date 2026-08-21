@@ -130,7 +130,7 @@ board is not pulled in.
 | Backend unreachable or timed out | A message with the API address and a note that the backend is not responding. No retry loop. |
 | 401 | The key is invalid, revoked or expired. A new one has to be generated and the server restarted. |
 | 403 with a missing scope | The name of the missing scope, the list of scopes the key has, and instructions on what to ask the administrator for. |
-| 403 on a path closed to keys | A note that no scope unlocks it (applies to `/api/admin/**` and session login). |
+| 403 on a path closed to keys | A note that no scope unlocks it (applies to `/api/organization/**` and session login). |
 | 404 | A note that no such task, rule or subtask exists. |
 | 400 | Rejected input together with the message from the API. |
 | 422 | A broken workspace rule, for example a disallowed status transition. The model is told directly so that it does not repeat the same values. |
@@ -144,7 +144,7 @@ environment, they pass an explicit `env` section from the configuration instead.
 
 **All tools return "nowtask rejected the API key (401)"**
 The key was revoked, expired or comes from a different instance. Generate a new one in
-Administration and restart the MCP server. A key cannot be read back after the fact, the database
+Organization and restart the MCP server. A key cannot be read back after the fact, the database
 only holds a hash.
 
 **A write tool reports a missing scope even though the key has it**
@@ -173,4 +173,4 @@ npx @modelcontextprotocol/inspector --cli node mcp/dist/index.js \
 **Agent changes do not show up as agent changes**
 In task history an entry made with a key has a `ruleName` field starting with `agent:`, followed by
 the key name and its prefix after the colon. The full trace, together with the method, path and
-response code, is in the event log under `GET /api/admin/audit`.
+response code, is in the event log under `GET /api/organization/audit`.
