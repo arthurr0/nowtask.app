@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/html/layout :: page(~{::content})}">
+  <body>
+    <th:block th:fragment="content">
+      <th:block th:if="${reminder}">
+        <th:block th:replace="~{mail/html/parts :: eyebrow(#{mail.invite.eyebrowReminder})}" />
+      </th:block>
+      <th:block th:unless="${reminder}">
+        <th:block th:replace="~{mail/html/parts :: eyebrow(#{mail.invite.eyebrow})}" />
+      </th:block>
+      <th:block th:replace="~{mail/html/parts :: heading(#{mail.invite.title(${organizationName})})}" />
+      <th:block th:if="${reminder}">
+        <th:block
+          th:replace="~{mail/html/parts :: paragraph(#{mail.invite.bodyReminder(${inviterName}, ${organizationName})})}"
+        />
+      </th:block>
+      <th:block th:unless="${reminder}">
+        <th:block
+          th:replace="~{mail/html/parts :: paragraph(#{mail.invite.body(${inviterName}, ${organizationName})})}"
+        />
+      </th:block>
+      <th:block th:replace="~{mail/html/parts :: button(${link}, #{mail.invite.action})}" />
+      <th:block th:replace="~{mail/html/parts :: fallback(${link})}" />
+      <th:block th:replace="~{mail/html/parts :: rule}" />
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 12px 0 0">
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.invite.organization}, ${organizationName})}" />
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.invite.role}, ${roleName})}" />
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.common.validUntil}, ${expires})}" />
+      </table>
+
+      <th:block th:replace="~{mail/html/parts :: note(#{mail.invite.note})}" />
+    </th:block>
+  </body>
+</html>

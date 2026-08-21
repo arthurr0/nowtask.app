@@ -1,26 +1,21 @@
 package app.nowtask.integrations;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.springframework.stereotype.Component;
 import app.nowtask.integrations.api.Channels.Delivery;
 
 @Component
 class MailChannel {
 
-    private final ObjectProvider<JavaMailSender> mail;
-    private final String host;
-    private final String from;
+    private final Mailer mailer;
+    private final MailRenderer renderer;
 
-    MailChannel(
-            ObjectProvider<JavaMailSender> mail,
-            @Value("${spring.mail.host:}") String host,
-            @Value("${nowtask.mail.from:nowtask@localhost}") String from) {
-        this.mail = mail;
-        this.host = host;
-        this.from = from;
+    MailChannel(Mailer mailer, MailRenderer renderer) {
+        this.mailer = mailer;
+        this.renderer = renderer;
     }
 
     Delivery send(Integration integration, String event, String taskKey, String message) {
@@ -28,33 +23,36 @@ class MailChannel {
         if (to.isBlank()) {
             return new Delivery(false, "The mail integration has no recipient address");
         }
-        if (host.isBlank()) {
-            return new Delivery(false, "Mail is not configured, set NOWTASK_MAIL_HOST");
-        }
 
-        JavaMailSender sender = mail.getIfAvailable();
-        if (sender == null) {
-            return new Delivery(false, "Mail is not configured, set NOWTASK_MAIL_HOST");
-        }
+        Locale locale = MailConfig.DEFAULT_LOCALE;
+        String key = taskKey == null || taskKey.isBlank() ? null : taskKey;
+        String title = label(event, locale);
 
-        SimpleMailMessage letter = new SimpleMailMessage();
-        letter.setFrom(from);
-        letter.setTo(to.split("\\s*,\\s*"));
-        letter.setSubject(subject(event, taskKey));
-        letter.setText(message);
+        Map<String, Object> model = MailRenderer.model();
+        model.put("title", title);
+        model.put("event", event);
+        model.put("message", message);
+        model.put("taskKey", key);
+        model.put("link", key == null ? null : renderer.appUrl() + "/app/tasks/" + key);
+        model.put("preheader", renderer.message("mail.notification.preheader", locale));
 
-        try {
-            sender.send(letter);
-            return new Delivery(true, "Sent to " + to);
-        } catch (RuntimeException e) {
-            String reason = e.getMessage();
-            return new Delivery(false, reason == null || reason.isBlank() ? e.getClass().getSimpleName() : reason);
-        }
+        String subject = key == null
+                ? renderer.message("mail.notification.subject", locale, title)
+                : renderer.message("mail.notification.subjectTask", locale, title, key);
+
+        List<String> recipients = Arrays.stream(to.split("\\s*,\\s*"))
+                .map(String::trim)
+                .filter(address -> !address.isBlank())
+                .toList();
+
+        Mailer.Result result = mailer.deliver(recipients, renderer.render("notification", locale, subject, model));
+
+        return new Delivery(result.sent(), result.detail());
     }
 
-    private static String subject(String event, String taskKey) {
-        return taskKey == null || taskKey.isBlank()
-                ? "nowtask: " + event
-                : "nowtask: " + event + " (" + taskKey + ")";
+    private String label(String event, Locale locale) {
+        String code = "mail.event." + event;
+        String resolved = renderer.message(code, locale);
+        return code.equals(resolved) ? event : resolved;
     }
 }

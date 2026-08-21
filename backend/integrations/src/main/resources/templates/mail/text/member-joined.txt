@@ -1,0 +1,14 @@
+[(#{mail.memberJoined.title(${memberName})})]
+
+[(#{mail.memberJoined.body(${memberName}, ${organizationName})})]
+
+[(#{mail.memberJoined.member})]: [(${memberName})]
+[(#{mail.memberJoined.address})]: [(${memberEmail})]
+[(#{mail.invite.organization})]: [(${organizationName})]
+
+[(#{mail.memberJoined.action})]:
+[(${link})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

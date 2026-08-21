@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/html/layout :: page(~{::content})}">
+  <body>
+    <th:block th:fragment="content">
+      <th:block th:replace="~{mail/html/parts :: eyebrow(#{mail.verifyEmail.eyebrow})}" />
+      <th:block th:replace="~{mail/html/parts :: heading(#{mail.verifyEmail.title})}" />
+      <th:block th:replace="~{mail/html/parts :: paragraph(#{mail.verifyEmail.body(${name})})}" />
+      <th:block th:replace="~{mail/html/parts :: button(${link}, #{mail.verifyEmail.action})}" />
+      <th:block th:replace="~{mail/html/parts :: fallback(${link})}" />
+      <th:block th:replace="~{mail/html/parts :: rule}" />
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 12px 0 0">
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.common.validUntil}, ${expires})}" />
+      </table>
+
+      <th:block th:replace="~{mail/html/parts :: note(#{mail.verifyEmail.note})}" />
+    </th:block>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+[(#{mail.invite.title(${organizationName})})]
+
+[(${reminder} ? #{mail.invite.bodyReminder(${inviterName}, ${organizationName})} : #{mail.invite.body(${inviterName}, ${organizationName})})]
+
+[(#{mail.invite.action})]:
+[(${link})]
+
+[(#{mail.invite.organization})]: [(${organizationName})]
+[(#{mail.invite.role})]: [(${roleName})]
+[(#{mail.common.validUntil})]: [(${expires})]
+
+[(#{mail.invite.note})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

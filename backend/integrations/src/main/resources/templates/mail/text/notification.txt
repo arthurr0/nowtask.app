@@ -1,0 +1,15 @@
+[(${title})]
+
+[(${message})]
+
+[(#{mail.notification.event})]: [(${event})]
+[# th:if="${taskKey}"][(#{mail.notification.task})]: [(${taskKey})][/]
+[# th:if="${link}"]
+[(#{mail.notification.action})]:
+[(${link})][/]
+
+[(#{mail.notification.note})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

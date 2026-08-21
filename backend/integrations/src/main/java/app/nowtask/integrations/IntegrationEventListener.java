@@ -2,6 +2,7 @@ package app.nowtask.integrations;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,7 +21,7 @@ class IntegrationEventListener {
     IntegrationEventListener(
             NotificationService notifications,
             IntegrationService integrations,
-            AsyncTaskExecutor executor) {
+            @Qualifier("applicationTaskExecutor") AsyncTaskExecutor executor) {
         this.notifications = notifications;
         this.integrations = integrations;
         this.executor = executor;

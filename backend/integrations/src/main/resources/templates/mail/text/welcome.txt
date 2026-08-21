@@ -1,0 +1,14 @@
+[(#{mail.welcome.title})]
+
+[(#{mail.welcome.body(${name})})]
+
+[(#{mail.welcome.action})]:
+[(${link})]
+
+01 [(#{mail.welcome.step1})]
+02 [(#{mail.welcome.step2})]
+03 [(#{mail.welcome.step3})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

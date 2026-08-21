@@ -1,0 +1,14 @@
+[(#{mail.verifyEmail.title})]
+
+[(#{mail.verifyEmail.body(${name})})]
+
+[(#{mail.verifyEmail.action})]:
+[(${link})]
+
+[(#{mail.common.validUntil})]: [(${expires})]
+
+[(#{mail.verifyEmail.note})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

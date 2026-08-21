@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/html/layout :: page(~{::content})}">
+  <body>
+    <th:block th:fragment="content">
+      <th:block th:replace="~{mail/html/parts :: eyebrow(#{mail.memberJoined.eyebrow})}" />
+      <th:block th:replace="~{mail/html/parts :: heading(#{mail.memberJoined.title(${memberName})})}" />
+      <th:block
+        th:replace="~{mail/html/parts :: paragraph(#{mail.memberJoined.body(${memberName}, ${organizationName})})}"
+      />
+      <th:block th:replace="~{mail/html/parts :: button(${link}, #{mail.memberJoined.action})}" />
+      <th:block th:replace="~{mail/html/parts :: rule}" />
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 12px 0 0">
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.memberJoined.member}, ${memberName})}" />
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.memberJoined.address}, ${memberEmail})}" />
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.invite.organization}, ${organizationName})}" />
+      </table>
+    </th:block>
+  </body>
+</html>
