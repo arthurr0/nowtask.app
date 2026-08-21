@@ -205,17 +205,22 @@ export interface CustomField {
   type: FieldType;
   scopeKey: string;
   scopeValue?: string;
-  restrictedToRole: RoleId | null;
+  requiredPermission: string | null;
 }
 
-export type PermissionValue = 'yes' | 'no' | 'conditional';
-
 export interface Permission {
-  key: string;
-  admin: PermissionValue;
-  manager: PermissionValue;
-  member: PermissionValue;
-  guest: PermissionValue;
+  code: string;
+  group: string;
+}
+
+export interface Role {
+  id: string;
+  code: string;
+  name: string;
+  position: number;
+  isProtected: boolean;
+  permissions: string[];
+  memberCount: number;
 }
 
 export interface LanguageInfo {

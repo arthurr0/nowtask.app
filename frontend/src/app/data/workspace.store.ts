@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { I18nService } from '../core/i18n/i18n.service';
+import { OnboardingService } from '../core/onboarding.service';
 import { firstValueFrom } from 'rxjs';
 import type {
   BootstrapDto,
@@ -46,6 +47,7 @@ export interface SearchResultDto {
 export class WorkspaceStore {
   private readonly http = inject(HttpClient);
   private readonly i18n = inject(I18nService);
+  private readonly onboarding = inject(OnboardingService);
 
   private readonly bootstrapSignal = signal<BootstrapDto | null>(null);
   private readonly tasksSignal = signal<TaskDto[]>([]);
@@ -78,6 +80,12 @@ export class WorkspaceStore {
   readonly navigation = computed<NavItemDto[]>(() => this.bootstrapSignal()?.navigation ?? []);
   readonly currentSprint = computed(() => this.settings()?.currentSprint ?? '');
   readonly activeRuleCount = computed(() => this.bootstrapSignal()?.activeRuleCount ?? 0);
+
+  readonly permissions = computed<readonly string[]>(() => this.bootstrapSignal()?.permissions ?? []);
+
+  can(permission: string): boolean {
+    return this.permissions().includes(permission);
+  }
 
   readonly currentUser = computed<UserDto | null>(
     () => this.bootstrapSignal()?.currentUser ?? null,
@@ -122,6 +130,7 @@ export class WorkspaceStore {
       ]);
       this.bootstrapSignal.set(bootstrap);
       this.tasksSignal.set(page.items);
+      this.onboarding.adopt(bootstrap.onboarding);
     } catch (error) {
       this.errorSignal.set(describe(error));
     } finally {
@@ -142,7 +151,9 @@ export class WorkspaceStore {
   }
 
   async reloadBootstrap(): Promise<void> {
-    this.bootstrapSignal.set(await firstValueFrom(this.http.get<BootstrapDto>('/api/bootstrap')));
+    const bootstrap = await firstValueFrom(this.http.get<BootstrapDto>('/api/bootstrap'));
+    this.bootstrapSignal.set(bootstrap);
+    this.onboarding.adopt(bootstrap.onboarding);
   }
 
   user(id: string | null): UserDto | null {
@@ -242,12 +253,14 @@ export class WorkspaceStore {
   async createTask(input: NewTaskInput): Promise<TaskDto> {
     const created = await firstValueFrom(this.http.post<TaskDto>('/api/tasks', input));
     this.tasksSignal.update((tasks) => [created, ...tasks]);
+    void this.onboarding.syncAfterActivity();
     return created;
   }
 
   async patchTask(taskKey: string, patch: Record<string, unknown>): Promise<TaskDto> {
     const updated = await firstValueFrom(this.http.patch<TaskDto>(`/api/tasks/${taskKey}`, patch));
     this.replaceTask(updated);
+    void this.onboarding.syncAfterActivity();
     return updated;
   }
 
@@ -272,6 +285,7 @@ export class WorkspaceStore {
       this.http.post('/api/tasks/bulk/status', { keys: [...taskKeys], statusId }),
     );
     await this.reloadTasks();
+    void this.onboarding.syncAfterActivity();
   }
 
   async deleteTasks(taskKeys: readonly string[]): Promise<void> {
@@ -402,7 +416,7 @@ export class WorkspaceStore {
     fieldKey: string;
     type: string;
     scopeLabel: string;
-    restrictedToRole: string | null;
+    requiredPermission: string | null;
   }): Promise<CustomFieldDto> {
     return firstValueFrom(this.http.post<CustomFieldDto>('/api/workspace/custom-fields', body));
   }

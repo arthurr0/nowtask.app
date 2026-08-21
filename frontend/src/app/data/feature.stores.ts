@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { OnboardingService } from '../core/onboarding.service';
 import { firstValueFrom } from 'rxjs';
 import type {
   AgentsOverviewDto,
@@ -16,7 +17,9 @@ import type {
   IssuedApiKeyDto,
   MilestoneDto,
   OverviewDto,
+  PermissionCatalogDto,
   PermissionDto,
+  RoleDto,
   RuleDto,
   RunDto,
   SubtaskDto,
@@ -66,6 +69,7 @@ abstract class LoadableStore {
 
 @Injectable({ providedIn: 'root' })
 export class RulesStore extends LoadableStore {
+  private readonly onboarding = inject(OnboardingService);
   private readonly rulesSignal = signal<RuleDto[]>([]);
   private readonly runsSignal = signal<Record<string, RunDto[]>>({});
   private readonly loadedSignal = signal(false);
@@ -103,6 +107,7 @@ export class RulesStore extends LoadableStore {
     this.rulesSignal.update((rules) =>
       rules.map((rule) => (rule.id === updated.id ? updated : rule)),
     );
+    void this.onboarding.syncAfterActivity();
   }
 
   rule(id: string): RuleDto | null {
@@ -252,9 +257,11 @@ export class AgentsStore extends LoadableStore {
 
 @Injectable({ providedIn: 'root' })
 export class AdminStore extends LoadableStore {
+  private readonly onboarding = inject(OnboardingService);
   private readonly membersSignal = signal<UserDto[]>([]);
   private readonly teamsSignal = signal<TeamDto[]>([]);
   private readonly permissionsSignal = signal<PermissionDto[]>([]);
+  private readonly rolesSignal = signal<RoleDto[]>([]);
   private readonly apiKeysSignal = signal<ApiKeyDto[]>([]);
   private readonly auditSignal = signal<AuditPageDto | null>(null);
   private readonly auditPageSignal = signal(0);
@@ -264,6 +271,7 @@ export class AdminStore extends LoadableStore {
   readonly members = this.membersSignal.asReadonly();
   readonly teams = this.teamsSignal.asReadonly();
   readonly permissions = this.permissionsSignal.asReadonly();
+  readonly roles = this.rolesSignal.asReadonly();
   readonly apiKeys = this.apiKeysSignal.asReadonly();
 
   async load(): Promise<void> {
@@ -271,11 +279,12 @@ export class AdminStore extends LoadableStore {
       const [members, teams, permissions] = await Promise.all([
         firstValueFrom(this.http.get<UserDto[]>('/api/admin/members')),
         firstValueFrom(this.http.get<TeamDto[]>('/api/admin/teams')),
-        firstValueFrom(this.http.get<PermissionDto[]>('/api/admin/permissions')),
+        firstValueFrom(this.http.get<PermissionCatalogDto>('/api/admin/permissions')),
       ]);
       this.membersSignal.set(members);
       this.teamsSignal.set(teams);
-      this.permissionsSignal.set(permissions);
+      this.permissionsSignal.set(permissions.catalog);
+      this.rolesSignal.set(permissions.roles);
 
       try {
         this.apiKeysSignal.set(
@@ -292,6 +301,7 @@ export class AdminStore extends LoadableStore {
       this.http.post<UserDto>('/api/admin/members', { name, email, role }),
     );
     await this.load();
+    void this.onboarding.syncAfterActivity();
     return created;
   }
 

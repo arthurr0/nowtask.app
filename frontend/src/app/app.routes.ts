@@ -1,5 +1,6 @@
 import type { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
+import { onboardingGuard, orgGuard } from './core/org.guard';
 
 export const routes: Routes = [
   {
@@ -19,8 +20,41 @@ export const routes: Routes = [
     loadComponent: () => import('./features/signup/signup').then((m) => m.Signup),
   },
   {
-    path: 'app',
+    path: 'forgot-password',
+    title: 'nowtask',
+    loadComponent: () => import('./features/login/forgot-password').then((m) => m.ForgotPassword),
+  },
+  {
+    path: 'reset-password',
+    title: 'nowtask',
+    loadComponent: () => import('./features/login/reset-password').then((m) => m.ResetPassword),
+  },
+  {
+    path: 'invite/:token',
+    title: 'nowtask',
+    loadComponent: () =>
+      import('./features/onboarding/invite-landing').then((m) => m.InviteLanding),
+  },
+  {
+    path: 'verify-email',
+    title: 'nowtask',
+    loadComponent: () => import('./features/onboarding/verify-email').then((m) => m.VerifyEmail),
+  },
+  {
+    path: 'orgs/new',
+    title: 'nowtask',
     canActivate: [authGuard],
+    loadComponent: () => import('./features/onboarding/create-org').then((m) => m.CreateOrg),
+  },
+  {
+    path: 'onboarding',
+    title: 'nowtask',
+    canActivate: [authGuard, orgGuard],
+    loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.OnboardingWizard),
+  },
+  {
+    path: 'app',
+    canActivate: [authGuard, orgGuard, onboardingGuard],
     loadComponent: () => import('./features/shell/shell').then((m) => m.Shell),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'board' },

@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import type { UserDto } from './api-types';
+import type { SignupResultDto, UserDto } from './api-types';
 import {
   AdminStore,
   AgentsStore,
@@ -13,11 +13,15 @@ import {
   TimelineStore,
 } from '../data/feature.stores';
 import { WorkspaceStore } from '../data/workspace.store';
+import { OnboardingService } from './onboarding.service';
+import { OrgService } from './org.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly orgs = inject(OrgService);
+  private readonly onboarding = inject(OnboardingService);
 
   private readonly stores = [
     inject(WorkspaceStore),
@@ -64,15 +68,49 @@ export class AuthService {
     );
     this.userSignal.set(user);
     this.checkedSignal.set(true);
+    this.orgs.clear();
+    this.onboarding.clear();
   }
 
-  async signup(name: string, email: string, password: string): Promise<void> {
+  async signup(name: string, email: string, password: string): Promise<SignupResultDto> {
     await this.ensureCsrf();
-    const user = await firstValueFrom(
-      this.http.post<UserDto>('/api/auth/signup', { name, email, password }),
+    const result = await firstValueFrom(
+      this.http.post<SignupResultDto>('/api/auth/signup', { name, email, password }),
     );
-    this.userSignal.set(user);
+    this.userSignal.set(result.user);
     this.checkedSignal.set(true);
+    this.orgs.clear();
+    this.onboarding.clear();
+    return result;
+  }
+
+  async verifyEmail(token: string): Promise<UserDto> {
+    await this.ensureCsrf();
+    const user = await firstValueFrom(this.http.post<UserDto>('/api/auth/verify-email', { token }));
+    if (this.userSignal()) {
+      this.userSignal.set(user);
+    }
+    return user;
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await this.ensureCsrf();
+    await firstValueFrom(this.http.post('/api/auth/forgot-password', { email }));
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    await this.ensureCsrf();
+    await firstValueFrom(this.http.post('/api/auth/reset-password', { token, password }));
+  }
+
+  async resendVerification(): Promise<void> {
+    await firstValueFrom(this.http.post('/api/auth/resend-verification', {}));
+  }
+
+  async reload(): Promise<UserDto | null> {
+    this.checkedSignal.set(false);
+    await this.restore();
+    return this.userSignal();
   }
 
   private async ensureCsrf(): Promise<void> {
@@ -94,6 +132,8 @@ export class AuthService {
     for (const store of this.stores) {
       store.clear();
     }
+    this.orgs.clear();
+    this.onboarding.clear();
   }
 
   markSignedOut(): void {

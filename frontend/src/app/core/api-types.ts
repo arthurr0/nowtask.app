@@ -1,15 +1,22 @@
 import type { Priority, RoleId, StatusCategory } from './models';
 
+export interface RoleRefDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export interface UserDto {
   id: string;
   name: string;
   shortName: string;
   initials: string;
   email: string;
-  role: RoleId;
+  role: RoleRefDto | null;
   capacity: number;
   pending: boolean;
   invitedOn: string | null;
+  emailVerified: boolean;
 }
 
 export interface TeamDto {
@@ -124,8 +131,10 @@ export interface BootstrapDto {
   savedViews: SavedViewDto[];
   settings: WorkspaceSettingsDto;
   navigation: NavItemDto[];
+  permissions: string[];
   sprints: string[];
   activeRuleCount: number;
+  onboarding: OnboardingDto | null;
 }
 
 export interface TaskDto {
@@ -253,7 +262,7 @@ export interface CustomFieldDto {
   fieldKey: string;
   type: string;
   scopeLabel: string;
-  restrictedToRole: RoleId | null;
+  requiredPermission: string | null;
 }
 
 export interface MilestoneDto {
@@ -263,11 +272,23 @@ export interface MilestoneDto {
 }
 
 export interface PermissionDto {
-  key: string;
-  admin: 'yes' | 'no' | 'conditional';
-  manager: 'yes' | 'no' | 'conditional';
-  member: 'yes' | 'no' | 'conditional';
-  guest: 'yes' | 'no' | 'conditional';
+  code: string;
+  group: string;
+}
+
+export interface RoleDto {
+  id: string;
+  code: string;
+  name: string;
+  position: number;
+  isProtected: boolean;
+  permissions: string[];
+  memberCount: number;
+}
+
+export interface PermissionCatalogDto {
+  catalog: PermissionDto[];
+  roles: RoleDto[];
 }
 
 export interface ApiKeyDto {
@@ -419,4 +440,123 @@ export interface IntegrationDto {
 export interface IntegrationTestDto {
   ok: boolean;
   detail: string;
+}
+
+export interface OrgMembershipDto {
+  organizationId: string;
+  name: string;
+  slug: string;
+  state: string;
+  roleId: string;
+  roleCode: string;
+  roleName: string;
+  permissions: string[];
+}
+
+export interface OrgDto {
+  id: string;
+  name: string;
+  slug: string;
+  ssoDomain: string | null;
+  defaultPresetCode: string;
+  state: string;
+  createdAt: string;
+}
+
+export interface SuggestedOrgDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface SignupResultDto {
+  user: UserDto;
+  suggestOrg: SuggestedOrgDto | null;
+}
+
+export type OnboardingFlow = 'founder' | 'invitee';
+
+export type OnboardingStep = 'orgName' | 'preset' | 'project' | 'invite' | 'tour' | 'done';
+
+export interface ChecklistItemDto {
+  code: string;
+  done: boolean;
+  at: string | null;
+}
+
+export interface OnboardingDto {
+  flow: OnboardingFlow;
+  step: OnboardingStep;
+  checklist: ChecklistItemDto[];
+  tourSeen: boolean;
+  completed: boolean;
+  dismissed: boolean;
+}
+
+export type InviteState = 'open' | 'expired' | 'revoked' | 'accepted' | 'unknown';
+
+export interface InvitePreviewDto {
+  organizationName: string;
+  organizationSlug: string;
+  invitedByName: string;
+  role: string;
+  maskedEmail: string;
+  expiresAt: string | null;
+  state: InviteState;
+  accountExists: boolean;
+  ssoAvailable: boolean;
+}
+
+export interface InviteDto {
+  id: string;
+  email: string;
+  roleCode: string;
+  roleName: string;
+  roleId: string;
+  state: InviteState;
+  invitedById: string;
+  invitedByName: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface BulkInviteResultDto {
+  sent: InviteDto[];
+  failed: { email: string; code: string; messageKey: string }[];
+}
+
+export interface AcceptedInviteDto {
+  organizationId: string;
+  organizationName: string;
+  roleCode: string;
+  user: UserDto;
+}
+
+export interface PresetSummaryDto {
+  code: string;
+  statusCount: number;
+  sprintsEnabled: boolean;
+  milestonesEnabled: boolean;
+  estimateUnit: string | null;
+  wipEnforced: boolean;
+  dependencyGuard: boolean;
+  defaultViewCode: string;
+}
+
+export interface PresetStatusDto {
+  code: string;
+  label: string;
+  category: StatusCategory;
+  wipLimit: number | null;
+  position: number;
+  swatch: string;
+}
+
+export interface PresetDetailDto {
+  summary: PresetSummaryDto;
+  statuses: PresetStatusDto[];
+  transitions: { from: string; to: string; requirement: string | null }[];
+  fields: { name: string; fieldKey: string; type: string; options: string[] }[];
+  views: string[];
+  rules: { name: string; summary: string; supported: boolean }[];
 }
