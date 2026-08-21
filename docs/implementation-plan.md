@@ -43,7 +43,7 @@ Detailed breakdown:
 
 | Number | Contents | Reversible |
 | --- | --- | --- |
-| `V40` | `organization`, `organization_member`, the default organization, role migration | yes |
+| `V40` | `organization`, `organization_role`, `organization_role_permission`, `organization_member`, the default organization, the four role templates, role migration, `custom_field.required_permission`, `api_key.role_id` | yes |
 | `V41` | `organization_id` (without `NOT NULL`) on 24 tables | yes |
 | `V42` | filling in `organization_id` | yes |
 | `V43` | `NOT NULL`, `DEFAULT`, foreign keys, rebuilt unique keys, indexes | **no** |
@@ -60,12 +60,12 @@ Detailed breakdown:
 | `V60` | `organization_invite` | yes |
 | `V61` | `email_verification`, `app_user.email_verified_at`, `state`, `oidc_subject` | yes |
 | `V62` | `onboarding_progress` | yes |
-| `V63` | moving the pending account from demo data into an invitation, `email_verified_at` for demo accounts | yes |
-| `V64` | dropping `app_user.role`, `capacity`, `pending`, `invited_on` | **no** |
+| `V63` | moving accounts still marked `pending` into invitations | yes |
+| `V64` | dropping `app_user.role`, `capacity`, `pending`, `invited_on` and `custom_field.restricted_to_role` | **no** |
 | `V65` to `V69` | onboarding area reserve | not applicable |
 
 **Why `V64` and not `V45`.** Flyway runs migrations in numeric order. Dropping `app_user.pending`
-requires the `hanna@kontrahent.pl` account to be moved into `organization_invite` first, and that
+requires every account still marked pending to be moved into `organization_invite` first, and that
 table is created in `V60`. If the cleanup were numbered `V45`, it would run before `V60` and delete
 the data. This one step deliberately steps outside its own area's range.
 
@@ -82,25 +82,31 @@ stop the application from starting for everyone.
 Modules: `shared`, `identity`, `app`. Migrations: `V40`, `V41`, `V42`.
 **Touches neither `backend/tasks`, nor `backend/workspace`, nor `frontend/`.**
 
-1. `shared`: `OrganizationContext` (a record with `userId`, `organizationId`, `role`),
-   `OrganizationContextHolder` (`ThreadLocal`), `OrganizationEvents`.
-2. `identity`: the `Organization` and `OrganizationMember` entities, repositories,
-   `OrganizationService`, extending the `UserDirectory` interface with `currentMembership()`
-   and `organizations()`.
+1. `shared`: `Permission` (the catalog from `docs/multi-tenancy.md`, point 2.2.1),
+   `OrganizationContext` (a record with `userId`, `organizationId`, `roleId`, `roleCode`,
+   `permissions`), `OrganizationContextHolder` (`ThreadLocal`), `ForbiddenException`,
+   `OrganizationEvents`. **`RoleId` is deleted**, together with `seesProtectedFields()`.
+2. `identity`: the `Organization`, `OrganizationRole` and `OrganizationMember` entities,
+   repositories, `OrganizationService`, `RoleService`, extending the `UserDirectory` interface with
+   `currentMembership()` and `organizations()`. `Permissions.ALL` stops being a static matrix,
+   `MemberService.adminCount()` becomes the invariant query from point 2.2.1.
 3. `identity`: `UserDirectoryService.findAll()` and `findActive()` join `organization_member`.
    `AppUserRepository.findAllByOrderByPendingAscNameAsc()` disappears.
-4. `app`: `OrganizationContextFilter` (resolving the context from the session or from `X-Org-Id`),
+4. `app`: `OrganizationContextFilter` (resolving the context from the session or from `X-Org-Id`,
+   and rebuilding the request authorities as `PERM_<code>`),
    `OrganizationContextTransactionListener` (`set_config` at the start of a transaction),
-   `SecurityConfig` lets `GET /api/orgs` and `POST /api/orgs` through without a selected
-   organization.
-5. `app`: `OrgController` with the eight paths from `docs/multi-tenancy.md`, point 10.
+   `SecurityConfig` replaces both `hasRole("ADMIN")` rules with `hasAuthority("PERM_...")` and lets
+   `GET /api/orgs` and `POST /api/orgs` through without a selected organization.
+5. `app`: `OrgController` and `RoleController` with the paths from `docs/multi-tenancy.md`,
+   point 10.
    The controller lives in `identity`, registration happens in `app` through package scanning as it
    does today.
 6. `app`: `BootstrapController` adds `organization` and `organizations`.
 7. Migrations `V40` to `V42`.
 
-At the end of the phase the application works exactly as it did before it, with one organization,
-and additionally exposes `/api/orgs`. `app_user.role` is still read, but `identity` prefers the
+At the end of the phase the application works exactly as it did before it, with one organization and
+the four seeded role templates reproducing today's behavior, and additionally exposes `/api/orgs`
+and `/api/admin/roles`. `app_user.role` is still read, but `identity` prefers the
 value from the membership when one exists.
 
 **Exit gate:** `TenantSchemaTest` passes for `V40` to `V42` in the version that only checks column

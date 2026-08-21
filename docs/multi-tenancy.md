@@ -63,42 +63,130 @@ as a subdomain, see point 5.
 confirms `email_verified`, an account signing in through OIDC gets membership in that organization
 automatically. The column is `UNIQUE`, because one domain cannot point at two companies.
 
-### 2.2 Membership with a role
+### 2.2 Membership with a role defined by the organization
 
-The role moves from `app_user` to the membership. This is the change with no way back without data
-loss, because `app_user.role` disappears.
+The role moves from `app_user` to the membership, and the role itself stops being a constant in the
+code. Every organization defines its own roles, because a five person agency and a company with
+three departments do not share one division of labour. This is the change with no way back without
+data loss, because `app_user.role` disappears.
 
 ```sql
+CREATE TABLE organization_role (
+    id              UUID        PRIMARY KEY,
+    organization_id UUID        NOT NULL REFERENCES organization (id) ON DELETE CASCADE,
+    code            TEXT        NOT NULL,
+    name            TEXT        NOT NULL,
+    position        INTEGER     NOT NULL DEFAULT 0,
+    protected       BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, code)
+);
+
+CREATE TABLE organization_role_permission (
+    role_id    UUID NOT NULL REFERENCES organization_role (id) ON DELETE CASCADE,
+    permission TEXT NOT NULL,
+    PRIMARY KEY (role_id, permission)
+);
+
 CREATE TABLE organization_member (
-    id              UUID PRIMARY KEY,
+    id              UUID        PRIMARY KEY,
     organization_id UUID        NOT NULL REFERENCES organization (id) ON DELETE CASCADE,
     user_id         UUID        NOT NULL REFERENCES app_user (id) ON DELETE CASCADE,
-    role            TEXT        NOT NULL,
+    role_id         UUID        NOT NULL REFERENCES organization_role (id) ON DELETE RESTRICT,
     capacity        INTEGER     NOT NULL DEFAULT 0,
     state           TEXT        NOT NULL DEFAULT 'active',
     joined_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_seen_at    TIMESTAMPTZ,
     UNIQUE (organization_id, user_id),
-    CONSTRAINT organization_member_role_check  CHECK (role IN ('admin', 'manager', 'member', 'guest')),
     CONSTRAINT organization_member_state_check CHECK (state IN ('active', 'disabled'))
 );
 
 CREATE INDEX idx_member_user ON organization_member (user_id, state);
 CREATE INDEX idx_member_org  ON organization_member (organization_id, state);
+CREATE INDEX idx_role_org    ON organization_role (organization_id, position);
 ```
+
+`ON DELETE RESTRICT` on `role_id` is deliberate: a role still held by somebody cannot be deleted,
+the members have to be moved off it first. That is a clearer error than silently demoting people.
 
 Consequences:
 
-- `RoleId` (the `shared` module) stays unchanged, only the place we read it from changes.
-- `capacity` (today `app_user.capacity`, `26` in the demo data) is a team quantity, so it moves to
-  the membership. `UserDto.capacity` in the API does not change shape, the source changes.
+- **`RoleId` disappears from `shared`.** So do `CHECK (role IN (...))` on the columns, `hasRole(...)`
+  in `SecurityConfig` and `RoleId.seesProtectedFields()`. What replaces them is point 2.2.1.
+- `capacity` (today `app_user.capacity`) is a team quantity, so it moves to the membership.
+  `UserDto.capacity` in the API does not change shape, the source changes.
+- `UserDto.role` stops being one of four fixed strings and becomes `{ id, code, name }`, because the
+  frontend can no longer translate a role through a dictionary. The name comes from the
+  organization, so it is not translatable and is displayed as entered.
 - `AppUserDetailsService.loadUserByUsername` used to grant `roles(user.getRole().name())`. After the
-  change, authentication does not know the organization yet, so **roles disappear from
-  `GrantedAuthority`**. Authorization moves to checking the role from the active membership, see
-  point 5.3.
+  change, authentication does not know the organization yet, so **authorities disappear from
+  authentication** and are rebuilt per request, see point 5.3.
 - An account without any active membership is a valid state (a fresh signup, removal from the last
   organization). Such an account signs in and sees only the "create an organization or ask for an
   invitation" screen.
+
+### 2.2.1 The permission catalog
+
+Roles are data, permissions are not. The catalog is a fixed enum in `shared`, because every one of
+its entries corresponds to a real check in the code, and a permission nobody checks is a lie told to
+the administrator. Adding a permission means a code change, defining a role does not.
+
+The starting point is `Permissions.ALL` from `identity`, today a static matrix that
+`GET /api/admin/permissions` only displays and nothing enforces. Those eleven entries become real
+permissions, plus seven that enforcement needs and the matrix never had:
+
+| Permission | Replaces / guards |
+| --- | --- |
+| `tasks.create_edit` | `perm.createEdit` |
+| `tasks.comment` | `perm.comment` |
+| `tasks.delete` | `perm.deleteTasks`, `POST /api/tasks/bulk/delete` |
+| `tasks.status_outside_flow` | `perm.statusOutsideFlow` |
+| `fields.manage` | `perm.manageFields` |
+| `fields.view_protected` | `perm.viewProtected`, `TaskService.visibleCustomFields` |
+| `automations.manage` | `perm.manageAutomations` |
+| `automations.run` | `perm.runRules` |
+| `members.invite` | `perm.invite` |
+| `data.export` | `perm.export`, the whole `exports` module |
+| `apikeys.manage` | `perm.apiKeys`, `ApiKeyController` |
+| `members.manage` | editing and removing members, changing their role |
+| `roles.manage` | creating, editing and deleting the organization roles |
+| `projects.manage` | projects, statuses, transitions, epics, milestones |
+| `settings.manage` | `workspace_settings` |
+| `integrations.manage` | `/api/integrations/**` |
+| `audit.read` | `GET /api/admin/audit` |
+| `org.manage` | renaming and deleting the organization, `sso_domain` |
+
+**The `conditional` value disappears.** Today the matrix gives `manager` a `conditional` on
+`perm.statusOutsideFlow` and `perm.invite`, which corresponds to nothing in the code, because
+nothing checks either. A permission is held or it is not. The nuance that `conditional` was trying
+to express belongs to `status_transition.requirement`, which already exists and works.
+
+**The last administrator invariant** stops being "at least one account with `role = admin`", because
+`admin` no longer exists as a concept. It becomes: **an organization must always have at least one
+active member whose role grants both `members.manage` and `roles.manage`.** Checked in three places,
+each of which can break it: removing a member, changing a member's role, and taking a permission
+away from a role. `MemberService.adminCount()` is replaced by that query.
+
+### 2.2.2 Role templates on organization creation
+
+An organization created with no roles is unusable, and forcing whoever creates it to define a
+permission model before their first task is a bad first five minutes. `V40` therefore seeds four
+roles into every organization, reproducing exactly what the matrix grants today:
+
+| Code | Permissions | `protected` |
+| --- | --- | --- |
+| `admin` | all 18 | yes |
+| `manager` | everything except `apikeys.manage`, `roles.manage`, `org.manage` | no |
+| `member` | `tasks.create_edit`, `tasks.comment`, `automations.run` | no |
+| `guest` | `tasks.comment` | no |
+
+`protected` means the role cannot be deleted and cannot have `members.manage` or `roles.manage`
+taken away. It is a second net under the invariant above, so that an organization cannot be locked
+out by editing every role. Everything else, the name, the remaining permissions, the position, is
+editable, and any number of further roles can be added.
+
+The codes are unique per organization, not globally, so one company can rename `manager` to
+`Team lead` and another can delete it entirely.
 
 ### 2.3 Global identity, not per company
 
@@ -471,23 +559,64 @@ switch would throw all other tabs onto the login screen.
 
 ### 5.3 Role and permissions
 
-`AppUserDetailsService` stops granting `roles(...)`, because at authentication time the organization
-is unknown. We resolve the role from the active membership in the context filter and expose it
-through `shared`:
+`AppUserDetailsService` stops granting authorities, because at authentication time the organization
+is unknown, and with roles defined per organization the same account can be an administrator in one
+company and a guest in another. Authorities are rebuilt on every request from the active membership
+and exposed through `shared`:
 
 ```java
-public record OrganizationContext(UUID userId, UUID organizationId, RoleId role) {
-    public boolean isAdmin()   { return role == RoleId.ADMIN; }
-    public boolean canManage() { return role == RoleId.ADMIN || role == RoleId.MANAGER; }
+public record OrganizationContext(
+        UUID userId,
+        UUID organizationId,
+        UUID roleId,
+        String roleCode,
+        Set<Permission> permissions) {
+
+    public boolean can(Permission permission) {
+        return permissions.contains(permission);
+    }
+
+    public void require(Permission permission) {
+        if (!can(permission)) {
+            throw new ForbiddenException("ROLE_FORBIDDEN", permission.code());
+        }
+    }
 }
 ```
 
-The holder (`ThreadLocal`) lives in `shared`, because `shared` depends on nothing and every module
-needs it. Context resolution (the servlet filter, session access, setting the database variables)
-lives in `app`. The organization tables and endpoints live in `identity`.
+`Permission` is an enum in `shared` holding the catalog from point 2.2.1. The holder
+(`ThreadLocal`) also lives in `shared`, because `shared` depends on nothing and every module needs
+it. Context resolution (the servlet filter, session access, setting the database variables) lives in
+`app`. The organization tables and endpoints live in `identity`.
 
-The `custom_field.restricted_to_role` column and `TaskService.visibleCustomFields(task, viewerRole)`
-keep working, only `viewerRole` now comes from the context, not from `app_user.role`.
+`OrganizationContextFilter` does two things per request: it fills the holder, and it replaces the
+authorities on the `Authentication` with one `PERM_<code>` per permission of the active role. That
+keeps declarative rules working in `SecurityConfig`, only they stop naming roles:
+
+```java
+.requestMatchers("/api/integrations/**").hasAuthority("PERM_INTEGRATIONS_MANAGE")
+.requestMatchers(HttpMethod.GET, "/api/admin/audit").hasAuthority("PERM_AUDIT_READ")
+.requestMatchers("/api/admin/roles/**").hasAuthority("PERM_ROLES_MANAGE")
+```
+
+The filter runs after authentication and before `AuthorizationFilter`, in the same place
+`ApiKeyAuthenticationFilter` sits today. Checks that depend on the object being touched rather than
+on the path stay in the services and use `context.require(...)`.
+
+The `custom_field.restricted_to_role` column becomes `custom_field.required_permission`, holding a
+permission code rather than a role name. That is what makes it survive the change: a role name is
+per organization and can be deleted, a permission code is global and stable.
+`TaskService.visibleCustomFields(task, viewerRole)` becomes
+`visibleCustomFields(task, context)` and asks `context.can(...)` for the field's
+`required_permission`. The migration maps every non-null `restricted_to_role` to
+`fields.view_protected`, which reproduces today's behavior exactly, because the current code
+compares nothing to the stored value and only calls `seesProtectedFields()`.
+
+**API keys.** A key gets `api_key.role_id` alongside `organization_id`, so a key carries the
+permissions of a role rather than those of its owner. Removing the owner's membership revokes the
+key (point 2.4), but while it lives its permissions do not follow the owner's role changes.
+`ApiKeyScope` keeps narrowing on top of that: the effective permission set is the intersection of
+the role's permissions and the key's scopes.
 
 ### 5.4 No access
 
@@ -510,37 +639,54 @@ The `code` field does not fit today's error shape `{ status, message, at }`. Tha
 The order matters. Every step is a separate migration so that the deployment can be stopped between
 them.
 
-### V40, organization identity
+### V40, organization identity, roles and permissions
 
-1. `CREATE TABLE organization`, `CREATE TABLE organization_member` (the shape from point 2).
+1. `CREATE TABLE organization`, `organization_role`, `organization_role_permission`,
+   `organization_member` (the shape from point 2.2).
 2. Inserting the default organization with the fixed identifier
    `00000000-0000-0000-0000-000000000042`, name `nowtask`, slug `nowtask`,
-   `default_preset_code = 'kanban'`, `created_by` set to the oldest account (`user:u1`,
-   Artur Koecki). A fixed identifier, because `V2` uses deterministic identifiers and we want
-   environments to be comparable.
-3. Migrating the roles:
+   `default_preset_code = 'kanban'`, `created_by` set to the oldest account. A fixed identifier so
+   that environments stay comparable.
+3. Seeding the four role templates from point 2.2.2 into that organization, with deterministic
+   identifiers derived from the organization and the code, so a re-run lands on the same rows.
+4. Migrating the memberships, mapping the old `app_user.role` string onto the seeded role of the
+   same code:
 
 ```sql
-INSERT INTO organization_member (id, organization_id, user_id, role, capacity, state, joined_at)
+INSERT INTO organization_member (id, organization_id, user_id, role_id, capacity, state, joined_at)
 SELECT gen_random_uuid(),
        '00000000-0000-0000-0000-000000000042',
        u.id,
-       u.role,
+       r.id,
        u.capacity,
        CASE WHEN u.pending THEN 'disabled' ELSE 'active' END,
        u.created_at
-FROM app_user u;
+FROM app_user u
+JOIN organization_role r
+  ON r.organization_id = '00000000-0000-0000-0000-000000000042'
+ AND r.code = u.role;
 ```
+
+The join is inner on purpose. `app_user.role` has a `CHECK` limiting it to the four codes, so every
+row matches, and if one does not, the migration fails loudly instead of creating a member with no
+role.
+
+5. `custom_field.required_permission TEXT`, filled with `'fields.view_protected'` wherever
+   `restricted_to_role IS NOT NULL`. The old column stays until `V64`.
+6. `api_key.role_id`, filled with the `admin` role of the default organization, because that is what
+   an unscoped key meant before this change.
 
 `app_user.role`, `capacity`, `pending` and `invited_on` stay untouched for now. At this point the
 application works exactly as it did before the migration.
 
-**Reversible.** `DROP TABLE organization_member, organization`.
+**Reversible.** `DROP TABLE organization_member, organization_role_permission, organization_role,
+organization`, `DROP COLUMN custom_field.required_permission, api_key.role_id`.
 
 ### V41, the columns
 
 `ALTER TABLE ... ADD COLUMN organization_id UUID` (without `NOT NULL`, without `DEFAULT`) on all 24
-tables. Adding a column without a default is a catalog-only change, it does not rewrite the table,
+tables. `organization_role`, `organization_role_permission` and `organization_member` are not on the
+list: the first two carry the organization already, the third is an identity table (point 2.5). Adding a column without a default is a catalog-only change, it does not rewrite the table,
 so it is fast regardless of the number of tasks.
 
 **Reversible.** `DROP COLUMN`.
@@ -625,7 +771,7 @@ with the old credentials will work (the owner bypasses RLS), so this is a place 
 mistake is easy. `TenantSchemaTest` additionally checks that `current_user <> 'nowtask'` in the
 production profile.
 
-### V64 (the onboarding range), cleaning up `app_user`
+### V64 (the onboarding range), cleaning up `app_user` and the old role column
 
 Irreversible.
 
@@ -634,20 +780,23 @@ ALTER TABLE app_user DROP COLUMN role;
 ALTER TABLE app_user DROP COLUMN capacity;
 ALTER TABLE app_user DROP COLUMN pending;
 ALTER TABLE app_user DROP COLUMN invited_on;
+ALTER TABLE custom_field DROP COLUMN restricted_to_role;
 ```
 
 `pending` and `invited_on` go away, because an invitation is a relation between a person and an
 organization, not a property of an account. They are replaced by `organization_invite` from
-`docs/onboarding.md`.
+`docs/onboarding.md`. `custom_field.restricted_to_role` goes away because `required_permission`
+(point 5.3) replaced it in `V40` and both columns have been written since.
 
-**Why this step is not in the V40 to V49 range.** Before `app_user.pending` is dropped, the only
-pending account in the demo data (`hanna@kontrahent.pl`) has to be moved into `organization_invite`,
-and that table is only created in `V60`. Flyway runs migrations in numeric order, so
-`DROP COLUMN pending` has to have a number higher than `V60`. This one step deliberately steps
-outside its area's range.
+**Why this step is not in the V40 to V49 range.** Any account still carrying `pending = TRUE` has to
+be moved into `organization_invite` before the column disappears, and that table is only created in
+`V60`. Such accounts are produced by `MemberService.invite`, so an installation that has ever
+invited anyone has them. Flyway runs migrations in numeric order, so `DROP COLUMN pending` has to
+have a number higher than `V60`. This one step deliberately steps outside its area's range.
 
 Run it only after deploying the `identity` changes that stop reading those columns (`AppUser`,
-`AppUserDetailsService`, `UserDirectoryService.toView`).
+`AppUserDetailsService`, `UserDirectoryService.toView`) and the `workspace` change that stops
+reading `restricted_to_role`.
 
 The V45 to V49 range stays free as this area's reserve.
 
@@ -656,10 +805,10 @@ The V45 to V49 range stays free as this area's reserve.
 | Step | Migration | Code |
 | --- | --- | --- |
 | 1 | V40 to V42 | unchanged, the application works as it does today |
-| 2 | none | deploying the organization context, `identity` reads the role from the membership and still writes to `app_user.role` too |
+| 2 | none | deploying the organization context and the permission enum, `identity` reads the role from the membership and still writes to `app_user.role` too |
 | 3 | V43, V44 | switching `spring.datasource` to `nowtask_app` |
 | 4 | V60 to V63 | invitations and address verification, moving the pending account |
-| 5 | none | removing the reads of `app_user.role/capacity/pending/invited_on` |
+| 5 | none | removing the reads of `app_user.role/capacity/pending/invited_on` and of `custom_field.restricted_to_role` |
 | 6 | V64 | none |
 
 ---
@@ -670,11 +819,11 @@ Every module listed exists in `backend/settings.gradle.kts`.
 
 | Module | What is added | What has to be fixed | Risk |
 | --- | --- | --- | --- |
-| `shared` | `OrganizationContext` (a record plus a `ThreadLocal` holder), `OrganizationEvents` (`OrganizationCreated`, `MemberJoined`, `MemberRemoved`) | nothing, `RoleId` and `StatusCategory` unchanged | low |
-| `identity` | the `Organization`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `OrgController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting `roles(...)`; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears | **high**, this is where the whole role model changes |
-| `app` | `OrganizationContextFilter`, `OrganizationContextTransactionListener`, a second data source for Flyway, `BootstrapController` returns the organization and the organization list | `SecurityConfig` lets `/api/auth/signup`, `/api/invites/**`, `/api/orgs` through when signed in without an organization | medium |
+| `shared` | `Permission` (the enum from point 2.2.1), `OrganizationContext` (a record plus a `ThreadLocal` holder), `ForbiddenException`, `OrganizationEvents` (`OrganizationCreated`, `MemberJoined`, `MemberRemoved`, `RoleChanged`) | **`RoleId` is deleted**, every module importing it has to move to `Permission`; `StatusCategory` unchanged | **high**, `RoleId` reaches into four modules |
+| `identity` | the `Organization`, `OrganizationRole`, `OrganizationMember`, `OrganizationInvite` entities, `OrganizationService`, `RoleService`, `OrgController`, `RoleController`, extending `UserDirectory` with `currentMembership()` and `organizations()` | `AppUser` loses four fields; `AppUserDetailsService` stops granting authorities; `UserDirectoryService.findAll/findActive` join `organization_member`; `AppUserRepository.findAllByOrderByPendingAscNameAsc` disappears; **`Permissions.ALL` stops being a static matrix** and `GET /api/admin/permissions` starts returning the catalog plus the organization's roles; `MemberService.adminCount()` is replaced by the invariant query from point 2.2.1 | **high**, this is where the whole role model changes |
+| `app` | `OrganizationContextFilter` (fills the holder and rebuilds the request authorities), `OrganizationContextTransactionListener`, a second data source for Flyway, `BootstrapController` returns the organization, the organization list and the caller's permissions | `SecurityConfig` drops both `hasRole("ADMIN")` rules for `hasAuthority("PERM_...")`, and lets `/api/auth/signup`, `/api/invites/**`, `/api/orgs` through when signed in without an organization | **high**, this is where authorization changes shape |
 | `workspace` | `organization_id` in writes, `projectId` as a read parameter | `WorkspaceService.statuses()`, `transitions()`, `epics()`, `customFields()`, `milestones()` **do not filter by project even today**; `nextStatusPosition()` computes `MAX(position)` across the whole table; `createEpic` and `createCustomField` do the same; `updateSettings` does an `UPDATE` without a `WHERE` (only correct under RLS); `defaultProject()` throws `NotFoundException` for an organization without a project | **high**, two scope levels at once (organization and project) |
-| `tasks` | `organization_id` in the entities, the task key assigned from `task_key_sequence` per organization and project | `TaskService.CURRENT_SPRINT = "S24"` is a constant in the code, for a new organization no sprint with that code exists and the board will be empty; `TaskRepository.findByKey` has to hit the (organization, key) pair, because the key stops being globally unique | **high** |
+| `tasks` | `organization_id` in the entities, the task key assigned from `task_key_sequence` per organization and project, `visibleCustomFields` asks the context for `required_permission`, `tasks.delete` and `tasks.status_outside_flow` become real checks | `TaskService.CURRENT_SPRINT = "S24"` is a constant in the code, for a new organization no sprint with that code exists and the board will be empty; `TaskRepository.findByKey` has to hit the (organization, key) pair, because the key stops being globally unique | **high** |
 | `automation` | `organization_id` on `automation_rule` and `automation_run` | `TaskEventListener` receives events from `tasks` by a text key; the key stops being globally unique, so the records in `shared.events.TaskEvents` have to get an `organizationId`; a rule engine running asynchronously has to set the context itself before writing `automation_run` | **high**, a module boundary without a dependency on `tasks` |
 | `analytics` | filtering metrics by organization | `MetricsService.burndown()` and `throughput()` read whole tables without a `WHERE`; under RLS they will start returning organization data, but still not project or sprint data | medium |
 | `integrations` | `organization_id` on integrations and notifications (the tables do not exist yet, they will be created in the V20 to V29 range) | an outgoing webhook must not reveal another company's identifiers; sending mail has to take the sender from the organization settings | medium |
@@ -880,13 +1029,29 @@ POST   /api/orgs/current/leave          -> 204
 GET    /api/orgs/current/export         -> a ZIP of CSVs, Content-Disposition
 GET    /api/orgs/slug-available?slug=   -> {available: boolean, suggestion?: string}
 POST   /api/orgs/{id}/switch            -> BootstrapDto
+
+GET    /api/admin/permissions           -> {catalog: PermissionDto[], roles: RoleDto[]}
+GET    /api/admin/roles                 -> RoleDto[]
+POST   /api/admin/roles                 {code, name, permissions[]} -> RoleDto
+PATCH  /api/admin/roles/{id}            {name?, permissions?, position?} -> RoleDto
+DELETE /api/admin/roles/{id}            {reassignTo} -> 204
 ```
+
+`RoleDto` is `{id, code, name, position, protected, permissions: string[], memberCount}`.
+`PermissionDto` is `{code, group}`, the catalog from point 2.2.1, identical for every organization.
+
+`DELETE /api/admin/roles/{id}` requires `reassignTo`, the identifier of the role its members move
+to, because `organization_member.role_id` is `ON DELETE RESTRICT`. Deleting a role with no members
+still requires the field, and ignores it. A `protected` role cannot be deleted at all.
+
+All five paths require `PERM_ROLES_MANAGE`, except `GET /api/admin/permissions`, which every member
+may read, because the interface shows the caller their own permissions.
 
 `GET /api/orgs` is the only endpoint available when signed in without a selected organization,
 alongside `POST /api/orgs` and `/api/auth/*`. The rest of `/api/**` answers `409 NO_ORGANIZATION`.
 
-`POST /api/orgs` creates in one transaction: the organization, the creator's membership with the
-`admin` role, a `workspace_settings` row, three built-in views (`view.atRisk`, `view.unassigned`,
+`POST /api/orgs` creates in one transaction: the organization, the four role templates from point
+2.2.2, the creator's membership with the `admin` role, a `workspace_settings` row, three built-in views (`view.atRisk`, `view.unassigned`,
 `view.automated`) and switches the session to the new organization. It does not create a project,
 because that is a separate wizard step (`docs/onboarding.md`).
 
@@ -903,7 +1068,8 @@ Changed behavior of existing paths, without a change of shape:
 | Path | Was | Is |
 | --- | --- | --- |
 | `GET /api/bootstrap` | everything in the installation | everything in the active organization, plus `organization` and `organizations` |
-| `GET /api/admin/members` | all accounts | members of the active organization, `role` from the membership |
+| `GET /api/admin/members` | all accounts | members of the active organization, `role` an object from the membership |
+| `GET /api/admin/permissions` | a static matrix of four roles | the permission catalog plus the organization's roles, editable |
 | `GET /api/admin/api-keys` | all keys | keys of the active organization |
 | `GET /api/workspace/*` | the whole installation | the active organization |
 | `GET /api/tasks/{key}` | a globally unique key | a key unique within the organization |
@@ -926,8 +1092,10 @@ consistent.
    the user can fix with one action.
 3. **The `X-Org-Id` header.** To be added to the shared rules next to `X-XSRF-TOKEN`.
 4. **`BootstrapDto`.** Two new fields: `organization`, `organizations`.
-5. **`UserDto.role`.** Clarify that it is the role in the active organization, not a global role.
-   The shape is unchanged.
+5. **`UserDto.role`.** It is the role in the active organization, not a global role, **and its shape
+   changes** from one of four fixed strings to `{id, code, name}`. The name is defined by the
+   organization, so the frontend stops translating it and displays it as entered. Every dictionary
+   entry of the form `role.admin` disappears from the three i18n files.
 6. **`GET /api/workspace/statuses|transitions|custom-fields|milestones|epics`.** Add the required
    `?projectId=` parameter. Today those endpoints return the whole installation, which is already
    wrong with the three projects in the demo data (`NOW`, `MOB`, `DS`), and with many companies it
@@ -939,6 +1107,8 @@ consistent.
 9. **The "corporate login" section.** Clarify that the return from OIDC links an account by email
    address only when `email_verified = true` in the token, and that assignment to an organization
    goes through `organization.sso_domain`.
+10. **A new "Roles and permissions" section.** The five paths from point 10, `RoleDto`,
+    `PermissionDto`, and the `ROLE_FORBIDDEN` code carrying the missing permission in `detail`.
 
 ---
 
@@ -960,3 +1130,10 @@ I am not guessing these, because each one is a product or legal decision, not a 
    a DNS entry.
 4. **Retention of a deleted organization.** I put down 30 days, but that number is out of thin air
    and should follow from a privacy policy, which the repository does not have.
+5. **Can a member be given permissions outside their role?** The model says no: a permission is held
+   through a role and only through a role. The alternative, a per member grant list, doubles every
+   authorization query and makes "who can do what" unanswerable from the roles screen. If a company
+   needs an exception, it creates a role for it. Worth confirming before the screens are built.
+6. **Is the permission catalog closed?** Adding an entry means a code change, because a permission
+   nobody checks is a lie told to the administrator. That is a deliberate limit on how far a company
+   can shape its own model, and it should be a conscious decision, not a discovery.

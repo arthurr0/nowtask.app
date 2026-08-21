@@ -305,8 +305,33 @@ A channel can be named in the "Notify channel" rule action. Every delivery attem
 integration log together with its result, and delivery happens off the request thread, so a silent
 recipient does not slow the application down.
 
+Account mail runs through the same module: address confirmation, an invitation and its reminder, a
+welcome message once the address is confirmed, a note to the inviter when someone joins, a password
+reset link and a confirmation that the password changed. Every message goes out as HTML with a plain
+text alternative, in the brand palette, in light and dark, with the logo attached inline so it shows
+even when the client blocks remote images. The language follows the `Accept-Language` header, which
+the frontend fills from the language chosen in the interface, and Polish, English and German are
+covered.
+
+The templates are Thymeleaf files in `backend/integrations/src/main/resources/templates/mail`, the
+wording sits in `resources/mail/messages_{pl,en,de}.properties`, and the layout with the shared
+blocks in `templates/mail/html/layout.html` and `parts.html`. `./gradlew :integrations:test` renders
+every template in every language and leaves previews in `backend/integrations/build/mail-preview`,
+so a change to the design can be checked in a browser without sending anything.
+
 Locally Mailpit from `docker-compose.yml` catches mail, so nothing leaves the machine. Outside
-Docker mail is disabled until you set `NOWTASK_MAIL_HOST`.
+Docker mail is disabled until you set `NOWTASK_MAIL_HOST`. Links inside a message are built from
+`NOWTASK_APP_URL`, so set it to the public address or the links will point at localhost.
+
+A real SMTP relay needs a login as well: `NOWTASK_MAIL_USERNAME`, `NOWTASK_MAIL_PASSWORD` and a
+`NOWTASK_MAIL_FROM` that the relay is allowed to send as. In `docker-compose.prod.yml`
+authentication and STARTTLS on port 587 are on by default, so for Zoho Mail it is enough to point
+`NOWTASK_MAIL_HOST` at `smtppro.zoho.eu` (paid plan, European data centre, login at mail.zoho.eu) or
+`smtppro.zoho.com` (paid plan, global data centre; a free plan uses `smtp.` instead of `smtppro.`)
+and use an app password generated in Zoho instead of the account password. Mailpit takes no login,
+which is why `NOWTASK_MAIL_AUTH` and `NOWTASK_MAIL_STARTTLS` default to `false` in the application
+itself. `NOWTASK_MAIL_FROM_NAME` sets the name shown next to the address, `NOWTASK_MAIL_REPLY_TO` an
+address for replies when the sender is a noreply mailbox.
 
 </details>
 

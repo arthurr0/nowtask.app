@@ -24,10 +24,13 @@ What already exists and has to be matched:
   new database has no accounts, no projects and no statuses, so the first account comes from
   `POST /api/auth/signup`. Wherever the rest of this document refers to demo data as an existing
   starting point, read it as a description of the state before that removal.
-- **Corporate login.** `docker-compose.yml` brings up Keycloak 26.4 with `--import-realm` and mounts
-  `./infra/keycloak`, the backend gets `NOWTASK_OIDC_ISSUER`, `backend/app/build.gradle.kts` has
-  `spring-boot-starter-oauth2-client`. **The `infra/keycloak/` directory exists but is empty**, so
-  the `nowtask` realm is not created today and `/oauth2/authorization/nowtask` will not work.
+- **Corporate login: nothing of it exists.** This point used to claim that `docker-compose.yml`
+  brings up Keycloak, that the backend gets `NOWTASK_OIDC_ISSUER` and that
+  `backend/app/build.gradle.kts` has `spring-boot-starter-oauth2-client`. Checked against the
+  repository, all three are false, and the `infra/keycloak/` directory does not exist at all rather
+  than being empty. The only trace of OIDC is the `app_user.oidc_subject` column added in `V61`.
+  Everything this document says about OIDC is therefore a design for work that has not started, not
+  a description of what is there.
 - **The login screen.** `frontend/src/app/features/login/login.html`, lines 123 to 132, has two
   `disabled` buttons with no handler: `login.saml` ("Corporate login (SAML)") and `login.passkey`.
   `docs/api-contract.md` talks about OIDC, not SAML, and the passkey is meant to disappear from the
@@ -588,19 +591,30 @@ property and the `NOWTASK_DEMO_PASSWORD` variable are gone from the repository.
 `NOWTASK_MAIL_HOST` and `NOWTASK_MAIL_PORT`. The `integrations` module has
 `spring-boot-starter-mail` in its dependencies. Nothing has to be added to the infrastructure.
 
-Three mail templates, all in three languages, chosen by the recipient's language (and for a new
-account by the `Accept-Language` header):
+Seven templates, all in three languages, chosen by the `Accept-Language` header of the request that
+triggered the message:
 
-| Key | When | Contains |
+| Template | When | Contains |
 | --- | --- | --- |
-| `mail.verifyEmail` | signup, resend | a link valid for 7 days |
-| `mail.invite` | issuing an invitation | the organization name, the inviter's first name, the role, a link valid for 14 days |
-| `mail.inviteReminder` | 7 days after issuing, when `state = 'open'` | the same, shorter, once |
+| `verify-email` | signup, resend | a link valid for 7 days |
+| `invite` | issuing an invitation | the organization name, the inviter's first name, the role, a link valid for 14 days |
+| `invite` with `reminder` | 7 days after issuing, when `state = 'open'` | the same, shorter, once |
+| `welcome` | after the address is confirmed | what the account can do now, a link to the board |
+| `member-joined` | after an invitation is accepted | goes to the inviter, with the person and the organization |
+| `password-reset` | `POST /api/auth/forgot-password` | a link valid for one hour |
+| `password-changed` | after a successful reset | a confirmation with the time and what to do if it was not you |
 
 Delivery goes through `integrations`, which does not depend on `identity` in the other direction.
-`identity` publishes an event in `shared.events` (`InviteIssued`, `EmailVerificationRequested`),
-`integrations` receives it. That boundary is already described in `docs/api-contract.md` and I do not
-propose touching it.
+`identity` publishes an event in `shared.events` (`InviteIssued`, `EmailVerificationRequested`,
+`EmailVerified`, `MemberJoined`, `PasswordResetRequested`, `PasswordChanged`), `integrations`
+receives it. That boundary is already described in `docs/api-contract.md` and I do not propose
+touching it.
+
+The templates are Thymeleaf files in `backend/integrations/src/main/resources/templates/mail`, HTML
+next to a plain text alternative, and every message goes out as both. The wording lives in
+`resources/mail/messages_{pl,en,de}.properties`, the layout and the shared blocks in
+`templates/mail/html/layout.html` and `parts.html`. `MailRendererTest` renders every template in
+every language and writes previews to `backend/integrations/build/mail-preview`.
 
 ### 6.5 The login screen
 

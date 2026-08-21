@@ -5,8 +5,15 @@ shapes, the frontend codes against them. Changing the contract requires updating
 
 Shared rules:
 
-- Everything under `/api`, session in a cookie, CSRF in the `X-XSRF-TOKEN` header.
-- Errors: `{ status, message, at }`. 404 does not exist, 422 broken domain rule, 400 bad input.
+- Everything under `/api`, session in a cookie, CSRF in the `X-XSRF-TOKEN` header, the active
+  organization in the `X-Org-Id` header.
+- Errors: `{ status, message, at, code?, detail? }`. 404 does not exist, 422 broken domain rule,
+  400 bad input, 409 conflict or missing context, 429 rate limit with a `Retry-After` header.
+- Open paths (`/api/auth/signup`, `/api/auth/verify-email`, `/api/auth/forgot-password`,
+  `/api/auth/reset-password`, `/api/invites/**`) work without a session but still require
+  `X-XSRF-TOKEN` on state changing methods.
+- `Accept-Language` picks the language of an outgoing mail. The frontend sends the language chosen
+  in the interface, so the message matches what the person sees in the application.
 - Dates: `LocalDate` as `YYYY-MM-DD`, timestamps as ISO 8601 with an offset.
 - Identifiers are UUIDs. Tasks are additionally addressed by a text key (`NOW-172`).
 
@@ -152,8 +159,6 @@ transition returns a 422 when `blockDisallowedDrag` is on.
 ## To add: people and access
 
 ```
-POST   /api/admin/invites            {email, role} -> UserDto        // pending account
-DELETE /api/admin/invites/{id}
 PATCH  /api/admin/members/{id}       {role} -> UserDto
 DELETE /api/admin/members/{id}
 POST   /api/admin/teams              {name} -> TeamDto
@@ -211,22 +216,132 @@ the 20 most recent entries by default, at most 200.
 
 The path is closed to API keys: an agent cannot read the agent list or anyone else's activity.
 
-## To add: account signup
+## Account signup and address verification
 
 ```
-POST   /api/auth/signup              {name, email, password} -> UserDto
+POST   /api/auth/signup              {name, email, password} -> SignupResultDto
+POST   /api/auth/verify-email        {token} -> UserDto
+POST   /api/auth/resend-verification -> 204
+POST   /api/auth/forgot-password     {email} -> 204
+POST   /api/auth/reset-password      {token, password} -> 204
 ```
 
-An open path, without authentication but with a CSRF token, so the frontend first fetches
-`GET /api/meta`. Returns `201`, creates an account with the `member` role (`pending = false`) and
-opens a session immediately, changing the session identifier so that it cannot be fixated.
+`POST /api/auth/forgot-password` always answers `204`, whether the address is known or not, so the
+endpoint cannot be used to check who has an account. A mail goes out only for an active account with
+a password, at most three times an hour. The link is valid for one hour.
 
-Error codes: `409` address taken, `400` password shorter than 10 characters or an invalid address,
-`422` password from the most common list.
+`POST /api/auth/reset-password` answers `422` with `TOKEN_INVALID`, `TOKEN_USED` or `TOKEN_EXPIRED`,
+and `400` when the password is shorter than ten characters. A successful reset closes every other
+open link of that account and sends a confirmation mail.
 
-Without organizations (`docs/multi-tenancy.md`) whoever signs up enters the only workspace in the
-installation. Address verification, the wizard and `suggestOrg` from `docs/onboarding.md` wait for
-organizations.
+`POST /api/auth/signup` and `POST /api/auth/verify-email` are open paths, without authentication but
+with a CSRF token, so the frontend first fetches `GET /api/meta`. Signup returns `201`, creates the
+account and opens a session immediately, changing the session identifier so that it cannot be
+fixated. The account belongs to no organization yet, so the next step is `POST /api/orgs`.
+
+`SignupResultDto`: `{ user: UserDto, suggestOrg: { id, name, slug } | null }`. A non-empty
+`suggestOrg` means the address domain matches an `organization.sso_domain` and the interface shows
+the intermediate screen from `docs/onboarding.md`, point 3, step 0.
+
+Error codes: `409 EMAIL_TAKEN`, `400` password shorter than 10 characters or an invalid address,
+`422 PASSWORD_TOO_COMMON`, `422 EMAIL_DISPOSABLE`, `429` when the rate limit is exceeded.
+Verification: `422 TOKEN_EXPIRED`, `422 TOKEN_USED`, `422 TOKEN_INVALID`.
+
+Whether signup is open is decided by `nowtask.signup.mode` (`open`, `invite-only`, `sso-only`,
+`open` by default). The other two modes answer `422 SIGNUP_INVITE_ONLY` or `422 SIGNUP_SSO_ONLY`.
+
+Address verification does not block the wizard. It blocks sending invitations
+(`422 EMAIL_NOT_VERIFIED`).
+
+## Invitations and joining
+
+The invitee side, all three paths open without a session:
+
+```
+GET    /api/invites/{token}            -> InvitePreviewDto
+POST   /api/invites/{token}/accept     {name?, password?} -> AcceptedInviteDto
+POST   /api/invites/{token}/request-new -> 204
+```
+
+`InvitePreviewDto`: `{ organizationName, organizationSlug, invitedByName, role, maskedEmail,
+expiresAt, state, accountExists, ssoAvailable }`, where `state` is
+`open | expired | revoked | accepted | unknown`. An unknown token answers `200` with
+`state: "unknown"` and empty fields, identical to a revoked one, so that the endpoint is not an
+oracle for checking whether an invitation existed.
+
+`POST /api/invites/{token}/accept` creates the account when there is none (`name` and `password`
+required), or authenticates an existing one (`password` required), and always creates the
+membership. A session for the matching address needs no body. The account created this way is
+verified straight away. `AcceptedInviteDto`: `{ organizationId, organizationName, roleCode, user }`;
+the frontend follows it with `GET /api/bootstrap`. Errors: `422 INVITE_EXPIRED`,
+`422 INVITE_REVOKED`, `422 INVITE_ACCEPTED`, `409 ALREADY_MEMBER`, `409 EMAIL_MISMATCH`,
+`409 BAD_CREDENTIALS`.
+
+`POST /api/invites/{token}/request-new` works only for an expired invitation, once a day, and
+notifies the person who issued it.
+
+The organization side, all paths require `PERM_MEMBERS_INVITE` and a verified address:
+
+```
+GET    /api/admin/invites             ?state= -> InviteDto[]
+POST   /api/admin/invites             {email, role} -> InviteDto
+POST   /api/admin/invites/bulk        {emails: string[], role} -> BulkInviteResultDto
+POST   /api/admin/invites/{id}/resend -> InviteDto
+DELETE /api/admin/invites/{id}
+```
+
+`InviteDto`: `{ id, email, roleCode, roleName, roleId, state, invitedById, invitedByName, createdAt,
+expiresAt }`. `BulkInviteResultDto`: `{ sent: InviteDto[], failed: [{ email, code, messageKey }] }`
+with item codes `INVALID_EMAIL`, `ALREADY_MEMBER`, `ALREADY_INVITED`, `LIMIT_REACHED`.
+
+An invitation is valid for 14 days, the limit is 50 per day per organization, and a reminder goes
+out once, 7 days after it was issued. The reminder rotates the token, so the earlier link stops
+working.
+
+**Issuing an invitation no longer creates an account.** `GET /api/admin/members` merges members with
+open invitations and returns a `UserDto` with `pending: true`, an `id` equal to the invitation
+identifier and a `name` equal to the address, so the administration screen needs no rebuild.
+`DELETE /api/admin/members/{id}` with such an identifier revokes the invitation.
+
+## Onboarding
+
+```
+GET    /api/onboarding                -> OnboardingDto, or 204 when there is nothing to show
+POST   /api/onboarding/start          -> OnboardingDto
+PATCH  /api/onboarding                {step?, dismissed?, tourSeen?} -> OnboardingDto
+```
+
+`OnboardingDto`: `{ flow, step, checklist: [{ code, done, at }], tourSeen, completed, dismissed }`.
+`flow` is `founder` or `invitee`, `step` is `orgName | preset | project | invite | done` for the
+founder and `tour | done` for the invitee.
+
+Checklist items are ticked off by listening to events, never by the API. Sending `checklist` in a
+`PATCH` ends in `422 CHECKLIST_READ_ONLY`. A list that is neither finished nor hidden disappears
+after 30 days.
+
+`GET /api/bootstrap` carries the same object in the `onboarding` field.
+
+## Work form presets
+
+```
+GET    /api/presets                   -> PresetSummaryDto[]
+GET    /api/presets/{code}            -> PresetDetailDto
+GET    /api/projects                  -> ProjectDto[]
+POST   /api/projects                  {name, code?, presetCode?} -> ProjectDto
+```
+
+Three preset codes: `scrum`, `kanban`, `waterfall`, plus `custom` for a project without one.
+`POST /api/projects` applies the preset in one transaction: statuses, transitions, custom fields with
+their value lists, preset views and rules, and for waterfall also two milestones. It requires
+`PERM_PROJECTS_MANAGE`. A preset rule whose trigger or action the engine does not know yet is
+created as `draft`.
+
+`PresetSummaryDto`: `{ code, statusCount, sprintsEnabled, milestonesEnabled, estimateUnit,
+wipEnforced, dependencyGuard, defaultViewCode }`. `PresetDetailDto` adds the full list of statuses,
+transitions, fields, view codes and rules, and is what the wizard preview shows.
+
+`SavedViewDto` gains a third class of view: `origin` is `builtin`, `preset` or `user`. Only a
+`builtin` view refuses deletion with a `422`.
 
 ## To add: navigation personalization
 
@@ -333,3 +448,6 @@ So that parallel work does not collide, every area gets its own range:
 | `V10` to `V19` | rules and the execution engine |
 | `V20` to `V29` | notifications, integrations, export |
 | `V30` to `V39` | people, access, event log, OIDC |
+| `V40` to `V49` | organizations, roles, data isolation |
+| `V50` to `V59` | work form presets, sprints, field options |
+| `V60` to `V69` | onboarding, invitations, address verification |
