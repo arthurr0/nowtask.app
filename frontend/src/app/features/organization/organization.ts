@@ -11,28 +11,104 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { dateTime, shortDate } from '../../core/format';
 import type {
   ApiKeyDto,
+  CustomFieldDto,
   IntegrationDto,
   PermissionDto,
   RoleDto,
+  StatusDto,
   TeamDto,
   UserDto,
+  WorkspaceSettingsDto,
 } from '../../core/api-types';
-import { OrganizationStore, IntegrationsStore, MetricsStore } from '../../data/feature.stores';
+import { TASK_FIELDS, customFieldKey } from '../../core/task-fields';
+import {
+  OrganizationStore,
+  IntegrationsStore,
+  MetricsStore,
+  SettingsStore,
+} from '../../data/feature.stores';
+import { ViewState } from '../../data/view-state';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { ConfirmService } from '../../ui/confirm.service';
 import { Icon } from '../../ui/icon';
 import { Menu, type MenuItem } from '../../ui/menu';
 import { PromptService } from '../../ui/prompt.service';
+import { Switch } from '../../ui/switch';
 import { ToastService } from '../../ui/toast.service';
 import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { PageState } from '../../ui/page-state';
 import { InviteDialog, type InviteDraft } from './organization-dialogs';
 import { IntegrationDialog, type IntegrationDraft } from './integration-dialog';
+import {
+  CustomFieldDialog,
+  StatusDialog,
+  type CustomFieldDraft,
+  type StatusDraft,
+} from './workspace-dialogs';
 import { ApiKeyDialog, type ApiKeyDraft } from '../agents/api-key-dialog';
 
-type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
+type Section =
+  | 'people'
+  | 'roles'
+  | 'fields'
+  | 'taskFields'
+  | 'flow'
+  | 'epics'
+  | 'regional'
+  | 'keys'
+  | 'integrations'
+  | 'audit';
+
+interface SectionItem {
+  id: Section;
+  icon: string;
+  label: string;
+}
+
+interface TaskFieldRow {
+  key: string;
+  label: string;
+  enabled: boolean;
+  inherited: boolean;
+}
+
+const SECTION_GROUPS: readonly { label: string; items: readonly SectionItem[] }[] = [
+  {
+    label: 'organization.people',
+    items: [
+      { id: 'people', icon: 'users', label: 'organization.peopleRoles' },
+      { id: 'roles', icon: 'shield', label: 'organization.rolePermissions' },
+    ],
+  },
+  {
+    label: 'organization.workStructure',
+    items: [
+      { id: 'fields', icon: 'sliders', label: 'organization.customFields' },
+      { id: 'taskFields', icon: 'filter', label: 'organization.taskFields' },
+      { id: 'flow', icon: 'board', label: 'organization.statusesFlow' },
+      { id: 'epics', icon: 'layers', label: 'organization.epics' },
+    ],
+  },
+  {
+    label: 'nav.organization',
+    items: [
+      { id: 'regional', icon: 'globe', label: 'organization.regional' },
+      { id: 'keys', icon: 'key', label: 'organization.apiKeys' },
+      { id: 'integrations', icon: 'link', label: 'organization.integrations' },
+      { id: 'audit', icon: 'log', label: 'organization.auditLog' },
+    ],
+  },
+];
+
+const SECTIONS: readonly SectionItem[] = SECTION_GROUPS.flatMap((group) => [...group.items]);
+
+const DATE_FORMATS = ['dd.MM.yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'd MMMM yyyy'];
+const TIME_FORMATS = ['HH:mm', 'h:mm a'];
+const WEEK_DAYS = [1, 7];
+const TIME_ZONES = ['Europe/Warsaw', 'Europe/Berlin', 'Europe/London', 'UTC', 'America/New_York'];
+const CURRENCIES = ['PLN', 'EUR', 'USD', 'GBP'];
 
 @Component({
   selector: 'app-organization',
@@ -41,12 +117,15 @@ type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
     Icon,
     Avatar,
     Menu,
+    Switch,
     Topbar,
     ViewControls,
     PageState,
     InviteDialog,
     ApiKeyDialog,
     IntegrationDialog,
+    CustomFieldDialog,
+    StatusDialog,
     RouterLink,
   ],
   templateUrl: './organization.html',
@@ -56,6 +135,8 @@ export class Organization implements OnInit {
   protected readonly organization = inject(OrganizationStore);
   protected readonly metrics = inject(MetricsStore);
   protected readonly integrations = inject(IntegrationsStore);
+  protected readonly fields = inject(SettingsStore);
+  private readonly view = inject(ViewState);
   private readonly confirm = inject(ConfirmService);
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
@@ -70,13 +151,27 @@ export class Organization implements OnInit {
   protected readonly issuedKey = signal<string | null>(null);
   protected readonly teamMembers = signal<Record<string, string[]>>({});
 
-  protected readonly sections = [
-    { id: 'people', icon: 'users', label: 'organization.peopleRoles' },
-    { id: 'security', icon: 'shield', label: 'organization.security' },
-    { id: 'keys', icon: 'key', label: 'organization.apiKeys' },
-    { id: 'integrations', icon: 'link', label: 'organization.integrations' },
-    { id: 'audit', icon: 'log', label: 'organization.auditLog' },
-  ] as const;
+  protected readonly workspaceSettings = signal<WorkspaceSettingsDto | null>(null);
+  protected readonly fieldScope = signal<string>('');
+  protected readonly fieldDialogOpen = signal(false);
+  protected readonly editedField = signal<CustomFieldDto | null>(null);
+  protected readonly statusDialogOpen = signal(false);
+  protected readonly editedStatus = signal<StatusDto | null>(null);
+  protected readonly transitionFrom = signal('');
+  protected readonly transitionTo = signal('');
+
+  protected readonly sectionGroups = SECTION_GROUPS;
+  protected readonly sections = SECTIONS;
+
+  protected readonly fieldMenu: readonly MenuItem[] = [
+    { id: 'edit', label: 'common.edit', icon: 'pencil' },
+    { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
+  ];
+
+  protected readonly epicMenu: readonly MenuItem[] = [
+    { id: 'rename', label: 'nav.renameView', icon: 'pencil' },
+    { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
+  ];
 
   protected readonly roles = computed<RoleDto[]>(() => this.organization.roles());
   protected readonly isAdmin = computed(() => this.store.currentUser()?.role?.code === 'admin');
@@ -94,11 +189,12 @@ export class Organization implements OnInit {
 
   ngOnInit(): void {
     const requested = this.route.snapshot.queryParamMap.get('section');
-    if (this.sections.some((item) => item.id === requested)) {
-      this.section.set(requested as Section);
-    }
     void this.organization.load();
     void this.metrics.load();
+    void this.fields.load();
+    this.setSection(
+      SECTIONS.some((item) => item.id === requested) ? (requested as Section) : 'people',
+    );
   }
 
   workloadOf(userId: string): { points: number; capacity: number } | null {
@@ -134,6 +230,13 @@ export class Organization implements OnInit {
     if (section === 'integrations') {
       void this.integrations.load();
     }
+    if (section === 'flow' || section === 'regional') {
+      void this.loadWorkspaceSettings();
+    }
+  }
+
+  reloadFields(): void {
+    void this.fields.load();
   }
 
   integrationMenu(integration: IntegrationDto): MenuItem[] {
@@ -446,10 +549,335 @@ export class Organization implements OnInit {
     return Math.max(1, Math.ceil(total / 50));
   }
 
+  protected readonly fieldScopeItems = computed<MenuItem[]>(() => [
+    {
+      id: '',
+      label: this.t('organization.taskFieldsOrg'),
+      checked: this.fieldScope() === '',
+    },
+    ...this.store.activeProjects().map((project) => ({
+      id: project.id,
+      label: `${project.name} (${project.code})`,
+      checked: this.fieldScope() === project.id,
+    })),
+  ]);
+
+  protected readonly fieldScopeLabel = computed(() => {
+    const project = this.store.project(this.fieldScope() || null);
+    return project ? `${project.name} (${project.code})` : this.t('organization.taskFieldsOrg');
+  });
+
+  protected readonly taskFieldRows = computed<TaskFieldRow[]>(() => {
+    const scope = this.fieldScope() || null;
+    const builtin = TASK_FIELDS.map((field) =>
+      this.taskFieldRow(field.key, this.t(field.label), scope),
+    );
+    const custom = this.fields
+      .customFields()
+      .map((field) => this.taskFieldRow(customFieldKey(field.fieldKey), field.name, scope));
+    return [...builtin, ...custom];
+  });
+
+  private taskFieldRow(key: string, label: string, scope: string | null): TaskFieldRow {
+    const settings = this.store.taskFieldSettings();
+    const own = settings.find(
+      (setting) => setting.fieldKey === key && (setting.projectId ?? null) === scope,
+    );
+    const shared = settings.find(
+      (setting) => setting.fieldKey === key && setting.projectId === null,
+    );
+
+    return {
+      key,
+      label,
+      enabled: own ? own.enabled : shared ? shared.enabled : true,
+      inherited: scope !== null && !own,
+    };
+  }
+
+  async toggleTaskField(row: TaskFieldRow): Promise<void> {
+    await this.saveTaskField(row.key, !row.enabled);
+  }
+
+  async inheritTaskField(row: TaskFieldRow): Promise<void> {
+    await this.saveTaskField(row.key, null);
+  }
+
+  private async saveTaskField(key: string, value: boolean | null): Promise<void> {
+    await this.run(() =>
+      this.store.updateTaskFieldSettings(this.fieldScope() || null, { [key]: value }),
+    );
+  }
+
+  openFieldDialog(field: CustomFieldDto | null): void {
+    this.editedField.set(field);
+    this.fieldDialogOpen.set(true);
+  }
+
+  closeFieldDialog(): void {
+    this.fieldDialogOpen.set(false);
+    this.editedField.set(null);
+  }
+
+  async saveField(draft: CustomFieldDraft): Promise<void> {
+    const edited = this.editedField();
+    try {
+      if (edited) {
+        await this.store.updateCustomField(edited.id, {
+          name: draft.name,
+          type: draft.type,
+          scopeLabel: draft.scopeLabel,
+          requiredPermission: draft.requiredPermission,
+        });
+      } else {
+        await this.store.createCustomField(draft);
+      }
+      await this.fields.load();
+      this.closeFieldDialog();
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async onFieldMenu(item: MenuItem, field: CustomFieldDto): Promise<void> {
+    if (item.id === 'edit') {
+      this.openFieldDialog(field);
+      return;
+    }
+    const confirmed = await this.confirm.askDelete(field.name);
+    if (!confirmed) return;
+    try {
+      await this.store.deleteCustomField(field.id);
+      await this.fields.load();
+      this.toast.success(this.t('organization.fieldDeleted', { name: field.name }));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  statusMenu(index: number, total: number): MenuItem[] {
+    return [
+      { id: 'edit', label: 'common.edit', icon: 'pencil' },
+      { id: 'up', label: 'common.moveUp', icon: 'up', disabled: index === 0 },
+      { id: 'down', label: 'common.moveDown', icon: 'down', disabled: index === total - 1 },
+      { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
+    ];
+  }
+
+  openStatusDialog(status: StatusDto | null): void {
+    this.editedStatus.set(status);
+    this.statusDialogOpen.set(true);
+  }
+
+  closeStatusDialog(): void {
+    this.statusDialogOpen.set(false);
+    this.editedStatus.set(null);
+  }
+
+  async saveStatus(draft: StatusDraft): Promise<void> {
+    const edited = this.editedStatus();
+    try {
+      if (edited) {
+        await this.store.updateStatus(edited.id, {
+          label: draft.label,
+          category: draft.category,
+          wipLimit: draft.wipLimit,
+        });
+      } else {
+        await this.store.createStatus(draft);
+      }
+      this.closeStatusDialog();
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async onStatusMenu(item: MenuItem, status: StatusDto, index: number): Promise<void> {
+    if (item.id === 'edit') {
+      this.openStatusDialog(status);
+      return;
+    }
+    if (item.id === 'up' || item.id === 'down') {
+      const ids = this.store.boardStatuses().map((entry) => entry.id);
+      const target = item.id === 'up' ? index - 1 : index + 1;
+      if (target < 0 || target >= ids.length) return;
+      [ids[index], ids[target]] = [ids[target], ids[index]];
+      try {
+        await this.store.reorderStatuses(ids);
+      } catch (error) {
+        this.toast.error(this.errorText(error));
+      }
+      return;
+    }
+    const confirmed = await this.confirm.askDelete(this.store.statusName(status));
+    if (!confirmed) return;
+    try {
+      await this.store.deleteStatus(status.id);
+      this.toast.success(this.t('organization.statusDeleted'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  statusPickItems(current: string): MenuItem[] {
+    return this.store.boardStatuses().map((status) => ({
+      id: status.id,
+      label: this.store.statusName(status),
+      checked: status.id === current,
+    }));
+  }
+
+  statusName(id: string): string {
+    const status = this.store.status(id);
+    return status ? this.store.statusName(status) : this.t('ui.select.placeholder');
+  }
+
+  async addTransition(): Promise<void> {
+    const from = this.transitionFrom();
+    const to = this.transitionTo();
+    if (!from || !to) {
+      this.toast.error(this.t('organization.transitionPick'));
+      return;
+    }
+    if (from === to) {
+      this.toast.error(this.t('organization.transitionSame'));
+      return;
+    }
+    try {
+      await this.store.createTransition(from, to, null);
+      this.transitionFrom.set('');
+      this.transitionTo.set('');
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async removeTransition(id: string): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'organization.removeTransition',
+      message: 'organization.removeTransitionHint',
+      confirmLabel: 'common.delete',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await this.run(() => this.store.deleteTransition(id));
+  }
+
+  async addEpic(): Promise<void> {
+    const name = await this.prompt.ask({
+      title: 'organization.addEpic',
+      label: 'organization.epicName',
+      placeholder: 'organization.epicNamePlaceholder',
+    });
+    if (!name) return;
+    await this.run(() => this.store.createEpic(name, this.view.projectId()));
+  }
+
+  async onEpicMenu(item: MenuItem, epicId: string, name: string): Promise<void> {
+    if (item.id === 'rename') {
+      const next = await this.prompt.ask({
+        title: 'nav.renameView',
+        label: 'organization.epicName',
+        value: name,
+      });
+      if (!next) return;
+      await this.run(() => this.store.renameEpic(epicId, next));
+      return;
+    }
+    const confirmed = await this.confirm.askDelete(name);
+    if (!confirmed) return;
+    try {
+      await this.store.deleteEpic(epicId);
+      this.toast.success(this.t('organization.epicDeleted'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  epicTaskCount(epicId: string): number {
+    return this.store.tasks().filter((task) => task.epicId === epicId).length;
+  }
+
+  dateFormatItems(): MenuItem[] {
+    return DATE_FORMATS.map((format) => ({
+      id: format,
+      label: format,
+      checked: this.workspaceSettings()?.dateFormat === format,
+    }));
+  }
+
+  timeFormatItems(): MenuItem[] {
+    return TIME_FORMATS.map((format) => ({
+      id: format,
+      label: format,
+      checked: this.workspaceSettings()?.timeFormat === format,
+    }));
+  }
+
+  weekDayItems(): MenuItem[] {
+    return WEEK_DAYS.map((day) => ({
+      id: String(day),
+      label: this.weekDayLabel(day),
+      checked: this.workspaceSettings()?.firstDayOfWeek === day,
+    }));
+  }
+
+  weekDayLabel(day: number): string {
+    return this.t(day === 1 ? 'organization.monday' : 'organization.sunday');
+  }
+
+  timeZoneItems(): MenuItem[] {
+    return TIME_ZONES.map((zone) => ({
+      id: zone,
+      label: zone,
+      checked: this.workspaceSettings()?.timeZone === zone,
+    }));
+  }
+
+  currencyItems(): MenuItem[] {
+    return CURRENCIES.map((currency) => ({
+      id: currency,
+      label: currency,
+      checked: this.workspaceSettings()?.currency === currency,
+    }));
+  }
+
+  async changeSprint(current: string | null): Promise<void> {
+    const sprint = await this.prompt.ask({
+      title: 'organization.currentSprint',
+      message: 'organization.currentSprintHint',
+      label: 'organization.currentSprint',
+      value: current ?? '',
+      required: false,
+    });
+    if (sprint === null || sprint === (current ?? '')) return;
+    await this.patchWorkspace({ currentSprint: sprint });
+  }
+
+  async patchWorkspace(body: Record<string, unknown>): Promise<void> {
+    try {
+      this.workspaceSettings.set(await this.store.patchWorkspaceSettings(body));
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  private async loadWorkspaceSettings(): Promise<void> {
+    try {
+      this.workspaceSettings.set(await this.store.loadWorkspaceSettings());
+    } catch {
+      this.workspaceSettings.set(null);
+    }
+  }
+
   private async run(work: () => Promise<unknown>): Promise<void> {
     try {
       await work();
-      this.toast.success(this.t('settings.saved'));
+      this.toast.success(this.t('common.saved'));
     } catch (error) {
       this.toast.error(this.errorText(error));
     }

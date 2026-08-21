@@ -29,7 +29,7 @@ import { Switch } from './switch';
               type="button"
               class="hoverable flex h-7 w-7 items-center justify-center rounded-[6px] text-ink-3 disabled:opacity-40"
               [disabled]="index === 0"
-              [attr.aria-label]="t('settings.moveUp')"
+              [attr.aria-label]="t('common.moveUp')"
               (click)="view.moveColumn(column.code, -1)"
             >
               <ui-icon name="up" [size]="14" />
@@ -38,7 +38,7 @@ import { Switch } from './switch';
               type="button"
               class="hoverable flex h-7 w-7 items-center justify-center rounded-[6px] text-ink-3 disabled:opacity-40"
               [disabled]="index === rows().length - 1"
-              [attr.aria-label]="t('settings.moveDown')"
+              [attr.aria-label]="t('common.moveDown')"
               (click)="view.moveColumn(column.code, 1)"
             >
               <ui-icon name="down" [size]="14" />

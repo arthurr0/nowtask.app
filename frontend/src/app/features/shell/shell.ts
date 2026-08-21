@@ -175,10 +175,10 @@ export class Shell implements OnInit {
     const visible = this.navItems().filter((item) => !item.hidden);
     const position = visible.findIndex((item) => item.code === code);
     return [
-      { id: 'up', label: 'settings.moveUp', icon: 'up', disabled: position <= 0 },
+      { id: 'up', label: 'common.moveUp', icon: 'up', disabled: position <= 0 },
       {
         id: 'down',
-        label: 'settings.moveDown',
+        label: 'common.moveDown',
         icon: 'down',
         disabled: position === visible.length - 1,
       },
@@ -359,7 +359,7 @@ export class Shell implements OnInit {
   private async run(work: () => Promise<unknown>): Promise<void> {
     try {
       await work();
-      this.toast.success(this.t('settings.saved'));
+      this.toast.success(this.t('common.saved'));
     } catch (error) {
       this.toast.error(this.errorText(error));
     }

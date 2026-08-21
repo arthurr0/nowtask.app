@@ -37,31 +37,13 @@
         <span class="flex-1">{{ t(item.label) }}</span>
       </button>
     }
-
-    <span class="kap px-2 pt-5 pb-1.5">{{ t('settings.workStructure') }}</span>
-    @for (item of structureSections; track item.id) {
-      <button
-        type="button"
-        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-left"
-        [class.bg-surface-2]="section() === item.id"
-        [class.font-medium]="section() === item.id"
-        [class.text-ink-2]="section() !== item.id"
-        (click)="section.set(item.id)"
-      >
-        <ui-icon [name]="item.icon" [size]="16" />
-        <span class="flex-1">{{ t(item.label) }}</span>
-        @if (item.id === 'fields') {
-          <span class="font-mono text-[11px] text-ink-3">{{ settings.customFields().length }}</span>
-        }
-      </button>
-    }
   </nav>
 
   <div
     class="flex min-w-0 flex-1 flex-col overflow-y-auto px-5 py-6 pb-24 lg:px-8 lg:pb-8 scroll-thin"
   >
     <div class="mb-5 flex gap-2 overflow-x-auto lg:hidden">
-      @for (item of accountSections.concat(personalSections, structureSections); track item.id) {
+      @for (item of accountSections.concat(personalSections); track item.id) {
         <button
           type="button"
           class="flex h-11 flex-none items-center gap-2 rounded-full px-4 text-[13px]"
@@ -686,508 +668,48 @@
         <section class="flex flex-col gap-6">
           <header class="flex flex-col gap-1">
             <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
-              {{ t('settings.langRegion') }}
+              {{ t('settings.language') }}
             </h1>
             <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('settings.langLead') }}</p>
           </header>
 
-          <div class="flex flex-col gap-8 xl:flex-row">
-            <div class="flex w-full max-w-[470px] flex-col gap-2.5">
-              <span class="kap">{{ t('settings.availableLanguages') }}</span>
-              <div class="flex flex-col">
-                @for (language of languages; track language.code) {
-                  <button
-                    type="button"
-                    class="flex h-[46px] items-center gap-3.5 border-b border-line text-left"
-                    (click)="selectLanguage(language.code)"
-                  >
-                    <span class="w-8 flex-none font-mono text-xs text-ink-2">{{
-                      language.code
-                    }}</span>
-                    <span class="w-[130px] flex-none truncate text-[13px]">{{
-                      language.name
-                    }}</span>
-                    <span class="h-[3px] flex-1 overflow-hidden rounded-full bg-surface-3">
-                      <span
-                        class="block h-[3px] bg-ink-2"
-                        [style.width.%]="language.coverage"
-                      ></span>
-                    </span>
-                    <span class="w-11 flex-none text-right font-mono text-[11px] text-ink-3"
-                      >{{ language.coverage }}%</span
-                    >
-                    <span class="w-[84px] flex-none text-right">
-                      @if (language.isDefault) {
-                        <span class="rounded-full bg-inv px-2 py-0.5 text-[11px] text-inv-ink">{{
-                          t('settings.default')
-                        }}</span>
-                      } @else if (i18n.lang() === language.code) {
-                        <span class="text-[11px] text-ink-3">{{ t('common.active') }}</span>
-                      }
-                    </span>
-                  </button>
-                }
-              </div>
-            </div>
-
-            <div class="flex flex-1 flex-col gap-2.5">
-              <span class="kap">{{ t('settings.formats') }}</span>
-              @if (workspaceSettings(); as ws) {
-                <div class="flex flex-col gap-0.5">
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{
-                      t('settings.dateFormat')
-                    }}</span>
-                    <ui-menu
-                      [items]="dateFormatItems()"
-                      triggerClass="flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
-                      triggerHeight="28px"
-                      ariaLabel="settings.dateFormat"
-                      align="end"
-                      [chevron]="true"
-                      (selected)="patchWorkspace({ dateFormat: $event.id })"
-                    >
-                      <span>{{ ws.dateFormat }}</span>
-                    </ui-menu>
-                  </div>
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{
-                      t('settings.timeFormat')
-                    }}</span>
-                    <ui-menu
-                      [items]="timeFormatItems()"
-                      triggerClass="flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
-                      triggerHeight="28px"
-                      ariaLabel="settings.timeFormat"
-                      align="end"
-                      [chevron]="true"
-                      (selected)="patchWorkspace({ timeFormat: $event.id })"
-                    >
-                      <span>{{ ws.timeFormat }}</span>
-                    </ui-menu>
-                  </div>
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{ t('settings.firstDay') }}</span>
-                    <ui-menu
-                      [items]="weekDayItems()"
-                      triggerClass="flex h-7 items-center gap-1.5 rounded-field px-2 text-xs"
-                      triggerHeight="28px"
-                      ariaLabel="settings.firstDay"
-                      align="end"
-                      [chevron]="true"
-                      (selected)="patchWorkspace({ firstDayOfWeek: +$event.id })"
-                    >
-                      <span>{{ weekDayLabel(ws.firstDayOfWeek) }}</span>
-                    </ui-menu>
-                  </div>
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{ t('settings.timezone') }}</span>
-                    <ui-menu
-                      [items]="timeZoneItems()"
-                      triggerClass="flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
-                      triggerHeight="28px"
-                      ariaLabel="settings.timezone"
-                      align="end"
-                      [chevron]="true"
-                      (selected)="patchWorkspace({ timeZone: $event.id })"
-                    >
-                      <span>{{ ws.timeZone }}</span>
-                    </ui-menu>
-                  </div>
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{ t('settings.currency') }}</span>
-                    <ui-menu
-                      [items]="currencyItems()"
-                      triggerClass="flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
-                      triggerHeight="28px"
-                      ariaLabel="settings.currency"
-                      align="end"
-                      [chevron]="true"
-                      (selected)="patchWorkspace({ currency: $event.id })"
-                    >
-                      <span>{{ ws.currency }}</span>
-                    </ui-menu>
-                  </div>
-                  <div class="flex h-[42px] items-center gap-3 border-b border-line">
-                    <span class="flex-1 text-[13px] text-ink-2">{{
-                      t('settings.currentSprint')
-                    }}</span>
-                    <button
-                      type="button"
-                      class="hoverable flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
-                      (click)="changeSprint(ws.currentSprint)"
-                    >
-                      <span [class.text-ink-3]="!ws.currentSprint">{{
-                        ws.currentSprint || t('common.none')
-                      }}</span>
-                      <ui-icon name="pencil" [size]="13" class="text-ink-3" />
-                    </button>
-                  </div>
-                  <div class="flex min-h-[46px] items-center gap-3 py-2">
-                    <span class="flex-1 text-[13px] text-ink-2">{{
-                      t('settings.allowOverride')
-                    }}</span>
-                    <ui-switch
-                      [checked]="ws.allowUserOverride"
-                      [label]="t('settings.allowOverride')"
-                      (toggled)="patchWorkspace({ allowUserOverride: !ws.allowUserOverride })"
-                    />
-                  </div>
-                </div>
-              } @else {
-                <p class="text-xs text-ink-3">{{ t('common.none') }}</p>
-              }
-            </div>
-          </div>
-        </section>
-      }
-
-      @case ('fields') {
-        @if (settings.loading() || settings.error()) {
-          <ui-page-state
-            [loading]="settings.loading()"
-            [error]="settings.error()"
-            (retry)="reload()"
-          />
-        } @else {
-          <section class="flex flex-col gap-5">
-            <header class="flex flex-wrap items-start gap-4">
-              <div class="flex flex-1 flex-col gap-1">
-                <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
-                  {{ t('settings.customFields') }}
-                </h1>
-                <p class="max-w-[720px] text-[13px] text-ink-2">
-                  {{ t('settings.customFieldsLead') }}
-                </p>
-              </div>
-              <button
-                type="button"
-                class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-xs font-medium text-inv-ink"
-                (click)="openFieldDialog(null)"
-              >
-                <ui-icon name="plus" [size]="15" />
-                {{ t('settings.addField') }}
-              </button>
-            </header>
-
-            <div class="overflow-x-auto scroll-thin">
-              <div class="min-w-[860px]">
-                <div class="kap flex h-9 items-center gap-4 border-b border-line">
-                  <span class="w-[220px]">{{ t('settings.fieldName') }}</span>
-                  <span class="w-[170px]">{{ t('settings.fieldKey') }}</span>
-                  <span class="w-[150px]">{{ t('settings.fieldType') }}</span>
-                  <span class="w-[150px]">{{ t('settings.fieldScope') }}</span>
-                  <span class="flex-1">{{ t('settings.fieldVisibility') }}</span>
-                  <span class="w-8"></span>
-                </div>
-                @for (field of settings.customFields(); track field.id) {
-                  <div class="flex h-[46px] items-center gap-4 border-b border-line">
-                    <button
-                      type="button"
-                      class="w-[220px] truncate text-left text-[13px]"
-                      (click)="openFieldDialog(field)"
-                    >
-                      {{ field.name }}
-                    </button>
-                    <span class="w-[170px] font-mono text-xs text-ink-2">{{ field.fieldKey }}</span>
-                    <span class="w-[150px] text-xs text-ink-2">{{
-                      t('fieldType.' + field.type)
-                    }}</span>
-                    <span class="w-[150px] truncate text-xs text-ink-2">
-                      {{
-                        field.scopeLabel.startsWith('settings.')
-                          ? t(field.scopeLabel)
-                          : field.scopeLabel
-                      }}
-                    </span>
-                    <span class="flex flex-1 items-center gap-1.5 text-xs text-ink-2">
-                      @if (field.requiredPermission) {
-                        <ui-icon name="lock" [size]="13" />
-                        {{
-                          t('settings.permissionOnly', {
-                            permission: t('permission.' + field.requiredPermission),
-                          })
-                        }}
-                      } @else {
-                        {{ t('common.everyone') }}
-                      }
-                    </span>
-                    <span class="flex w-8 justify-end">
-                      <ui-menu
-                        [items]="fieldMenu"
-                        triggerClass="hoverable flex h-7 w-7 items-center justify-center rounded-[6px] text-ink-3"
-                        triggerHeight="28px"
-                        ariaLabel="common.more"
-                        align="end"
-                        (selected)="onFieldMenu($event, field)"
-                      >
-                        <ui-icon name="dots" [size]="15" />
-                      </ui-menu>
-                    </span>
-                  </div>
-                } @empty {
-                  <p class="py-8 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
-                }
-              </div>
-            </div>
-          </section>
-        }
-      }
-
-      @case ('taskFields') {
-        <section class="flex flex-col gap-5">
-          <header class="flex flex-wrap items-start gap-4">
-            <div class="flex flex-1 flex-col gap-1">
-              <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
-                {{ t('settings.taskFields') }}
-              </h1>
-              <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('settings.taskFieldsLead') }}</p>
-            </div>
-            <ui-menu
-              [items]="fieldScopeItems()"
-              triggerClass="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
-              triggerHeight="32px"
-              ariaLabel="settings.taskFieldsScope"
-              align="end"
-              (selected)="fieldScope.set($any($event.id))"
-            >
-              <ui-icon name="layers" [size]="14" />
-              <span>{{ fieldScopeLabel() }}</span>
-            </ui-menu>
-          </header>
-
-          <div class="flex flex-col">
-            @for (row of taskFieldRows(); track row.key) {
-              <div class="flex min-h-[46px] items-center gap-4 border-b border-line">
-                <span class="flex-1 truncate text-[13px]" [class.text-ink-3]="!row.enabled">
-                  {{ row.label }}
-                </span>
-                @if (row.inherited) {
-                  <span class="text-xs text-ink-3">{{ t('settings.taskFieldInherited') }}</span>
-                } @else if (fieldScope()) {
-                  <button
-                    type="button"
-                    class="text-xs text-ink-2 underline"
-                    (click)="inheritTaskField(row)"
-                  >
-                    {{ t('settings.taskFieldInherit') }}
-                  </button>
-                }
-                <ui-switch
-                  [checked]="row.enabled"
-                  [label]="row.label"
-                  (toggled)="toggleTaskField(row)"
-                />
-              </div>
-            }
-          </div>
-        </section>
-      }
-
-      @case ('flow') {
-        <section class="flex flex-col gap-6">
-          <header class="flex flex-col gap-1">
-            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
-              {{ t('settings.statusesFlow') }}
-            </h1>
-            <p class="max-w-[760px] text-[13px] text-ink-2">{{ t('settings.statusesLead') }}</p>
-          </header>
-
-          <div class="flex flex-col gap-8 xl:flex-row">
-            <div class="flex w-full max-w-[480px] flex-col gap-2.5">
-              <span class="kap">{{ t('settings.statuses') }}</span>
-              <div class="flex flex-col">
-                @for (status of store.boardStatuses(); track status.id; let i = $index) {
-                  <div class="flex h-12 items-center gap-3 border-b border-line">
-                    <span
-                      class="h-2.5 w-2.5 flex-none rounded-sm"
-                      [style.background]="status.swatch"
-                    ></span>
-                    <button
-                      type="button"
-                      class="flex-1 truncate text-left text-[13px]"
-                      (click)="openStatusDialog(status)"
-                    >
-                      {{ store.statusName(status) }}
-                    </button>
-                    <span
-                      class="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-3"
-                    >
-                      {{ t('statusCategory.' + status.category) }}
-                    </span>
-                    <span
-                      class="w-[62px] text-right font-mono text-[11px]"
-                      [class.text-ink]="status.wipLimit !== null"
-                      [class.text-ink-3]="status.wipLimit === null"
-                    >
-                      {{ status.wipLimit === null ? t('common.noWip') : 'WIP ' + status.wipLimit }}
-                    </span>
-                    <ui-menu
-                      [items]="statusMenu(i, store.boardStatuses().length)"
-                      triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
-                      triggerHeight="28px"
-                      ariaLabel="common.more"
-                      align="end"
-                      (selected)="onStatusMenu($event, status, i)"
-                    >
-                      <ui-icon name="dots" [size]="15" />
-                    </ui-menu>
-                  </div>
-                }
+          <div class="flex w-full max-w-[470px] flex-col gap-2.5">
+            <span class="kap">{{ t('settings.availableLanguages') }}</span>
+            <div class="flex flex-col">
+              @for (language of languages; track language.code) {
                 <button
                   type="button"
-                  class="flex h-11 items-center gap-2.5 text-ink-3"
-                  (click)="openStatusDialog(null)"
+                  class="flex h-[46px] items-center gap-3.5 border-b border-line text-left"
+                  (click)="selectLanguage(language.code)"
                 >
-                  <ui-icon name="plus" [size]="15" />
-                  <span class="text-xs">{{ t('settings.addStatus') }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="flex flex-1 flex-col gap-2.5">
-              <span class="kap">{{ t('settings.transitions') }}</span>
-              <div class="flex flex-col gap-2 rounded-panel border border-line bg-surface p-4">
-                @for (transition of store.transitions(); track transition.id) {
-                  <div class="group flex flex-wrap items-center gap-2.5 text-[13px]">
-                    <span class="w-[108px] text-ink-2">{{
-                      store.statusNameByCode(transition.fromCode)
-                    }}</span>
-                    <ui-icon name="arrow-right" [size]="16" class="text-ink-3" />
-                    <span class="flex-1">{{ store.statusNameByCode(transition.toCode) }}</span>
-                    @if (transition.requirement) {
-                      <span
-                        class="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-3"
-                      >
-                        {{ t(transition.requirement) }}
-                      </span>
+                  <span class="w-8 flex-none font-mono text-xs text-ink-2">{{
+                    language.code
+                  }}</span>
+                  <span class="w-[130px] flex-none truncate text-[13px]">{{ language.name }}</span>
+                  <span class="h-[3px] flex-1 overflow-hidden rounded-full bg-surface-3">
+                    <span class="block h-[3px] bg-ink-2" [style.width.%]="language.coverage"></span>
+                  </span>
+                  <span class="w-11 flex-none text-right font-mono text-[11px] text-ink-3"
+                    >{{ language.coverage }}%</span
+                  >
+                  <span class="w-[84px] flex-none text-right">
+                    @if (language.isDefault) {
+                      <span class="rounded-full bg-inv px-2 py-0.5 text-[11px] text-inv-ink">{{
+                        t('settings.default')
+                      }}</span>
+                    } @else if (i18n.lang() === language.code) {
+                      <span class="text-[11px] text-ink-3">{{ t('common.active') }}</span>
                     }
-                    <button
-                      type="button"
-                      class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                      [attr.aria-label]="t('common.delete')"
-                      (click)="removeTransition(transition.id)"
-                    >
-                      <ui-icon name="x" [size]="14" />
-                    </button>
-                  </div>
-                } @empty {
-                  <p class="text-xs text-ink-3">{{ t('settings.noTransitions') }}</p>
-                }
-
-                <div class="mt-1 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                  <ui-menu
-                    [items]="statusPickItems(transitionFrom())"
-                    triggerClass="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
-                    triggerHeight="32px"
-                    ariaLabel="settings.transitionFrom"
-                    [chevron]="true"
-                    (selected)="transitionFrom.set($event.id)"
-                  >
-                    <span>{{
-                      transitionFrom() ? statusName(transitionFrom()) : t('settings.transitionFrom')
-                    }}</span>
-                  </ui-menu>
-                  <ui-icon name="arrow-right" [size]="15" class="text-ink-3" />
-                  <ui-menu
-                    [items]="statusPickItems(transitionTo())"
-                    triggerClass="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
-                    triggerHeight="32px"
-                    ariaLabel="settings.transitionTo"
-                    [chevron]="true"
-                    (selected)="transitionTo.set($event.id)"
-                  >
-                    <span>{{
-                      transitionTo() ? statusName(transitionTo()) : t('settings.transitionTo')
-                    }}</span>
-                  </ui-menu>
-                  <button
-                    type="button"
-                    class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv px-3 text-xs font-medium text-inv-ink"
-                    (click)="addTransition()"
-                  >
-                    <ui-icon name="plus" [size]="14" />
-                    {{ t('settings.addTransition') }}
-                  </button>
-                </div>
-              </div>
-
-              @if (workspaceSettings(); as ws) {
-                <div
-                  class="flex items-center gap-2.5 rounded-panel border border-line px-3.5 py-3 text-xs text-ink-2"
-                >
-                  <ui-switch
-                    [checked]="ws.blockDisallowedDrag"
-                    [label]="t('settings.blockDrag')"
-                    (toggled)="patchWorkspace({ blockDisallowedDrag: !ws.blockDisallowedDrag })"
-                  />
-                  <span>{{ t('settings.blockDrag') }}</span>
-                </div>
+                  </span>
+                </button>
               }
             </div>
-          </div>
-        </section>
-      }
-
-      @case ('epics') {
-        <section class="flex flex-col gap-5">
-          <header class="flex flex-wrap items-start gap-4">
-            <div class="flex flex-1 flex-col gap-1">
-              <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
-                {{ t('settings.epics') }}
-              </h1>
-              <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('settings.epicsLead') }}</p>
-            </div>
-            <button
-              type="button"
-              class="flex h-8 items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-xs font-medium text-inv-ink"
-              (click)="addEpic()"
-            >
-              <ui-icon name="plus" [size]="15" />
-              {{ t('settings.addEpic') }}
-            </button>
-          </header>
-
-          <div class="flex w-full max-w-[560px] flex-col">
-            @for (epic of store.epics(); track epic.id) {
-              <div class="flex h-12 items-center gap-3 border-b border-line">
-                <ui-icon name="layers" [size]="15" class="text-ink-3" />
-                <span class="flex-1 truncate text-[13px]">{{ epic.name }}</span>
-                <span class="font-mono text-[11px] text-ink-3">{{ epicTaskCount(epic.id) }}</span>
-                <ui-menu
-                  [items]="epicMenu"
-                  triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
-                  triggerHeight="28px"
-                  ariaLabel="common.more"
-                  align="end"
-                  (selected)="onEpicMenu($event, epic.id, epic.name)"
-                >
-                  <ui-icon name="dots" [size]="15" />
-                </ui-menu>
-              </div>
-            } @empty {
-              <p class="py-8 text-center text-xs text-ink-3">{{ t('common.none') }}</p>
-            }
           </div>
         </section>
       }
     }
   </div>
 </div>
-
-<app-custom-field-dialog
-  [open]="fieldDialogOpen()"
-  [field]="editedField()"
-  (saved)="saveField($event)"
-  (cancelled)="closeFieldDialog()"
-/>
-
-<app-status-dialog
-  [open]="statusDialogOpen()"
-  [status]="editedStatus()"
-  (saved)="saveStatus($event)"
-  (cancelled)="closeStatusDialog()"
-/>
 
 <app-email-change-dialog
   [open]="emailDialogOpen()"

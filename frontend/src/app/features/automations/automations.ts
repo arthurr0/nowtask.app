@@ -149,7 +149,7 @@ export class Automations implements OnInit {
         this.selectedId.set(created.id);
       }
       this.closeDialog();
-      this.toast.success(this.t('settings.saved'));
+      this.toast.success(this.t('common.saved'));
     } catch (error) {
       this.toast.error(this.errorText(error));
     }
@@ -168,7 +168,7 @@ export class Automations implements OnInit {
           draft: true,
         });
         this.selectedId.set(created.id);
-        this.toast.success(this.t('settings.saved'));
+        this.toast.success(this.t('common.saved'));
       } catch (error) {
         this.toast.error(this.errorText(error));
       }
@@ -177,7 +177,7 @@ export class Automations implements OnInit {
     if (item.id === 'draft') {
       try {
         await this.rulesStore.update(rule.id, { draft: !rule.draft, enabled: rule.draft });
-        this.toast.success(this.t('settings.saved'));
+        this.toast.success(this.t('common.saved'));
       } catch (error) {
         this.toast.error(this.errorText(error));
       }

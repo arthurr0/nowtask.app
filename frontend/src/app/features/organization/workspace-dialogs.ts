@@ -54,23 +54,23 @@ const CATEGORIES = ['notStarted', 'inFlight', 'done'] as const;
     <ui-dialog
       [open]="open()"
       size="md"
-      [title]="field() ? 'settings.editField' : 'settings.addField'"
-      description="settings.fieldDialogLead"
+      [title]="field() ? 'organization.editField' : 'organization.addField'"
+      description="organization.fieldDialogLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
         <ui-text-field
           [value]="name()"
           (valueChange)="onName($event)"
-          label="settings.fieldName"
+          label="organization.fieldName"
           [required]="true"
           [error]="error()"
         />
         <ui-text-field
           [value]="fieldKey()"
           (valueChange)="fieldKey.set($event)"
-          label="settings.fieldKey"
-          hint="settings.fieldKeyHint"
+          label="organization.fieldKey"
+          hint="organization.fieldKeyHint"
           [required]="true"
           [disabled]="field() !== null"
         />
@@ -79,21 +79,21 @@ const CATEGORIES = ['notStarted', 'inFlight', 'done'] as const;
             [value]="type()"
             (valueChange)="type.set($event)"
             [options]="typeOptions()"
-            label="settings.fieldType"
+            label="organization.fieldType"
             [required]="true"
           />
           <ui-select-field
             [value]="requiredPermission()"
             (valueChange)="requiredPermission.set($event)"
             [options]="permissionOptions()"
-            label="settings.fieldVisibility"
+            label="organization.fieldVisibility"
           />
         </div>
         <ui-text-field
           [value]="scopeLabel()"
           (valueChange)="scopeLabel.set($event)"
-          label="settings.fieldScope"
-          hint="settings.fieldScopeHint"
+          label="organization.fieldScope"
+          hint="organization.fieldScopeHint"
         />
       </div>
 
@@ -159,7 +159,9 @@ export class CustomFieldDialog {
     { value: '', label: this.t('common.everyone') },
     ...FIELD_PERMISSIONS.map((permission) => ({
       value: permission,
-      label: this.t('settings.permissionOnly', { permission: this.t('permission.' + permission) }),
+      label: this.t('organization.permissionOnly', {
+        permission: this.t('permission.' + permission),
+      }),
     })),
   ]);
 
@@ -174,7 +176,7 @@ export class CustomFieldDialog {
     const name = this.name().trim();
     const fieldKey = slug(this.fieldKey());
     if (!name || !fieldKey) {
-      this.error.set(this.t('settings.fieldNameRequired'));
+      this.error.set(this.t('organization.fieldNameRequired'));
       return;
     }
     this.saved.emit({
@@ -195,15 +197,15 @@ export class CustomFieldDialog {
     <ui-dialog
       [open]="open()"
       size="md"
-      [title]="status() ? 'settings.editStatus' : 'settings.addStatus'"
-      description="settings.statusDialogLead"
+      [title]="status() ? 'organization.editStatus' : 'organization.addStatus'"
+      description="organization.statusDialogLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
         <ui-text-field
           [value]="label()"
           (valueChange)="onLabel($event)"
-          label="settings.statusLabel"
+          label="organization.statusLabel"
           [required]="true"
           [error]="error()"
         />
@@ -211,8 +213,8 @@ export class CustomFieldDialog {
           <ui-text-field
             [value]="code()"
             (valueChange)="code.set($event)"
-            label="settings.statusCode"
-            hint="settings.statusCodeHint"
+            label="organization.statusCode"
+            hint="organization.statusCodeHint"
             [required]="true"
             [disabled]="status() !== null"
           />
@@ -220,15 +222,15 @@ export class CustomFieldDialog {
             [value]="category()"
             (valueChange)="category.set($event)"
             [options]="categoryOptions()"
-            label="settings.statusCategory"
+            label="organization.statusCategory"
             [required]="true"
           />
         </div>
         <ui-text-field
           [value]="wipLimit()"
           (valueChange)="wipLimit.set($event)"
-          label="settings.wipLimit"
-          hint="settings.wipHint"
+          label="organization.wipLimit"
+          hint="organization.wipHint"
           type="number"
         />
       </div>
@@ -303,7 +305,7 @@ export class StatusDialog {
     const label = this.label().trim();
     const code = slug(this.code());
     if (!label || !code) {
-      this.error.set(this.t('settings.statusLabelRequired'));
+      this.error.set(this.t('organization.statusLabelRequired'));
       return;
     }
     const parsed = Number.parseInt(this.wipLimit(), 10);

@@ -226,7 +226,7 @@ export class Board {
         });
         break;
       case 'settings':
-        void this.router.navigate(['/app/settings'], { queryParams: { tab: 'statuses' } });
+        void this.router.navigate(['/app/organization'], { queryParams: { section: 'flow' } });
         break;
     }
   }
