@@ -3,17 +3,31 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
+import { Router } from '@angular/router';
+import { AccountService } from '../../core/account.service';
+import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { OrgService } from '../../core/org.service';
 import { PrefsService } from '../../core/prefs.service';
+import { dateTime } from '../../core/format';
 import type { Accent, Density, Lang, RadiusStep, ThemeChoice } from '../../core/models';
-import type { CustomFieldDto, StatusDto, WorkspaceSettingsDto } from '../../core/api-types';
+import type {
+  CustomFieldDto,
+  NotificationPrefDto,
+  SessionDto,
+  StatusDto,
+  WorkspaceSettingsDto,
+} from '../../core/api-types';
 import { ViewState } from '../../data/view-state';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { SettingsStore } from '../../data/feature.stores';
 import { ConfirmService } from '../../ui/confirm.service';
+import { Avatar } from '../../ui/avatar';
 import { Icon } from '../../ui/icon';
 import { Menu, type MenuItem } from '../../ui/menu';
 import { PromptService } from '../../ui/prompt.service';
@@ -22,14 +36,26 @@ import { ToastService } from '../../ui/toast.service';
 import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { PageState } from '../../ui/page-state';
+import { TextField } from '../../ui/text-field';
 import {
   CustomFieldDialog,
   StatusDialog,
   type CustomFieldDraft,
   type StatusDraft,
 } from './settings-dialogs';
+import { DeleteAccountDialog, EmailChangeDialog, type EmailChangeDraft } from './account-dialogs';
 
-type Section = 'appearance' | 'language' | 'fields' | 'flow' | 'epics';
+type Section =
+  | 'profile'
+  | 'security'
+  | 'notifications'
+  | 'appearance'
+  | 'language'
+  | 'fields'
+  | 'flow'
+  | 'epics';
+
+const MIN_PASSWORD_LENGTH = 10;
 
 const DATE_FORMATS = ['dd.MM.yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'd MMMM yyyy'];
 const TIME_FORMATS = ['HH:mm', 'h:mm a'];
@@ -40,11 +66,28 @@ const CURRENCIES = ['PLN', 'EUR', 'USD', 'GBP'];
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, Switch, Menu, Topbar, ViewControls, PageState, CustomFieldDialog, StatusDialog],
+  imports: [
+    Icon,
+    Avatar,
+    Switch,
+    Menu,
+    Topbar,
+    ViewControls,
+    PageState,
+    TextField,
+    CustomFieldDialog,
+    StatusDialog,
+    EmailChangeDialog,
+    DeleteAccountDialog,
+  ],
   templateUrl: './settings.html',
 })
 export class Settings implements OnInit {
   protected readonly store = inject(WorkspaceStore);
+  protected readonly auth = inject(AuthService);
+  protected readonly account = inject(AccountService);
+  private readonly orgs = inject(OrgService);
+  private readonly router = inject(Router);
   protected readonly view = inject(ViewState);
   protected readonly settings = inject(SettingsStore);
   protected readonly prefs = inject(PrefsService);
@@ -54,7 +97,7 @@ export class Settings implements OnInit {
   protected readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
-  protected readonly section = signal<Section>('appearance');
+  protected readonly section = signal<Section>('profile');
   protected readonly workspaceSettings = signal<WorkspaceSettingsDto | null>(null);
 
   protected readonly fieldDialogOpen = signal(false);
@@ -63,6 +106,12 @@ export class Settings implements OnInit {
   protected readonly transitionFrom = signal('');
   protected readonly transitionTo = signal('');
   protected readonly editedStatus = signal<StatusDto | null>(null);
+
+  protected readonly accountSections: readonly { id: Section; icon: string; label: string }[] = [
+    { id: 'profile', icon: 'user', label: 'account.profile' },
+    { id: 'security', icon: 'lock', label: 'account.security' },
+    { id: 'notifications', icon: 'bell', label: 'account.notifications' },
+  ];
 
   protected readonly personalSections: readonly { id: Section; icon: string; label: string }[] = [
     { id: 'appearance', icon: 'sun', label: 'settings.appearance' },
@@ -120,9 +169,55 @@ export class Settings implements OnInit {
     { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
   ];
 
+  protected readonly profileName = signal('');
+  protected readonly profileInitials = signal('');
+  protected readonly profileSaving = signal(false);
+
+  protected readonly currentPassword = signal('');
+  protected readonly newPassword = signal('');
+  protected readonly repeatPassword = signal('');
+  protected readonly passwordError = signal('');
+  protected readonly passwordSaving = signal(false);
+
+  protected readonly emailDialogOpen = signal(false);
+  protected readonly emailError = signal('');
+  protected readonly deleteDialogOpen = signal(false);
+  protected readonly deleteError = signal('');
+
+  protected readonly profileDirty = computed(() => {
+    const user = this.auth.user();
+    if (!user) return false;
+    return (
+      this.profileName().trim() !== user.name || this.profileInitials().trim() !== user.initials
+    );
+  });
+
+  protected readonly passwordReady = computed(
+    () =>
+      this.currentPassword().length > 0 &&
+      this.newPassword().length >= MIN_PASSWORD_LENGTH &&
+      this.newPassword() === this.repeatPassword(),
+  );
+
+  protected readonly otherSessions = computed(
+    () => this.account.sessions().filter((session) => !session.current).length,
+  );
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.user();
+      if (!user) return;
+      untracked(() => {
+        this.profileName.set(user.name);
+        this.profileInitials.set(user.initials);
+      });
+    });
+  }
+
   ngOnInit(): void {
     void this.settings.load();
     void this.loadWorkspaceSettings();
+    void this.loadAccount();
   }
 
   reload(): void {
@@ -188,14 +283,15 @@ export class Settings implements OnInit {
     }));
   }
 
-  async changeSprint(current: string): Promise<void> {
+  async changeSprint(current: string | null): Promise<void> {
     const sprint = await this.prompt.ask({
       title: 'settings.currentSprint',
       message: 'settings.currentSprintHint',
       label: 'settings.currentSprint',
-      value: current,
+      value: current ?? '',
+      required: false,
     });
-    if (!sprint) return;
+    if (sprint === null || sprint === (current ?? '')) return;
     await this.patchWorkspace({ currentSprint: sprint });
   }
 
@@ -406,6 +502,199 @@ export class Settings implements OnInit {
     return this.store.tasks().filter((task) => task.epicId === epicId).length;
   }
 
+  async loadAccount(): Promise<void> {
+    try {
+      await this.account.load();
+    } catch {
+      this.toast.error(this.t('common.actionFailed'));
+    }
+  }
+
+  async saveProfile(): Promise<void> {
+    if (!this.profileDirty() || this.profileSaving()) return;
+
+    this.profileSaving.set(true);
+    try {
+      const initials = this.profileInitials().trim();
+      const user = await this.account.updateProfile(
+        initials
+          ? { name: this.profileName().trim(), initials }
+          : { name: this.profileName().trim() },
+      );
+      this.auth.setUser(user);
+      this.toast.success(this.t('settings.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    } finally {
+      this.profileSaving.set(false);
+    }
+  }
+
+  resetProfile(): void {
+    const user = this.auth.user();
+    if (!user) return;
+    this.profileName.set(user.name);
+    this.profileInitials.set(user.initials);
+  }
+
+  async changePassword(): Promise<void> {
+    if (!this.passwordReady() || this.passwordSaving()) return;
+
+    this.passwordSaving.set(true);
+    this.passwordError.set('');
+    try {
+      await this.account.changePassword(this.currentPassword(), this.newPassword());
+      this.currentPassword.set('');
+      this.newPassword.set('');
+      this.repeatPassword.set('');
+      this.toast.success(this.t('account.passwordSaved'));
+    } catch (error) {
+      this.passwordError.set(this.accountErrorText(error));
+    } finally {
+      this.passwordSaving.set(false);
+    }
+  }
+
+  openEmailDialog(): void {
+    this.emailError.set('');
+    this.emailDialogOpen.set(true);
+  }
+
+  async submitEmailChange(draft: EmailChangeDraft): Promise<void> {
+    try {
+      const change = await this.account.requestEmailChange(draft.email, draft.password);
+      this.emailDialogOpen.set(false);
+      this.toast.success(this.t('account.emailChangeSent', { email: change.newEmail }));
+    } catch (error) {
+      this.emailError.set(this.accountErrorText(error));
+    }
+  }
+
+  async cancelEmailChange(): Promise<void> {
+    try {
+      await this.account.cancelEmailChange();
+      this.toast.success(this.t('account.emailChangeCancelled'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async resendVerification(): Promise<void> {
+    try {
+      await this.auth.resendVerification();
+      this.toast.success(this.t('account.verificationSent'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async toggleNotification(kind: string, channel: 'inApp' | 'email'): Promise<void> {
+    const next: NotificationPrefDto[] = this.account
+      .notificationPrefs()
+      .map((pref) => (pref.kind === kind ? { ...pref, [channel]: !pref[channel] } : pref));
+
+    try {
+      await this.account.saveNotificationPrefs(next);
+      this.toast.success(this.t('settings.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  sessionName(session: SessionDto): string {
+    return describeAgent(session.userAgent) || this.t('account.unknownDevice');
+  }
+
+  sessionSeen(session: SessionDto): string {
+    return dateTime(session.lastSeenAt);
+  }
+
+  async revokeSession(session: SessionDto): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'account.revokeSession',
+      message: 'account.revokeSessionHint',
+      confirmLabel: 'account.revoke',
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await this.account.revokeSession(session.id);
+      this.toast.success(this.t('account.sessionRevoked'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async revokeOtherSessions(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'account.revokeOthers',
+      message: 'account.revokeOthersHint',
+      confirmLabel: 'account.revoke',
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      const closed = await this.account.revokeOtherSessions();
+      this.toast.success(this.t('account.sessionsRevoked', { count: closed }));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async leaveOrganization(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'account.leaveTitle',
+      message: 'account.leaveHint',
+      confirmLabel: 'account.leave',
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await this.account.leaveOrganization();
+      const memberships = await this.orgs.refresh(true);
+
+      if (memberships.length) {
+        window.location.assign('/app/board');
+      } else {
+        await this.router.navigate(['/orgs/new']);
+      }
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  openDeleteDialog(): void {
+    this.deleteError.set('');
+    this.deleteDialogOpen.set(true);
+  }
+
+  async deleteAccount(password: string): Promise<void> {
+    try {
+      await this.account.deleteAccount(password);
+      this.deleteDialogOpen.set(false);
+      this.auth.markSignedOut();
+      window.location.assign('/');
+    } catch (error) {
+      this.deleteError.set(this.accountErrorText(error));
+    }
+  }
+
+  private accountErrorText(error: unknown): string {
+    const code = errorCode(error);
+    if (code === 'PASSWORD_INVALID') return this.t('account.passwordWrong');
+    if (code === 'PASSWORD_REUSED') return this.t('account.passwordReused');
+    if (code === 'PASSWORD_TOO_COMMON') return this.t('account.passwordTooCommon');
+    if (code === 'PASSWORD_NOT_SET') return this.t('account.passwordNotSet');
+    if (code === 'EMAIL_TAKEN') return this.t('account.emailTaken');
+    if (code === 'EMAIL_UNCHANGED') return this.t('account.emailUnchanged');
+    if (code === 'EMAIL_DISPOSABLE') return this.t('account.emailDisposable');
+    if (code === 'RATE_LIMITED') return this.t('account.tooManyRequests');
+    return this.errorText(error);
+  }
+
   private async loadWorkspaceSettings(): Promise<void> {
     try {
       this.workspaceSettings.set(await this.store.loadWorkspaceSettings());
@@ -421,4 +710,41 @@ export class Settings implements OnInit {
     }
     return this.t('common.actionFailed');
   }
+}
+
+function errorCode(error: unknown): string {
+  if (typeof error !== 'object' || error === null || !('error' in error)) return '';
+  const body = (error as { error?: { code?: string } }).error;
+  return body?.code ?? '';
+}
+
+function describeAgent(userAgent: string | null): string {
+  if (!userAgent) return '';
+
+  const browser = /Edg\//.test(userAgent)
+    ? 'Edge'
+    : /Firefox\//.test(userAgent)
+      ? 'Firefox'
+      : /Chrome\//.test(userAgent)
+        ? 'Chrome'
+        : /Safari\//.test(userAgent)
+          ? 'Safari'
+          : '';
+
+  const system = /Android/.test(userAgent)
+    ? 'Android'
+    : /iPhone|iPad/.test(userAgent)
+      ? 'iOS'
+      : /Mac OS X/.test(userAgent)
+        ? 'macOS'
+        : /Windows/.test(userAgent)
+          ? 'Windows'
+          : /Linux/.test(userAgent)
+            ? 'Linux'
+            : '';
+
+  if (!browser && !system) return '';
+  if (!system) return browser;
+  if (!browser) return system;
+  return `${browser}, ${system}`;
 }

@@ -1,7 +1,7 @@
 <ui-topbar>
-  <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.admin') }}</span>
+  <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.organization') }}</span>
   <span class="font-mono text-[11px] text-ink-3">
-    {{ t('admin.headcount', { people: admin.members().length, teams: admin.teams().length }) }}
+    {{ t('organization.headcount', { people: organization.members().length, teams: organization.teams().length }) }}
   </span>
   <span class="hidden flex-1 lg:block"></span>
   <ui-view-controls />
@@ -12,19 +12,19 @@
       (click)="inviteOpen.set(true)"
     >
       <ui-icon name="plus" [size]="16" />
-      <span class="hidden sm:inline">{{ t('admin.invite') }}</span>
+      <span class="hidden sm:inline">{{ t('organization.invite') }}</span>
     </button>
   }
 </ui-topbar>
 
-@if (admin.loading() || admin.error()) {
-  <ui-page-state [loading]="admin.loading()" [error]="admin.error()" (retry)="reload()" />
+@if (organization.loading() || organization.error()) {
+  <ui-page-state [loading]="organization.loading()" [error]="organization.error()" (retry)="reload()" />
 } @else {
   <div class="flex flex-1 overflow-hidden">
     <nav
       class="hidden w-[232px] flex-none flex-col gap-0.5 border-r border-line bg-surface px-3 py-4 lg:flex"
     >
-      <span class="kap px-2 pt-2 pb-1.5">{{ t('nav.admin') }}</span>
+      <span class="kap px-2 pt-2 pb-1.5">{{ t('nav.organization') }}</span>
       @for (item of sections; track item.id) {
         <button
           type="button"
@@ -64,7 +64,7 @@
           <div class="flex flex-col gap-6 lg:flex-row">
             <section class="flex w-full flex-none flex-col gap-3 lg:w-[460px]">
               <div class="flex items-center gap-2.5">
-                <h2 class="kap">{{ t('admin.members') }}</h2>
+                <h2 class="kap">{{ t('organization.members') }}</h2>
                 <span class="h-px flex-1 bg-line"></span>
               </div>
 
@@ -74,7 +74,7 @@
                 <ui-icon name="search" [size]="15" class="text-ink-3" />
                 <input
                   class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-ink-3"
-                  [placeholder]="t('admin.searchPerson')"
+                  [placeholder]="t('organization.searchPerson')"
                   [value]="search()"
                   (input)="search.set($any($event.target).value)"
                 />
@@ -138,13 +138,13 @@
               </div>
 
               <div class="mt-1.5 flex items-center gap-2.5">
-                <h2 class="kap">{{ t('admin.teams') }}</h2>
+                <h2 class="kap">{{ t('organization.teams') }}</h2>
                 <span class="h-px flex-1 bg-line"></span>
                 @if (isAdmin()) {
                   <button
                     type="button"
                     class="hoverable flex h-6 w-6 items-center justify-center rounded-[6px] text-ink-3"
-                    [attr.aria-label]="t('admin.newTeam')"
+                    [attr.aria-label]="t('organization.newTeam')"
                     (click)="addTeam()"
                   >
                     <ui-icon name="plus" [size]="15" />
@@ -153,7 +153,7 @@
               </div>
 
               <div class="flex flex-col">
-                @for (team of admin.teams(); track team.id) {
+                @for (team of organization.teams(); track team.id) {
                   <div class="flex flex-col border-b border-line">
                     <div class="flex h-10 items-center gap-3 text-[13px]">
                       <button
@@ -185,7 +185,7 @@
 
                     @if (expandedTeam(team.id)) {
                       <div class="flex flex-wrap gap-1.5 pb-3">
-                        @for (user of admin.members(); track user.id) {
+                        @for (user of organization.members(); track user.id) {
                           <button
                             type="button"
                             class="flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px]"
@@ -215,11 +215,11 @@
 
             <section class="flex min-w-0 flex-1 flex-col gap-3">
               <div class="flex items-center gap-2.5">
-                <h2 class="kap">{{ t('admin.workload') }}</h2>
+                <h2 class="kap">{{ t('organization.workload') }}</h2>
                 <span class="h-px flex-1 bg-line"></span>
               </div>
               <div class="flex flex-col gap-3 rounded-panel border border-line bg-surface p-4">
-                @for (user of admin.members(); track user.id) {
+                @for (user of organization.members(); track user.id) {
                   @if (!user.pending) {
                     <div class="flex flex-col gap-1.5">
                       <div class="flex items-center gap-2 text-xs">
@@ -249,7 +249,7 @@
                     </div>
                   }
                 }
-                <p class="text-[11px] text-ink-3">{{ t('admin.workloadHint') }}</p>
+                <p class="text-[11px] text-ink-3">{{ t('organization.workloadHint') }}</p>
               </div>
             </section>
           </div>
@@ -258,14 +258,14 @@
         @case ('security') {
           <section class="flex min-w-0 flex-1 flex-col gap-3">
             <div class="flex items-center gap-2.5">
-              <h2 class="kap">{{ t('admin.rolePermissions') }}</h2>
+              <h2 class="kap">{{ t('organization.rolePermissions') }}</h2>
               <span class="h-px flex-1 bg-line"></span>
             </div>
 
             <div class="overflow-x-auto rounded-panel border border-line bg-surface scroll-thin">
               <div class="min-w-[700px]">
                 <div class="kap flex h-11 items-center border-b border-line bg-surface-2">
-                  <span class="min-w-0 flex-1 pl-4">{{ t('admin.permission') }}</span>
+                  <span class="min-w-0 flex-1 pl-4">{{ t('organization.permission') }}</span>
                   @for (role of roles(); track role.id) {
                     <span class="w-[104px] flex-none truncate text-center" [title]="role.name">{{
                       role.name
@@ -303,7 +303,7 @@
 
             <p class="flex items-start gap-2 text-[11px] text-ink-3">
               <ui-icon name="lock" [size]="13" />
-              <span>{{ t('admin.padlockNote') }}</span>
+              <span>{{ t('organization.padlockNote') }}</span>
             </p>
           </section>
         }
@@ -311,7 +311,7 @@
         @case ('keys') {
           <section class="flex min-w-0 flex-1 flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h2 class="kap">{{ t('admin.apiKeys') }}</h2>
+              <h2 class="kap">{{ t('organization.apiKeys') }}</h2>
               <span class="h-px flex-1 bg-line"></span>
               @if (isAdmin()) {
                 <button
@@ -320,7 +320,7 @@
                   (click)="keyOpen.set(true)"
                 >
                   <ui-icon name="plus" [size]="15" />
-                  {{ t('admin.newKey') }}
+                  {{ t('organization.newKey') }}
                 </button>
               }
             </div>
@@ -329,7 +329,7 @@
               <div class="flex flex-col gap-2 rounded-panel border border-warn bg-warn-soft p-4">
                 <p class="flex items-center gap-2 text-[13px] font-medium text-warn">
                   <ui-icon name="alert" [size]="15" />
-                  {{ t('admin.keyOnce') }}
+                  {{ t('organization.keyOnce') }}
                 </p>
                 <div class="flex flex-wrap items-center gap-2">
                   <code
@@ -342,7 +342,7 @@
                     (click)="copyIssuedKey()"
                   >
                     <ui-icon name="copy" [size]="14" />
-                    {{ t('admin.copyKey') }}
+                    {{ t('organization.copyKey') }}
                   </button>
                   <button
                     type="button"
@@ -361,17 +361,17 @@
             >
               <ui-icon name="agent" [size]="16" class="flex-none text-ink-2" />
               <span class="flex min-w-0 flex-1 flex-col gap-1">
-                <span class="text-[13px] font-medium">{{ t('admin.agents') }}</span>
-                <span class="text-xs leading-[1.7] text-ink-2">{{ t('admin.agentsLead') }}</span>
+                <span class="text-[13px] font-medium">{{ t('organization.agents') }}</span>
+                <span class="text-xs leading-[1.7] text-ink-2">{{ t('organization.agentsLead') }}</span>
               </span>
               <span class="flex flex-none items-center gap-1.5 text-xs">
-                {{ t('admin.agentsOpen') }}
+                {{ t('organization.agentsOpen') }}
                 <ui-icon name="arrow-right" [size]="13" />
               </span>
             </a>
 
             <div class="flex flex-col">
-              @for (key of admin.apiKeys(); track key.id) {
+              @for (key of organization.apiKeys(); track key.id) {
                 <div
                   class="flex min-h-12 flex-wrap items-center gap-3.5 border-b border-line py-2 text-xs"
                 >
@@ -391,13 +391,13 @@
                     [class.border-warn]="key.state !== 'active'"
                     [class.text-warn]="key.state !== 'active'"
                     [class.text-ink-3]="key.state === 'active'"
-                    >{{ t('admin.keyState.' + key.state) }}</span
+                    >{{ t('organization.keyState.' + key.state) }}</span
                   >
                   <span class="w-[150px] flex-none text-ink-3">
                     {{
                       key.lastUsedAt
-                        ? t('admin.keyUsed', { when: shortDateTime(key.lastUsedAt) })
-                        : t('admin.keyNeverUsed')
+                        ? t('organization.keyUsed', { when: shortDateTime(key.lastUsedAt) })
+                        : t('organization.keyNeverUsed')
                     }}
                   </span>
                   @if (isAdmin()) {
@@ -415,7 +415,7 @@
                 </div>
               } @empty {
                 <p class="py-8 text-center text-xs text-ink-3">
-                  {{ isAdmin() ? t('admin.noKeys') : t('admin.keysAdminOnly') }}
+                  {{ isAdmin() ? t('organization.noKeys') : t('organization.keysAdminOnly') }}
                 </p>
               }
             </div>
@@ -425,7 +425,7 @@
         @case ('integrations') {
           <section class="flex min-w-0 flex-1 flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h2 class="kap">{{ t('admin.integrations') }}</h2>
+              <h2 class="kap">{{ t('organization.integrations') }}</h2>
               <span class="h-px flex-1 bg-line"></span>
               @if (isAdmin()) {
                 <button
@@ -434,12 +434,12 @@
                   (click)="integrationOpen.set(true)"
                 >
                   <ui-icon name="plus" [size]="15" />
-                  {{ t('admin.newIntegration') }}
+                  {{ t('organization.newIntegration') }}
                 </button>
               }
             </div>
 
-            <p class="text-xs leading-[1.7] text-ink-2">{{ t('admin.integrationsLead') }}</p>
+            <p class="text-xs leading-[1.7] text-ink-2">{{ t('organization.integrationsLead') }}</p>
 
             <div class="flex flex-col">
               @for (integration of integrations.items(); track integration.id) {
@@ -464,19 +464,19 @@
                     [class.text-warn]="!integration.enabled"
                     [class.text-ink-3]="integration.enabled"
                     >{{
-                      integration.enabled ? t('admin.integrationOn') : t('admin.integrationOff')
+                      integration.enabled ? t('organization.integrationOn') : t('organization.integrationOff')
                     }}</span
                   >
                   <span class="w-[190px] flex-none truncate text-ink-3">
                     @if (integration.lastAt) {
                       {{
-                        t('admin.integrationLast', {
+                        t('organization.integrationLast', {
                           when: shortDateTime(integration.lastAt),
                           detail: integration.lastDetail,
                         })
                       }}
                     } @else {
-                      {{ t('admin.integrationNeverSent') }}
+                      {{ t('organization.integrationNeverSent') }}
                     }
                   </span>
                   @if (isAdmin()) {
@@ -493,7 +493,7 @@
                   }
                 </div>
               } @empty {
-                <p class="py-8 text-center text-xs text-ink-3">{{ t('admin.noIntegrations') }}</p>
+                <p class="py-8 text-center text-xs text-ink-3">{{ t('organization.noIntegrations') }}</p>
               }
             </div>
           </section>
@@ -502,16 +502,16 @@
         @case ('audit') {
           <section class="flex min-w-0 flex-1 flex-col gap-3">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h2 class="kap">{{ t('admin.auditLog') }}</h2>
+              <h2 class="kap">{{ t('organization.auditLog') }}</h2>
               <span class="h-px flex-1 bg-line"></span>
-              <span class="font-mono text-[11px] text-ink-3">{{ admin.audit()?.total ?? 0 }}</span>
+              <span class="font-mono text-[11px] text-ink-3">{{ organization.audit()?.total ?? 0 }}</span>
               <button
                 type="button"
                 class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
-                (click)="loadAudit(admin.auditPage())"
+                (click)="loadAudit(organization.auditPage())"
               >
                 <ui-icon name="log" [size]="14" />
-                {{ t('admin.refresh') }}
+                {{ t('organization.refresh') }}
               </button>
             </div>
 
@@ -520,10 +520,10 @@
                 <div class="kap flex h-9 items-center gap-4 border-b border-line">
                   <span class="w-[132px]">{{ t('task.when') }}</span>
                   <span class="w-[150px]">{{ t('task.author') }}</span>
-                  <span class="w-[170px]">{{ t('admin.action') }}</span>
-                  <span class="flex-1">{{ t('admin.subject') }}</span>
+                  <span class="w-[170px]">{{ t('organization.action') }}</span>
+                  <span class="flex-1">{{ t('organization.subject') }}</span>
                 </div>
-                @for (entry of admin.audit()?.items ?? []; track entry.id) {
+                @for (entry of organization.audit()?.items ?? []; track entry.id) {
                   <div class="flex min-h-10 items-center gap-4 border-b border-line py-1.5 text-xs">
                     <span class="w-[132px] flex-none font-mono text-ink-3">{{
                       shortDateTime(entry.at)
@@ -545,22 +545,22 @@
                 <button
                   type="button"
                   class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
-                  [disabled]="admin.auditPage() === 0"
-                  (click)="loadAudit(admin.auditPage() - 1)"
+                  [disabled]="organization.auditPage() === 0"
+                  (click)="loadAudit(organization.auditPage() - 1)"
                 >
                   <ui-icon name="chevron-right" [size]="14" class="rotate-180" />
-                  {{ t('admin.previous') }}
+                  {{ t('organization.previous') }}
                 </button>
                 <span class="font-mono text-[11px] text-ink-3"
-                  >{{ admin.auditPage() + 1 }} / {{ auditPages() }}</span
+                  >{{ organization.auditPage() + 1 }} / {{ auditPages() }}</span
                 >
                 <button
                   type="button"
                   class="flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
-                  [disabled]="admin.auditPage() + 1 >= auditPages()"
-                  (click)="loadAudit(admin.auditPage() + 1)"
+                  [disabled]="organization.auditPage() + 1 >= auditPages()"
+                  (click)="loadAudit(organization.auditPage() + 1)"
                 >
-                  {{ t('admin.next') }}
+                  {{ t('organization.next') }}
                   <ui-icon name="chevron-right" [size]="14" />
                 </button>
               </div>

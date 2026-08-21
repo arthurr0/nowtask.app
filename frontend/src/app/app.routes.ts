@@ -103,9 +103,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
       },
       {
-        path: 'admin',
-        loadComponent: () => import('./features/admin/admin').then((m) => m.Admin),
+        path: 'organization',
+        loadComponent: () =>
+          import('./features/organization/organization').then((m) => m.Organization),
       },
+      { path: 'admin', redirectTo: 'organization', pathMatch: 'full' },
       {
         path: 'system',
         loadComponent: () => import('./features/system/system').then((m) => m.System),

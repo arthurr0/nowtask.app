@@ -40,22 +40,22 @@ const DEFAULT_SCOPES = ['tasks:read', 'workspace:read', 'rules:read', 'metrics:r
     <ui-dialog
       [open]="open()"
       size="md"
-      title="admin.newKey"
-      description="admin.newKeyLead"
+      title="organization.newKey"
+      description="organization.newKeyLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
         <ui-text-field
           [value]="label()"
           (valueChange)="label.set($event)"
-          label="admin.keyLabel"
-          placeholder="admin.keyLabelPlaceholder"
+          label="organization.keyLabel"
+          placeholder="organization.keyLabelPlaceholder"
           [required]="true"
           [error]="error()"
         />
 
         <div class="flex flex-col gap-2">
-          <span class="kap">{{ t('admin.scopes') }}</span>
+          <span class="kap">{{ t('organization.scopes') }}</span>
           <div class="flex flex-wrap gap-1.5">
             @for (scope of scopes; track scope) {
               <button
@@ -79,7 +79,7 @@ const DEFAULT_SCOPES = ['tasks:read', 'workspace:read', 'rules:read', 'metrics:r
           @if (selected().includes('tasks:delete')) {
             <p class="flex items-center gap-1.5 text-[11px] text-warn">
               <ui-icon name="alert" [size]="13" />
-              {{ t('admin.deleteScopeWarning') }}
+              {{ t('organization.deleteScopeWarning') }}
             </p>
           }
         </div>
@@ -87,8 +87,8 @@ const DEFAULT_SCOPES = ['tasks:read', 'workspace:read', 'rules:read', 'metrics:r
         <ui-text-field
           [value]="expiresInDays()"
           (valueChange)="expiresInDays.set($event)"
-          label="admin.keyExpiry"
-          hint="admin.keyExpiryHint"
+          label="organization.keyExpiry"
+          hint="organization.keyExpiryHint"
           type="number"
         />
       </div>
@@ -107,7 +107,7 @@ const DEFAULT_SCOPES = ['tasks:read', 'workspace:read', 'rules:read', 'metrics:r
           (click)="submit()"
         >
           <ui-icon name="key" [size]="15" />
-          {{ t('admin.createKey') }}
+          {{ t('organization.createKey') }}
         </button>
       </div>
     </ui-dialog>
@@ -148,11 +148,11 @@ export class ApiKeyDialog {
   protected submit(): void {
     const label = this.label().trim();
     if (!label) {
-      this.error.set(this.t('admin.keyLabelRequired'));
+      this.error.set(this.t('organization.keyLabelRequired'));
       return;
     }
     if (this.selected().length === 0) {
-      this.error.set(this.t('admin.scopesRequired'));
+      this.error.set(this.t('organization.scopesRequired'));
       return;
     }
     const parsed = Number.parseInt(this.expiresInDays(), 10);

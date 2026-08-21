@@ -19,6 +19,29 @@ export interface UserDto {
   emailVerified: boolean;
 }
 
+export interface SessionDto {
+  id: string;
+  createdAt: string;
+  lastSeenAt: string;
+  ip: string | null;
+  userAgent: string | null;
+  current: boolean;
+}
+
+export interface EmailChangeDto {
+  newEmail: string;
+  requestedAt: string;
+  expiresAt: string;
+}
+
+export type NotificationKind = 'assigned' | 'inviteRenewal';
+
+export interface NotificationPrefDto {
+  kind: NotificationKind;
+  inApp: boolean;
+  email: boolean;
+}
+
 export interface TeamDto {
   id: string;
   name: string;
@@ -109,7 +132,7 @@ export interface WorkspaceSettingsDto {
   currency: string;
   allowUserOverride: boolean;
   blockDisallowedDrag: boolean;
-  currentSprint: string;
+  currentSprint: string | null;
 }
 
 export type NavItemCode =

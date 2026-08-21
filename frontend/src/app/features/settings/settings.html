@@ -8,7 +8,22 @@
   <nav
     class="hidden w-[248px] flex-none flex-col overflow-y-auto border-r border-line bg-surface px-3 py-4 lg:flex scroll-thin"
   >
-    <span class="kap px-2 pt-2 pb-1.5">{{ t('settings.personalisation') }}</span>
+    <span class="kap px-2 pt-2 pb-1.5">{{ t('account.section') }}</span>
+    @for (item of accountSections; track item.id) {
+      <button
+        type="button"
+        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-left"
+        [class.bg-surface-2]="section() === item.id"
+        [class.font-medium]="section() === item.id"
+        [class.text-ink-2]="section() !== item.id"
+        (click)="section.set(item.id)"
+      >
+        <ui-icon [name]="item.icon" [size]="16" />
+        <span class="flex-1">{{ t(item.label) }}</span>
+      </button>
+    }
+
+    <span class="kap px-2 pt-5 pb-1.5">{{ t('settings.personalisation') }}</span>
     @for (item of personalSections; track item.id) {
       <button
         type="button"
@@ -46,7 +61,7 @@
     class="flex min-w-0 flex-1 flex-col overflow-y-auto px-5 py-6 pb-24 lg:px-8 lg:pb-8 scroll-thin"
   >
     <div class="mb-5 flex gap-2 overflow-x-auto lg:hidden">
-      @for (item of personalSections.concat(structureSections); track item.id) {
+      @for (item of accountSections.concat(personalSections, structureSections); track item.id) {
         <button
           type="button"
           class="flex h-11 flex-none items-center gap-2 rounded-full px-4 text-[13px]"
@@ -64,6 +79,324 @@
     </div>
 
     @switch (section()) {
+      @case ('profile') {
+        <section class="flex flex-col gap-8">
+          <header class="flex flex-col gap-1">
+            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">{{ t('account.profile') }}</h1>
+            <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('account.profileLead') }}</p>
+          </header>
+
+          @if (auth.user(); as user) {
+            <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+              <div class="flex w-[168px] flex-none flex-col gap-1">
+                <span class="text-[13px] font-medium">{{ t('account.identity') }}</span>
+                <span class="text-xs leading-normal text-ink-3">{{
+                  t('account.identityHint')
+                }}</span>
+              </div>
+              <div class="flex w-full max-w-[420px] flex-col gap-4">
+                <div class="flex items-center gap-3">
+                  <ui-avatar [user]="user" [size]="44" />
+                  <div class="flex min-w-0 flex-col">
+                    <span class="truncate text-[13px] font-medium">{{ user.name }}</span>
+                    <span class="truncate text-xs text-ink-3">{{ user.email }}</span>
+                  </div>
+                </div>
+
+                <ui-text-field
+                  [value]="profileName()"
+                  (valueChange)="profileName.set($event)"
+                  label="account.fullName"
+                  autocomplete="name"
+                  [required]="true"
+                />
+                <ui-text-field
+                  [value]="profileInitials()"
+                  (valueChange)="profileInitials.set($event)"
+                  label="account.initials"
+                  hint="account.initialsHint"
+                  [maxLength]="3"
+                />
+
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="flex h-9 items-center gap-1.5 rounded-[7px] bg-inv px-3.5 text-[13px] font-medium text-inv-ink"
+                    [disabled]="!profileDirty() || profileSaving()"
+                    [class.opacity-50]="!profileDirty() || profileSaving()"
+                    (click)="saveProfile()"
+                  >
+                    <ui-icon name="save" [size]="15" />
+                    {{ t('common.save') }}
+                  </button>
+                  @if (profileDirty()) {
+                    <button
+                      type="button"
+                      class="flex h-9 items-center rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+                      (click)="resetProfile()"
+                    >
+                      {{ t('common.cancel') }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+              <div class="flex w-[168px] flex-none flex-col gap-1">
+                <span class="text-[13px] font-medium">{{ t('account.email') }}</span>
+                <span class="text-xs leading-normal text-ink-3">{{ t('account.emailHint') }}</span>
+              </div>
+              <div class="flex w-full max-w-[420px] flex-col gap-3">
+                <div class="flex items-center gap-3 rounded-panel border border-line px-3 py-2.5">
+                  <ui-icon name="user" [size]="15" class="flex-none text-ink-3" />
+                  <span class="min-w-0 flex-1 truncate text-[13px]">{{ user.email }}</span>
+                  @if (user.emailVerified) {
+                    <span class="flex flex-none items-center gap-1 text-[11px] text-done">
+                      <ui-icon name="check" [size]="13" />
+                      {{ t('account.verified') }}
+                    </span>
+                  } @else {
+                    <span class="flex-none text-[11px] text-warn">{{
+                      t('account.unverified')
+                    }}</span>
+                  }
+                </div>
+
+                @if (!user.emailVerified) {
+                  <button
+                    type="button"
+                    class="self-start text-[13px] text-ink-2 underline underline-offset-2"
+                    (click)="resendVerification()"
+                  >
+                    {{ t('account.resendVerification') }}
+                  </button>
+                }
+
+                @if (account.emailChange(); as change) {
+                  <div
+                    class="flex flex-col gap-2 rounded-panel border border-line bg-surface-2 p-3"
+                  >
+                    <span class="text-[13px]">{{
+                      t('account.emailChangePending', { email: change.newEmail })
+                    }}</span>
+                    <button
+                      type="button"
+                      class="self-start text-[13px] text-warn underline underline-offset-2"
+                      (click)="cancelEmailChange()"
+                    >
+                      {{ t('account.cancelEmailChange') }}
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="flex h-9 items-center gap-1.5 self-start rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+                    (click)="openEmailDialog()"
+                  >
+                    <ui-icon name="pencil" [size]="15" />
+                    {{ t('account.changeEmail') }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+              <div class="flex w-[168px] flex-none flex-col gap-1">
+                <span class="text-[13px] font-medium">{{ t('account.dangerZone') }}</span>
+                <span class="text-xs leading-normal text-ink-3">{{ t('account.dangerHint') }}</span>
+              </div>
+              <div class="flex w-full max-w-[420px] flex-col gap-2.5">
+                <div class="flex items-center gap-3 rounded-panel border border-line px-3 py-2.5">
+                  <div class="flex min-w-0 flex-1 flex-col">
+                    <span class="text-[13px]">{{ t('account.leaveTitle') }}</span>
+                    <span class="text-xs text-ink-3">{{ t('account.leaveSummary') }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="flex h-8 flex-none items-center rounded-[7px] border border-line-strong bg-surface px-3 text-[13px]"
+                    (click)="leaveOrganization()"
+                  >
+                    {{ t('account.leave') }}
+                  </button>
+                </div>
+
+                <div
+                  class="flex items-center gap-3 rounded-panel border border-warn/40 bg-warn/5 px-3 py-2.5"
+                >
+                  <div class="flex min-w-0 flex-1 flex-col">
+                    <span class="text-[13px]">{{ t('account.deleteTitle') }}</span>
+                    <span class="text-xs text-ink-3">{{ t('account.deleteSummary') }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="flex h-8 flex-none items-center gap-1.5 rounded-[7px] border border-warn/60 px-3 text-[13px] text-warn"
+                    (click)="openDeleteDialog()"
+                  >
+                    <ui-icon name="trash" [size]="14" />
+                    {{ t('common.delete') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </section>
+      }
+
+      @case ('security') {
+        <section class="flex flex-col gap-8">
+          <header class="flex flex-col gap-1">
+            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
+              {{ t('account.security') }}
+            </h1>
+            <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('account.securityLead') }}</p>
+          </header>
+
+          <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+            <div class="flex w-[168px] flex-none flex-col gap-1">
+              <span class="text-[13px] font-medium">{{ t('account.changePassword') }}</span>
+              <span class="text-xs leading-normal text-ink-3">{{ t('account.passwordHint') }}</span>
+            </div>
+            <div class="flex w-full max-w-[420px] flex-col gap-4">
+              <ui-text-field
+                [value]="currentPassword()"
+                (valueChange)="currentPassword.set($event)"
+                label="account.currentPassword"
+                type="password"
+                autocomplete="current-password"
+                [required]="true"
+              />
+              <ui-text-field
+                [value]="newPassword()"
+                (valueChange)="newPassword.set($event)"
+                label="account.newPassword"
+                type="password"
+                autocomplete="new-password"
+                hint="account.passwordRule"
+                [required]="true"
+              />
+              <ui-text-field
+                [value]="repeatPassword()"
+                (valueChange)="repeatPassword.set($event)"
+                label="account.repeatPassword"
+                type="password"
+                autocomplete="new-password"
+                [required]="true"
+                [error]="passwordError()"
+              />
+              <button
+                type="button"
+                class="flex h-9 items-center gap-1.5 self-start rounded-[7px] bg-inv px-3.5 text-[13px] font-medium text-inv-ink"
+                [disabled]="!passwordReady() || passwordSaving()"
+                [class.opacity-50]="!passwordReady() || passwordSaving()"
+                (click)="changePassword()"
+              >
+                <ui-icon name="lock" [size]="15" />
+                {{ t('account.savePassword') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+            <div class="flex w-[168px] flex-none flex-col gap-1">
+              <span class="text-[13px] font-medium">{{ t('account.sessions') }}</span>
+              <span class="text-xs leading-normal text-ink-3">{{ t('account.sessionsHint') }}</span>
+            </div>
+            <div class="flex w-full max-w-[560px] flex-col gap-2.5">
+              @if (account.sessions().length) {
+                <div class="flex flex-col">
+                  @for (session of account.sessions(); track session.id) {
+                    <div class="flex items-center gap-3 border-b border-line py-2.5">
+                      <ui-icon name="shield" [size]="16" class="flex-none text-ink-3" />
+                      <div class="flex min-w-0 flex-1 flex-col">
+                        <span class="truncate text-[13px]">
+                          {{ sessionName(session) }}
+                          @if (session.current) {
+                            <span
+                              class="ml-1.5 rounded-full bg-inv px-2 py-0.5 text-[11px] text-inv-ink"
+                              >{{ t('account.thisDevice') }}</span
+                            >
+                          }
+                        </span>
+                        <span class="truncate font-mono text-[11px] text-ink-3">
+                          {{ session.ip || '—' }} · {{ sessionSeen(session) }}
+                        </span>
+                      </div>
+                      @if (!session.current) {
+                        <button
+                          type="button"
+                          class="hoverable flex h-7 flex-none items-center rounded-field px-2 text-[13px] text-warn"
+                          (click)="revokeSession(session)"
+                        >
+                          {{ t('account.revoke') }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-xs text-ink-3">{{ t('common.none') }}</p>
+              }
+
+              @if (otherSessions() > 0) {
+                <button
+                  type="button"
+                  class="flex h-9 items-center gap-1.5 self-start rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+                  (click)="revokeOtherSessions()"
+                >
+                  <ui-icon name="x" [size]="15" />
+                  {{ t('account.revokeOthers') }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+      }
+
+      @case ('notifications') {
+        <section class="flex flex-col gap-6">
+          <header class="flex flex-col gap-1">
+            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">
+              {{ t('account.notifications') }}
+            </h1>
+            <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('account.notificationsLead') }}</p>
+          </header>
+
+          <div class="flex w-full max-w-[560px] flex-col gap-1">
+            <div class="flex items-center gap-3 pb-1.5">
+              <span class="flex-1"></span>
+              <span class="kap w-[72px] text-center">{{ t('account.inApp') }}</span>
+              <span class="kap w-[72px] text-center">{{ t('account.byEmail') }}</span>
+            </div>
+
+            @for (pref of account.notificationPrefs(); track pref.kind) {
+              <div class="flex items-center gap-3 border-b border-line py-3">
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="text-[13px]">{{ t('account.notify.' + pref.kind) }}</span>
+                  <span class="text-xs text-ink-3">{{ t('account.notifyHint.' + pref.kind) }}</span>
+                </div>
+                <span class="flex w-[72px] justify-center">
+                  <ui-switch
+                    [checked]="pref.inApp"
+                    [label]="t('account.inApp')"
+                    (toggled)="toggleNotification(pref.kind, 'inApp')"
+                  />
+                </span>
+                <span class="flex w-[72px] justify-center">
+                  <ui-switch
+                    [checked]="pref.email"
+                    [label]="t('account.byEmail')"
+                    (toggled)="toggleNotification(pref.kind, 'email')"
+                  />
+                </span>
+              </div>
+            }
+
+            <p class="pt-2 text-xs text-ink-3">{{ t('account.notificationsNote') }}</p>
+          </div>
+        </section>
+      }
+
       @case ('appearance') {
         <section class="flex flex-col gap-8">
           <header class="flex flex-col gap-1">
@@ -484,7 +817,9 @@
                       class="hoverable flex h-7 items-center gap-1.5 rounded-field px-2 font-mono text-xs"
                       (click)="changeSprint(ws.currentSprint)"
                     >
-                      {{ ws.currentSprint }}
+                      <span [class.text-ink-3]="!ws.currentSprint">{{
+                        ws.currentSprint || t('common.none')
+                      }}</span>
                       <ui-icon name="pencil" [size]="13" class="text-ink-3" />
                     </button>
                   </div>
@@ -802,4 +1137,19 @@
   [status]="editedStatus()"
   (saved)="saveStatus($event)"
   (cancelled)="closeStatusDialog()"
+/>
+
+<app-email-change-dialog
+  [open]="emailDialogOpen()"
+  [error]="emailError()"
+  (saved)="submitEmailChange($event)"
+  (cancelled)="emailDialogOpen.set(false)"
+/>
+
+<app-delete-account-dialog
+  [open]="deleteDialogOpen()"
+  [email]="auth.user()?.email || ''"
+  [error]="deleteError()"
+  (confirmed)="deleteAccount($event)"
+  (cancelled)="deleteDialogOpen.set(false)"
 />

@@ -298,10 +298,10 @@ export class Agents implements OnInit {
 
   keyMenu(agent: AgentDto): MenuItem[] {
     return [
-      { id: 'copy', label: 'admin.copyPrefix', icon: 'copy' },
+      { id: 'copy', label: 'organization.copyPrefix', icon: 'copy' },
       {
         id: 'revoke',
-        label: 'admin.revokeKey',
+        label: 'organization.revokeKey',
         icon: 'trash',
         danger: true,
         disabled: agent.state !== 'active',
@@ -312,13 +312,13 @@ export class Agents implements OnInit {
 
   async onKeyMenu(item: MenuItem, agent: AgentDto): Promise<void> {
     if (item.id === 'copy') {
-      await this.copy(agent.prefix, 'admin.keyCopied');
+      await this.copy(agent.prefix, 'organization.keyCopied');
       return;
     }
     const confirmed = await this.confirm.ask({
-      title: 'admin.revokeKey',
-      message: this.t('admin.revokeKeyHint', { label: agent.label }),
-      confirmLabel: 'admin.revokeKey',
+      title: 'organization.revokeKey',
+      message: this.t('organization.revokeKeyHint', { label: agent.label }),
+      confirmLabel: 'organization.revokeKey',
       destructive: true,
     });
     if (!confirmed) return;
@@ -344,7 +344,7 @@ export class Agents implements OnInit {
   async copyIssuedKey(): Promise<void> {
     const key = this.issuedKey();
     if (!key) return;
-    await this.copy(key, 'admin.keyCopied');
+    await this.copy(key, 'organization.keyCopied');
   }
 
   async copyConfig(): Promise<void> {

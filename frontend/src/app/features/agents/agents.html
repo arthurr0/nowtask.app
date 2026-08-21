@@ -24,7 +24,7 @@
       (click)="keyOpen.set(true)"
     >
       <ui-icon name="plus" [size]="16" />
-      <span class="hidden sm:inline">{{ t('admin.newKey') }}</span>
+      <span class="hidden sm:inline">{{ t('organization.newKey') }}</span>
     </button>
   }
 </ui-topbar>
@@ -174,7 +174,7 @@
                 (click)="keyOpen.set(true)"
               >
                 <ui-icon name="key" [size]="13" />
-                {{ t('admin.newKey') }}
+                {{ t('organization.newKey') }}
               </button>
             }
           </span>
@@ -188,7 +188,7 @@
             >
               <p class="flex items-center gap-2 text-[13px] font-medium text-warn">
                 <ui-icon name="alert" [size]="15" />
-                {{ t('admin.keyOnce') }}
+                {{ t('organization.keyOnce') }}
               </p>
               <div class="flex flex-wrap items-center gap-2">
                 <code
@@ -201,7 +201,7 @@
                   (click)="copyIssuedKey()"
                 >
                   <ui-icon name="copy" [size]="14" />
-                  {{ t('admin.copyKey') }}
+                  {{ t('organization.copyKey') }}
                 </button>
                 <button
                   type="button"
@@ -277,7 +277,7 @@
               @if (newestAgent(); as agent) {
                 <span class="font-mono text-[11px] text-ink-3">{{ agent.label }}</span>
                 <span class="text-ink-3">{{
-                  t('admin.keyUsed', { when: dateTime(agent.lastUsedAt) })
+                  t('organization.keyUsed', { when: dateTime(agent.lastUsedAt) })
                 }}</span>
               }
             } @else {
@@ -321,7 +321,7 @@
             (click)="keyOpen.set(true)"
           >
             <ui-icon name="plus" [size]="14" />
-            {{ t('admin.newKey') }}
+            {{ t('organization.newKey') }}
           </button>
         }
       </div>
@@ -347,13 +347,13 @@
               [class.border-warn]="agent.state !== 'active'"
               [class.text-warn]="agent.state !== 'active'"
               [class.text-ink-3]="agent.state === 'active'"
-              >{{ t('admin.keyState.' + agent.state) }}</span
+              >{{ t('organization.keyState.' + agent.state) }}</span
             >
             <span class="w-[150px] flex-none text-ink-3">
               {{
                 agent.lastUsedAt
-                  ? t('admin.keyUsed', { when: dateTime(agent.lastUsedAt) })
-                  : t('admin.keyNeverUsed')
+                  ? t('organization.keyUsed', { when: dateTime(agent.lastUsedAt) })
+                  : t('organization.keyNeverUsed')
               }}
             </span>
             @if (isAdmin()) {

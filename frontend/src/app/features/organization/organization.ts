@@ -17,7 +17,7 @@ import type {
   TeamDto,
   UserDto,
 } from '../../core/api-types';
-import { AdminStore, IntegrationsStore, MetricsStore } from '../../data/feature.stores';
+import { OrganizationStore, IntegrationsStore, MetricsStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { ConfirmService } from '../../ui/confirm.service';
@@ -28,7 +28,7 @@ import { ToastService } from '../../ui/toast.service';
 import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { PageState } from '../../ui/page-state';
-import { InviteDialog, type InviteDraft } from './admin-dialogs';
+import { InviteDialog, type InviteDraft } from './organization-dialogs';
 import { IntegrationDialog, type IntegrationDraft } from './integration-dialog';
 import { ApiKeyDialog, type ApiKeyDraft } from '../agents/api-key-dialog';
 
@@ -37,7 +37,7 @@ type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
 
 
 @Component({
-  selector: 'app-admin',
+  selector: 'app-organization',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Icon,
@@ -51,11 +51,11 @@ type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
     IntegrationDialog,
     RouterLink,
   ],
-  templateUrl: './admin.html',
+  templateUrl: './organization.html',
 })
-export class Admin implements OnInit {
+export class Organization implements OnInit {
   protected readonly store = inject(WorkspaceStore);
-  protected readonly admin = inject(AdminStore);
+  protected readonly organization = inject(OrganizationStore);
   protected readonly metrics = inject(MetricsStore);
   protected readonly integrations = inject(IntegrationsStore);
   private readonly confirm = inject(ConfirmService);
@@ -73,20 +73,20 @@ export class Admin implements OnInit {
   protected readonly teamMembers = signal<Record<string, string[]>>({});
 
   protected readonly sections = [
-    { id: 'people', icon: 'users', label: 'admin.peopleRoles' },
-    { id: 'security', icon: 'shield', label: 'admin.security' },
-    { id: 'keys', icon: 'key', label: 'admin.apiKeys' },
-    { id: 'integrations', icon: 'link', label: 'admin.integrations' },
-    { id: 'audit', icon: 'log', label: 'admin.auditLog' },
+    { id: 'people', icon: 'users', label: 'organization.peopleRoles' },
+    { id: 'security', icon: 'shield', label: 'organization.security' },
+    { id: 'keys', icon: 'key', label: 'organization.apiKeys' },
+    { id: 'integrations', icon: 'link', label: 'organization.integrations' },
+    { id: 'audit', icon: 'log', label: 'organization.auditLog' },
   ] as const;
 
-  protected readonly roles = computed<RoleDto[]>(() => this.admin.roles());
+  protected readonly roles = computed<RoleDto[]>(() => this.organization.roles());
   protected readonly isAdmin = computed(() => this.store.currentUser()?.role?.code === 'admin');
 
   protected readonly visibleMembers = computed(() => {
     const needle = this.search().trim().toLowerCase();
-    if (!needle) return this.admin.members();
-    return this.admin
+    if (!needle) return this.organization.members();
+    return this.organization
       .members()
       .filter(
         (user) =>
@@ -99,7 +99,7 @@ export class Admin implements OnInit {
     if (this.sections.some((item) => item.id === requested)) {
       this.section.set(requested as Section);
     }
-    void this.admin.load();
+    void this.organization.load();
     void this.metrics.load();
   }
 
@@ -114,8 +114,8 @@ export class Admin implements OnInit {
 
   invitedLabel(user: UserDto): string {
     return user.invitedOn
-      ? this.t('admin.invitedOn', { date: shortDate(user.invitedOn) })
-      : this.t('admin.invitePending');
+      ? this.t('organization.invitedOn', { date: shortDate(user.invitedOn) })
+      : this.t('organization.invitePending');
   }
 
   workloadPercent(userId: string): number {
@@ -125,12 +125,12 @@ export class Admin implements OnInit {
   }
 
   reload(): void {
-    void this.admin.load();
+    void this.organization.load();
   }
 
   setSection(section: Section): void {
     this.section.set(section);
-    if (section === 'audit' && !this.admin.audit()) {
+    if (section === 'audit' && !this.organization.audit()) {
       void this.loadAudit(0);
     }
     if (section === 'integrations') {
@@ -140,15 +140,15 @@ export class Admin implements OnInit {
 
   integrationMenu(integration: IntegrationDto): MenuItem[] {
     return [
-      { id: 'test', label: 'admin.integrationTest', icon: 'play' },
+      { id: 'test', label: 'organization.integrationTest', icon: 'play' },
       {
         id: 'toggle',
-        label: integration.enabled ? 'admin.integrationDisable' : 'admin.integrationEnable',
+        label: integration.enabled ? 'organization.integrationDisable' : 'organization.integrationEnable',
         icon: integration.enabled ? 'lock' : 'check',
       },
       {
         id: 'remove',
-        label: 'admin.integrationRemove',
+        label: 'organization.integrationRemove',
         icon: 'trash',
         danger: true,
         separatorBefore: true,
@@ -161,9 +161,9 @@ export class Admin implements OnInit {
       try {
         const result = await this.integrations.test(integration.id);
         if (result.ok) {
-          this.toast.success(this.t('admin.integrationTestOk', { detail: result.detail }));
+          this.toast.success(this.t('organization.integrationTestOk', { detail: result.detail }));
         } else {
-          this.toast.error(this.t('admin.integrationTestFailed', { detail: result.detail }));
+          this.toast.error(this.t('organization.integrationTestFailed', { detail: result.detail }));
         }
       } catch (error) {
         this.toast.error(this.errorText(error));
@@ -179,8 +179,8 @@ export class Admin implements OnInit {
     }
 
     const confirmed = await this.confirm.ask({
-      title: 'admin.integrationRemove',
-      message: this.t('admin.integrationRemoveLead', { name: integration.name }),
+      title: 'organization.integrationRemove',
+      message: this.t('organization.integrationRemoveLead', { name: integration.name }),
       confirmLabel: 'common.delete',
       destructive: true,
     });
@@ -211,7 +211,7 @@ export class Admin implements OnInit {
 
   protected readonly permissionGroups = computed<{ group: string; items: PermissionDto[] }[]>(() => {
     const groups = new Map<string, PermissionDto[]>();
-    for (const permission of this.admin.permissions()) {
+    for (const permission of this.organization.permissions()) {
       const items = groups.get(permission.group) ?? [];
       items.push(permission);
       groups.set(permission.group, items);
@@ -220,25 +220,25 @@ export class Admin implements OnInit {
   });
 
   memberMenu(user: UserDto): MenuItem[] {
-    const items: MenuItem[] = this.admin.roles().map((role) => ({
+    const items: MenuItem[] = this.organization.roles().map((role) => ({
       id: 'role:' + role.code,
-      label: this.t('admin.setRole', { role: role.name }),
+      label: this.t('organization.setRole', { role: role.name }),
       checked: user.role?.code === role.code,
     }));
     items.push({
       id: 'capacity',
-      label: 'admin.setCapacity',
+      label: 'organization.setCapacity',
       icon: 'chart',
       separatorBefore: true,
     });
     items.push({
       id: 'toggle',
-      label: user.pending ? 'admin.activate' : 'admin.suspend',
+      label: user.pending ? 'organization.activate' : 'organization.suspend',
       icon: user.pending ? 'check' : 'lock',
     });
     items.push({
       id: 'remove',
-      label: 'admin.removeMember',
+      label: 'organization.removeMember',
       icon: 'trash',
       danger: true,
       separatorBefore: true,
@@ -249,17 +249,17 @@ export class Admin implements OnInit {
   teamMenu(): MenuItem[] {
     return [
       { id: 'rename', label: 'nav.renameView', icon: 'pencil' },
-      { id: 'members', label: 'admin.manageMembers', icon: 'users' },
+      { id: 'members', label: 'organization.manageMembers', icon: 'users' },
       { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
     ];
   }
 
   keyMenu(key: ApiKeyDto): MenuItem[] {
     return [
-      { id: 'copy', label: 'admin.copyPrefix', icon: 'copy' },
+      { id: 'copy', label: 'organization.copyPrefix', icon: 'copy' },
       {
         id: 'revoke',
-        label: 'admin.revokeKey',
+        label: 'organization.revokeKey',
         icon: 'trash',
         danger: true,
         disabled: key.revokedAt !== null,
@@ -272,14 +272,14 @@ export class Admin implements OnInit {
     if (item.id.startsWith('role:')) {
       const role = item.id.slice('role:'.length);
       if (role === user.role?.code) return;
-      await this.run(() => this.admin.updateMember(user.id, { role }));
+      await this.run(() => this.organization.updateMember(user.id, { role }));
       return;
     }
     if (item.id === 'capacity') {
       const value = await this.prompt.ask({
-        title: 'admin.setCapacity',
-        message: 'admin.capacityHint',
-        label: 'admin.capacity',
+        title: 'organization.setCapacity',
+        message: 'organization.capacityHint',
+        label: 'organization.capacity',
         value: String(user.capacity),
       });
       if (value === null) return;
@@ -288,28 +288,28 @@ export class Admin implements OnInit {
         this.toast.error(this.t('task.numberInvalid'));
         return;
       }
-      await this.run(() => this.admin.updateMember(user.id, { capacity: parsed }));
+      await this.run(() => this.organization.updateMember(user.id, { capacity: parsed }));
       return;
     }
     if (item.id === 'toggle') {
-      await this.run(() => this.admin.updateMember(user.id, { pending: !user.pending }));
+      await this.run(() => this.organization.updateMember(user.id, { pending: !user.pending }));
       return;
     }
     const confirmed = await this.confirm.ask({
-      title: 'admin.removeMember',
-      message: this.t('admin.removeMemberHint', { name: user.name }),
+      title: 'organization.removeMember',
+      message: this.t('organization.removeMemberHint', { name: user.name }),
       confirmLabel: 'common.delete',
       destructive: true,
     });
     if (!confirmed) return;
-    await this.run(() => this.admin.removeMember(user.id));
+    await this.run(() => this.organization.removeMember(user.id));
   }
 
   async invite(draft: InviteDraft): Promise<void> {
     try {
-      const created = await this.admin.invite(draft.name, draft.email, draft.role);
+      const created = await this.organization.invite(draft.name, draft.email, draft.role);
       this.inviteOpen.set(false);
-      this.toast.success(this.t('admin.invited', { email: created.email }));
+      this.toast.success(this.t('organization.invited', { email: created.email }));
     } catch (error) {
       this.toast.error(this.errorText(error));
     }
@@ -317,23 +317,23 @@ export class Admin implements OnInit {
 
   async addTeam(): Promise<void> {
     const name = await this.prompt.ask({
-      title: 'admin.newTeam',
-      label: 'admin.teamName',
-      placeholder: 'admin.teamNamePlaceholder',
+      title: 'organization.newTeam',
+      label: 'organization.teamName',
+      placeholder: 'organization.teamNamePlaceholder',
     });
     if (!name) return;
-    await this.run(() => this.admin.createTeam(name));
+    await this.run(() => this.organization.createTeam(name));
   }
 
   async onTeamMenu(item: MenuItem, team: TeamDto): Promise<void> {
     if (item.id === 'rename') {
       const name = await this.prompt.ask({
         title: 'nav.renameView',
-        label: 'admin.teamName',
+        label: 'organization.teamName',
         value: team.name,
       });
       if (!name) return;
-      await this.run(() => this.admin.renameTeam(team.id, name));
+      await this.run(() => this.organization.renameTeam(team.id, name));
       return;
     }
     if (item.id === 'members') {
@@ -342,7 +342,7 @@ export class Admin implements OnInit {
     }
     const confirmed = await this.confirm.askDelete(team.name);
     if (!confirmed) return;
-    await this.run(() => this.admin.deleteTeam(team.id));
+    await this.run(() => this.organization.deleteTeam(team.id));
   }
 
   async loadTeamMembers(teamId: string): Promise<void> {
@@ -355,7 +355,7 @@ export class Admin implements OnInit {
       return;
     }
     try {
-      const members = await this.admin.teamMembers(teamId);
+      const members = await this.organization.teamMembers(teamId);
       this.teamMembers.update((current) => ({ ...current, [teamId]: members }));
     } catch (error) {
       this.toast.error(this.errorText(error));
@@ -373,8 +373,8 @@ export class Admin implements OnInit {
   async toggleTeamMember(teamId: string, userId: string): Promise<void> {
     const inTeam = this.isInTeam(teamId, userId);
     try {
-      if (inTeam) await this.admin.removeTeamMember(teamId, userId);
-      else await this.admin.addTeamMember(teamId, userId);
+      if (inTeam) await this.organization.removeTeamMember(teamId, userId);
+      else await this.organization.addTeamMember(teamId, userId);
       this.teamMembers.update((current) => ({
         ...current,
         [teamId]: inTeam
@@ -388,7 +388,7 @@ export class Admin implements OnInit {
 
   async createKey(draft: ApiKeyDraft): Promise<void> {
     try {
-      const issued = await this.admin.createApiKey(draft.label, draft.scopes, draft.expiresInDays);
+      const issued = await this.organization.createApiKey(draft.label, draft.scopes, draft.expiresInDays);
       this.keyOpen.set(false);
       this.issuedKey.set(issued.key);
     } catch (error) {
@@ -401,7 +401,7 @@ export class Admin implements OnInit {
     if (!key) return;
     try {
       await navigator.clipboard.writeText(key);
-      this.toast.success(this.t('admin.keyCopied'));
+      this.toast.success(this.t('organization.keyCopied'));
     } catch {
       this.toast.error(this.t('task.linkCopyFailed'));
     }
@@ -411,32 +411,32 @@ export class Admin implements OnInit {
     if (item.id === 'copy') {
       try {
         await navigator.clipboard.writeText(key.prefix);
-        this.toast.success(this.t('admin.keyCopied'));
+        this.toast.success(this.t('organization.keyCopied'));
       } catch {
         this.toast.error(this.t('task.linkCopyFailed'));
       }
       return;
     }
     const confirmed = await this.confirm.ask({
-      title: 'admin.revokeKey',
-      message: this.t('admin.revokeKeyHint', { label: key.label }),
-      confirmLabel: 'admin.revokeKey',
+      title: 'organization.revokeKey',
+      message: this.t('organization.revokeKeyHint', { label: key.label }),
+      confirmLabel: 'organization.revokeKey',
       destructive: true,
     });
     if (!confirmed) return;
-    await this.run(() => this.admin.revokeApiKey(key.id));
+    await this.run(() => this.organization.revokeApiKey(key.id));
   }
 
   async loadAudit(page: number): Promise<void> {
     try {
-      await this.admin.loadAudit(page);
+      await this.organization.loadAudit(page);
     } catch (error) {
       this.toast.error(this.errorText(error));
     }
   }
 
   auditPages(): number {
-    const total = this.admin.audit()?.total ?? 0;
+    const total = this.organization.audit()?.total ?? 0;
     return Math.max(1, Math.ceil(total / 50));
   }
 

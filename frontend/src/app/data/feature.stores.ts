@@ -238,14 +238,14 @@ export class AgentsStore extends LoadableStore {
     expiresInDays: number | null,
   ): Promise<IssuedApiKeyDto> {
     const issued = await firstValueFrom(
-      this.http.post<IssuedApiKeyDto>('/api/admin/api-keys', { label, scopes, expiresInDays }),
+      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', { label, scopes, expiresInDays }),
     );
     await this.load();
     return issued;
   }
 
   async revokeKey(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete(`/api/admin/api-keys/${id}`));
+    await firstValueFrom(this.http.delete(`/api/organization/api-keys/${id}`));
     await this.load();
   }
 
@@ -256,7 +256,7 @@ export class AgentsStore extends LoadableStore {
 }
 
 @Injectable({ providedIn: 'root' })
-export class AdminStore extends LoadableStore {
+export class OrganizationStore extends LoadableStore {
   private readonly onboarding = inject(OnboardingService);
   private readonly membersSignal = signal<UserDto[]>([]);
   private readonly teamsSignal = signal<TeamDto[]>([]);
@@ -277,9 +277,9 @@ export class AdminStore extends LoadableStore {
   async load(): Promise<void> {
     await this.guard(async () => {
       const [members, teams, permissions] = await Promise.all([
-        firstValueFrom(this.http.get<UserDto[]>('/api/admin/members')),
-        firstValueFrom(this.http.get<TeamDto[]>('/api/admin/teams')),
-        firstValueFrom(this.http.get<PermissionCatalogDto>('/api/admin/permissions')),
+        firstValueFrom(this.http.get<UserDto[]>('/api/organization/members')),
+        firstValueFrom(this.http.get<TeamDto[]>('/api/organization/teams')),
+        firstValueFrom(this.http.get<PermissionCatalogDto>('/api/organization/permissions')),
       ]);
       this.membersSignal.set(members);
       this.teamsSignal.set(teams);
@@ -288,7 +288,7 @@ export class AdminStore extends LoadableStore {
 
       try {
         this.apiKeysSignal.set(
-          await firstValueFrom(this.http.get<ApiKeyDto[]>('/api/admin/api-keys')),
+          await firstValueFrom(this.http.get<ApiKeyDto[]>('/api/organization/api-keys')),
         );
       } catch {
         this.apiKeysSignal.set([]);
@@ -298,7 +298,7 @@ export class AdminStore extends LoadableStore {
 
   async invite(name: string, email: string, role: string): Promise<UserDto> {
     const created = await firstValueFrom(
-      this.http.post<UserDto>('/api/admin/members', { name, email, role }),
+      this.http.post<UserDto>('/api/organization/members', { name, email, role }),
     );
     await this.load();
     void this.onboarding.syncAfterActivity();
@@ -306,41 +306,41 @@ export class AdminStore extends LoadableStore {
   }
 
   async updateMember(id: string, body: Record<string, unknown>): Promise<void> {
-    await firstValueFrom(this.http.patch<UserDto>(`/api/admin/members/${id}`, body));
+    await firstValueFrom(this.http.patch<UserDto>(`/api/organization/members/${id}`, body));
     await this.load();
   }
 
   async removeMember(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete(`/api/admin/members/${id}`));
+    await firstValueFrom(this.http.delete(`/api/organization/members/${id}`));
     await this.load();
   }
 
   async createTeam(name: string): Promise<void> {
-    await firstValueFrom(this.http.post<TeamDto>('/api/admin/teams', { name }));
+    await firstValueFrom(this.http.post<TeamDto>('/api/organization/teams', { name }));
     await this.load();
   }
 
   async renameTeam(id: string, name: string): Promise<void> {
-    await firstValueFrom(this.http.patch<TeamDto>(`/api/admin/teams/${id}`, { name }));
+    await firstValueFrom(this.http.patch<TeamDto>(`/api/organization/teams/${id}`, { name }));
     await this.load();
   }
 
   async deleteTeam(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete(`/api/admin/teams/${id}`));
+    await firstValueFrom(this.http.delete(`/api/organization/teams/${id}`));
     await this.load();
   }
 
   teamMembers(id: string): Promise<string[]> {
-    return firstValueFrom(this.http.get<string[]>(`/api/admin/teams/${id}/members`));
+    return firstValueFrom(this.http.get<string[]>(`/api/organization/teams/${id}/members`));
   }
 
   async addTeamMember(id: string, userId: string): Promise<void> {
-    await firstValueFrom(this.http.post<TeamDto>(`/api/admin/teams/${id}/members`, { userId }));
+    await firstValueFrom(this.http.post<TeamDto>(`/api/organization/teams/${id}/members`, { userId }));
     await this.load();
   }
 
   async removeTeamMember(id: string, userId: string): Promise<void> {
-    await firstValueFrom(this.http.delete<TeamDto>(`/api/admin/teams/${id}/members/${userId}`));
+    await firstValueFrom(this.http.delete<TeamDto>(`/api/organization/teams/${id}/members/${userId}`));
     await this.load();
   }
 
@@ -350,20 +350,20 @@ export class AdminStore extends LoadableStore {
     expiresInDays: number | null,
   ): Promise<IssuedApiKeyDto> {
     const issued = await firstValueFrom(
-      this.http.post<IssuedApiKeyDto>('/api/admin/api-keys', { label, scopes, expiresInDays }),
+      this.http.post<IssuedApiKeyDto>('/api/organization/api-keys', { label, scopes, expiresInDays }),
     );
     await this.load();
     return issued;
   }
 
   async revokeApiKey(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete(`/api/admin/api-keys/${id}`));
+    await firstValueFrom(this.http.delete(`/api/organization/api-keys/${id}`));
     await this.load();
   }
 
   async loadAudit(page = 0): Promise<void> {
     const result = await firstValueFrom(
-      this.http.get<AuditPageDto>('/api/admin/audit', {
+      this.http.get<AuditPageDto>('/api/organization/audit', {
         params: { page: String(page), size: '50' },
       }),
     );

@@ -33,8 +33,8 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
     <ui-dialog
       [open]="open()"
       size="md"
-      title="admin.newIntegration"
-      description="admin.integrationsLead"
+      title="organization.newIntegration"
+      description="organization.integrationsLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
@@ -42,14 +42,14 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
           [value]="kind()"
           (valueChange)="kind.set($any($event))"
           [options]="kindOptions()"
-          label="admin.integrationKind"
+          label="organization.integrationKind"
           [required]="true"
         />
         <ui-text-field
           [value]="name()"
           (valueChange)="name.set($event)"
-          label="admin.integrationName"
-          placeholder="admin.integrationNamePlaceholder"
+          label="organization.integrationName"
+          placeholder="organization.integrationNamePlaceholder"
           [required]="true"
           [error]="error()"
         />
@@ -57,29 +57,29 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
           <ui-text-field
             [value]="url()"
             (valueChange)="url.set($event)"
-            label="admin.integrationUrl"
-            placeholder="admin.integrationUrlPlaceholder"
+            label="organization.integrationUrl"
+            placeholder="organization.integrationUrlPlaceholder"
             [required]="true"
           />
           <ui-text-field
             [value]="secret()"
             (valueChange)="secret.set($event)"
-            label="admin.integrationSecret"
-            placeholder="admin.integrationSecretPlaceholder"
+            label="organization.integrationSecret"
+            placeholder="organization.integrationSecretPlaceholder"
           />
         } @else {
           <ui-text-field
             [value]="to()"
             (valueChange)="to.set($event)"
-            label="admin.integrationTo"
+            label="organization.integrationTo"
             type="email"
-            placeholder="admin.integrationToPlaceholder"
+            placeholder="organization.integrationToPlaceholder"
             [required]="true"
           />
         }
 
         <div class="flex flex-col gap-2">
-          <span class="text-xs text-ink-2">{{ t('admin.integrationEvents') }}</span>
+          <span class="text-xs text-ink-2">{{ t('organization.integrationEvents') }}</span>
           <div class="flex flex-wrap gap-1.5">
             @for (event of events; track event) {
               <button
@@ -91,11 +91,11 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
                 [class.text-ink]="selectedEvents().includes(event)"
                 (click)="toggleEvent(event)"
               >
-                {{ t('admin.event.' + event) }}
+                {{ t('organization.event.' + event) }}
               </button>
             }
           </div>
-          <span class="text-xs text-ink-3">{{ t('admin.integrationEventsHint') }}</span>
+          <span class="text-xs text-ink-3">{{ t('organization.integrationEventsHint') }}</span>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
           (click)="submit()"
         >
           <ui-icon name="plus" [size]="15" />
-          {{ t('admin.newIntegration') }}
+          {{ t('organization.newIntegration') }}
         </button>
       </div>
     </ui-dialog>
@@ -152,7 +152,7 @@ export class IntegrationDialog {
   }
 
   protected readonly kindOptions = computed<SelectOption[]>(() =>
-    KINDS.map((kind) => ({ value: kind, label: this.t('admin.integrationKind.' + kind) })),
+    KINDS.map((kind) => ({ value: kind, label: this.t('organization.integrationKind.' + kind) })),
   );
 
   protected toggleEvent(event: string): void {
@@ -164,7 +164,7 @@ export class IntegrationDialog {
   protected submit(): void {
     const name = this.name().trim();
     if (!name) {
-      this.error.set(this.t('admin.integrationNameRequired'));
+      this.error.set(this.t('organization.integrationNameRequired'));
       return;
     }
 
@@ -173,7 +173,7 @@ export class IntegrationDialog {
     if (this.kind() === 'webhook') {
       const url = this.url().trim();
       if (!url.startsWith('http')) {
-        this.error.set(this.t('admin.integrationUrlRequired'));
+        this.error.set(this.t('organization.integrationUrlRequired'));
         return;
       }
       config['url'] = url;
@@ -181,7 +181,7 @@ export class IntegrationDialog {
     } else {
       const to = this.to().trim();
       if (!to.includes('@')) {
-        this.error.set(this.t('admin.integrationToRequired'));
+        this.error.set(this.t('organization.integrationToRequired'));
         return;
       }
       config['to'] = to;

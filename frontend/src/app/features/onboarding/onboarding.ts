@@ -309,7 +309,7 @@ export class OnboardingWizard {
 
       for (const [role, emails] of byRole) {
         const result = await firstValueFrom(
-          this.http.post<BulkInviteResultDto>('/api/admin/invites/bulk', { emails, role }),
+          this.http.post<BulkInviteResultDto>('/api/organization/invites/bulk', { emails, role }),
         );
         for (const item of result.failed) {
           failed.push(`${item.email}: ${this.t(item.messageKey)}`);

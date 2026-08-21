@@ -1,5 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -28,17 +36,32 @@ import { ViewControls } from '../../ui/view-controls';
             <p class="text-[13px] text-ink-2">{{ t('state.loading') }}</p>
           } @else if (state() === 'done') {
             <ui-icon name="check" [size]="28" class="text-done" />
-            <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ t('verify.doneTitle') }}</h1>
-            <p class="text-[13px] text-ink-2">{{ t('verify.doneBody') }}</p>
-            <a
-              routerLink="/app/board"
-              class="flex h-[42px] w-full items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink"
-            >
-              {{ t('verify.goToBoard') }}
-            </a>
+            <h1 class="text-xl font-semibold tracking-[-0.015em]">
+              {{ t(changing() ? 'verify.emailChangedTitle' : 'verify.doneTitle') }}
+            </h1>
+            <p class="text-[13px] text-ink-2">
+              {{ t(changing() ? 'verify.emailChangedBody' : 'verify.doneBody') }}
+            </p>
+            @if (changing()) {
+              <a
+                routerLink="/login"
+                class="flex h-[42px] w-full items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink"
+              >
+                {{ t('login.signIn') }}
+              </a>
+            } @else {
+              <a
+                routerLink="/app/board"
+                class="flex h-[42px] w-full items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink"
+              >
+                {{ t('verify.goToBoard') }}
+              </a>
+            }
           } @else {
             <ui-icon name="alert" [size]="26" class="text-warn" />
-            <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ t('verify.failedTitle') }}</h1>
+            <h1 class="text-xl font-semibold tracking-[-0.015em]">
+              {{ t(changing() ? 'verify.emailChangeFailed' : 'verify.failedTitle') }}
+            </h1>
             <p class="text-[13px] text-ink-2">{{ message() }}</p>
             <a
               routerLink="/login"
@@ -52,16 +75,18 @@ import { ViewControls } from '../../ui/view-controls';
     </div>
   `,
 })
-export class VerifyEmail {
+export class VerifyEmail implements OnInit {
   private readonly auth = inject(AuthService);
   protected readonly t = inject(I18nService).t;
 
   readonly token = input<string>('');
+  readonly mode = input<string>('');
 
   protected readonly state = signal<'pending' | 'done' | 'failed'>('pending');
   protected readonly message = signal('');
+  protected readonly changing = computed(() => this.mode() === 'change');
 
-  constructor() {
+  ngOnInit(): void {
     void this.verify();
   }
 
@@ -75,7 +100,11 @@ export class VerifyEmail {
     }
 
     try {
-      await this.auth.verifyEmail(token);
+      if (this.changing()) {
+        await this.auth.confirmEmailChange(token);
+      } else {
+        await this.auth.verifyEmail(token);
+      }
       this.state.set('done');
     } catch (error) {
       this.state.set('failed');

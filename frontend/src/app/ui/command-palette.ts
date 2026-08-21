@@ -263,12 +263,12 @@ export class CommandPaletteDialog {
         run: () => void this.router.navigate(['/app/settings']),
       },
       {
-        id: 'action-admin',
+        id: 'action-organization',
         group: 'palette.actions',
-        label: this.t('nav.admin'),
+        label: this.t('nav.organization'),
         hint: '',
         icon: 'users',
-        run: () => void this.router.navigate(['/app/admin']),
+        run: () => void this.router.navigate(['/app/organization']),
       },
       {
         id: 'action-theme',

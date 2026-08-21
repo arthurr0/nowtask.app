@@ -31,32 +31,32 @@ const ROLES = ['admin', 'manager', 'member', 'guest'] as const;
     <ui-dialog
       [open]="open()"
       size="md"
-      title="admin.invite"
-      description="admin.inviteLead"
+      title="organization.invite"
+      description="organization.inviteLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
         <ui-text-field
           [value]="name()"
           (valueChange)="name.set($event)"
-          label="admin.personName"
-          placeholder="admin.personNamePlaceholder"
+          label="organization.personName"
+          placeholder="organization.personNamePlaceholder"
           [required]="true"
           [error]="error()"
         />
         <ui-text-field
           [value]="email()"
           (valueChange)="email.set($event)"
-          label="admin.personEmail"
+          label="organization.personEmail"
           type="email"
-          placeholder="admin.personEmailPlaceholder"
+          placeholder="organization.personEmailPlaceholder"
           [required]="true"
         />
         <ui-select-field
           [value]="role()"
           (valueChange)="role.set($event)"
           [options]="roleOptions()"
-          label="admin.role"
+          label="organization.role"
           [required]="true"
         />
       </div>
@@ -75,7 +75,7 @@ const ROLES = ['admin', 'manager', 'member', 'guest'] as const;
           (click)="submit()"
         >
           <ui-icon name="plus" [size]="15" />
-          {{ t('admin.invite') }}
+          {{ t('organization.invite') }}
         </button>
       </div>
     </ui-dialog>
@@ -114,7 +114,7 @@ export class InviteDialog {
     const name = this.name().trim();
     const email = this.email().trim();
     if (!name || !email.includes('@')) {
-      this.error.set(this.t('admin.inviteInvalid'));
+      this.error.set(this.t('organization.inviteInvalid'));
       return;
     }
     this.saved.emit({ name, email, role: this.role() });

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import type { SignupResultDto, UserDto } from './api-types';
 import {
-  AdminStore,
+  OrganizationStore,
   AgentsStore,
   MetricsStore,
   RulesStore,
@@ -13,6 +13,7 @@ import {
   TimelineStore,
 } from '../data/feature.stores';
 import { WorkspaceStore } from '../data/workspace.store';
+import { AccountService } from './account.service';
 import { OnboardingService } from './onboarding.service';
 import { OrgService } from './org.service';
 
@@ -28,10 +29,11 @@ export class AuthService {
     inject(RulesStore),
     inject(MetricsStore),
     inject(TimelineStore),
-    inject(AdminStore),
+    inject(OrganizationStore),
     inject(AgentsStore),
     inject(SettingsStore),
     inject(TaskDetailStore),
+    inject(AccountService),
   ];
 
   private readonly userSignal = signal<UserDto | null>(null);
@@ -93,6 +95,15 @@ export class AuthService {
     return user;
   }
 
+  async confirmEmailChange(token: string): Promise<UserDto> {
+    await this.ensureCsrf();
+    const user = await firstValueFrom(
+      this.http.post<UserDto>('/api/auth/confirm-email-change', { token }),
+    );
+    this.markSignedOut();
+    return user;
+  }
+
   async requestPasswordReset(email: string): Promise<void> {
     await this.ensureCsrf();
     await firstValueFrom(this.http.post('/api/auth/forgot-password', { email }));
@@ -105,6 +116,10 @@ export class AuthService {
 
   async resendVerification(): Promise<void> {
     await firstValueFrom(this.http.post('/api/auth/resend-verification', {}));
+  }
+
+  setUser(user: UserDto): void {
+    this.userSignal.set(user);
   }
 
   async reload(): Promise<UserDto | null> {
