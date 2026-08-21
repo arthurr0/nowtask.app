@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import type { MetaDto } from '../../core/api-types';
 import { AuthService } from '../../core/auth.service';
-import { ConfirmService } from '../../ui/confirm.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Icon } from '../../ui/icon';
 import { Logo } from '../../ui/logo';
@@ -21,8 +20,8 @@ import { ViewControls } from '../../ui/view-controls';
 export class Login implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
-  private readonly confirm = inject(ConfirmService);
   protected readonly t = inject(I18nService).t;
 
   protected readonly email = signal('');
@@ -43,16 +42,6 @@ export class Login implements OnInit {
     }
   }
 
-  async forgotPassword(): Promise<void> {
-    await this.confirm.ask({
-      title: 'login.forgot',
-      message: 'login.forgotHint',
-      confirmLabel: 'common.close',
-      cancelLabel: 'common.cancel',
-      icon: 'key',
-    });
-  }
-
   async submit(event: Event): Promise<void> {
     event.preventDefault();
     if (this.submitting()) {
@@ -64,7 +53,8 @@ export class Login implements OnInit {
 
     try {
       await this.auth.login(this.email(), this.password());
-      await this.router.navigate(['/app/board']);
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      await this.router.navigateByUrl(returnUrl ?? '/app/board');
     } catch (error) {
       const unauthorised = error instanceof HttpErrorResponse && error.status === 401;
       this.error.set(unauthorised ? this.t('login.badCredentials') : this.t('state.errorTitle'));

@@ -38,6 +38,27 @@
   </section>
 
   <section class="flex flex-1 items-center justify-center p-6 lg:p-10">
+    @if (suggestion(); as org) {
+    <div class="flex w-full max-w-[372px] flex-col gap-5">
+      <header class="flex flex-col gap-1.5">
+        <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.suggestTitle') }}</h2>
+        <p class="text-[13px] text-ink-2">{{ t('signup.suggestBody', { name: org.name }) }}</p>
+      </header>
+
+      <div class="flex flex-col gap-2.5">
+        <p class="rounded-card border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-2">
+          {{ t('signup.suggestAsk') }}
+        </p>
+        <button
+          type="button"
+          class="flex h-[46px] items-center justify-center rounded-card border border-line text-sm"
+          (click)="continueToOwnOrg()"
+        >
+          {{ t('signup.suggestOwn') }}
+        </button>
+      </div>
+    </div>
+    } @else {
     <form class="flex w-full max-w-[372px] flex-col gap-5" (submit)="submit($event)">
       <header class="flex flex-col gap-1.5">
         <h2 class="text-xl font-semibold tracking-[-0.015em]">{{ t('signup.title') }}</h2>
@@ -144,5 +165,6 @@
         <ui-view-controls />
       </div>
     </form>
+    }
   </section>
 </div>

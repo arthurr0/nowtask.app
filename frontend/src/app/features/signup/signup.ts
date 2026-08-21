@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import type { SuggestedOrgDto } from '../../core/api-types';
 import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Icon } from '../../ui/icon';
@@ -46,6 +47,7 @@ export class Signup {
   protected readonly showPassword = signal(false);
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly suggestion = signal<SuggestedOrgDto | null>(null);
 
   protected readonly minPasswordLength = MIN_PASSWORD_LENGTH;
 
@@ -70,13 +72,23 @@ export class Signup {
     this.error.set(null);
 
     try {
-      await this.auth.signup(this.name(), this.email(), this.password());
-      await this.router.navigate(['/app/board']);
+      const result = await this.auth.signup(this.name(), this.email(), this.password());
+
+      if (result.suggestOrg) {
+        this.suggestion.set(result.suggestOrg);
+        return;
+      }
+
+      await this.router.navigate(['/orgs/new']);
     } catch (error) {
       this.error.set(this.t(messageKey(error)));
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  async continueToOwnOrg(): Promise<void> {
+    await this.router.navigate(['/orgs/new']);
   }
 }
 

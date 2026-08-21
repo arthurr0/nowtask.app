@@ -64,13 +64,9 @@
         <div class="flex flex-col gap-1.5">
           <div class="flex items-baseline">
             <span class="flex-1 text-xs text-ink-2">{{ t('login.password') }}</span>
-            <button
-              type="button"
-              class="text-xs underline-offset-2 hover:underline"
-              (click)="forgotPassword()"
-            >
+            <a routerLink="/forgot-password" class="text-xs underline-offset-2 hover:underline">
               {{ t('login.forgot') }}
-            </button>
+            </a>
           </div>
           <div
             class="flex h-11 items-center gap-2.5 rounded-card border border-line bg-surface px-3.5"

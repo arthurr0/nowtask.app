@@ -1,0 +1,172 @@
+<div class="flex min-h-dvh flex-col bg-bg text-ink">
+  <header class="flex h-14 flex-none items-center gap-3 border-b border-line bg-surface px-6">
+    <ui-logo [size]="22" [tile]="false" />
+    <span class="text-[13px] font-semibold lowercase tracking-[-0.02em]">{{ t('app.name') }}</span>
+    <span class="flex-1"></span>
+    <ui-view-controls />
+  </header>
+
+  <main class="flex flex-1 items-center justify-center px-6 py-10">
+    @if (loading()) {
+      <p class="text-[13px] text-ink-2">{{ t('state.loading') }}</p>
+    } @else if (!preview() || preview()!.state === 'unknown' || preview()!.state === 'revoked') {
+      <div class="flex w-full max-w-[420px] flex-col gap-4 text-center">
+        <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ t('invite.unknownTitle') }}</h1>
+        <p class="text-[13px] text-ink-2">{{ t('invite.unknownBody') }}</p>
+        <a
+          routerLink="/login"
+          class="flex h-[42px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink"
+        >
+          {{ t('login.signIn') }}
+        </a>
+      </div>
+    } @else if (preview()!.state === 'accepted') {
+      <div class="flex w-full max-w-[420px] flex-col gap-4 text-center">
+        <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ t('invite.usedTitle') }}</h1>
+        <p class="text-[13px] text-ink-2">{{ t('invite.usedBody') }}</p>
+        <a
+          routerLink="/login"
+          class="flex h-[42px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink"
+        >
+          {{ t('login.signIn') }}
+        </a>
+      </div>
+    } @else if (preview()!.state === 'expired') {
+      <div class="flex w-full max-w-[420px] flex-col gap-4 text-center">
+        <h1 class="text-xl font-semibold tracking-[-0.015em]">{{ t('invite.expiredTitle') }}</h1>
+        <p class="text-[13px] text-ink-2">{{ t('invite.expiredBody') }}</p>
+
+        @if (renewalSent()) {
+          <p class="text-[13px] text-done">{{ t('invite.renewalSent') }}</p>
+        } @else {
+          <button
+            type="button"
+            class="flex h-[42px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
+            [disabled]="submitting()"
+            (click)="requestNew()"
+          >
+            {{ t('invite.requestNew') }}
+          </button>
+        }
+
+        @if (error()) {
+          <p class="text-[13px] text-warn">{{ error() }}</p>
+        }
+      </div>
+    } @else {
+      <div class="flex w-full max-w-[420px] flex-col gap-6">
+        <div class="flex flex-col items-center gap-3 text-center">
+          <ui-logo [size]="34" />
+          <p class="text-[13px] text-ink-2">
+            {{ t('invite.invitedBy', { name: preview()!.invitedByName }) }}
+          </p>
+          <h1 class="text-[26px] font-semibold tracking-[-0.02em]">
+            {{ preview()!.organizationName }}
+          </h1>
+          <p class="flex flex-col gap-1 font-mono text-[12px] text-ink-3">
+            <span>{{ t('invite.role') }}: {{ preview()!.role }}</span>
+            <span>{{ preview()!.maskedEmail }}</span>
+          </p>
+        </div>
+
+        @if (sameAccount()) {
+          <button
+            type="button"
+            class="flex h-[46px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
+            [disabled]="submitting()"
+            (click)="accept()"
+          >
+            {{ submitting() ? t('state.loading') : t('invite.join') }}
+          </button>
+        } @else {
+          @if (signedInEmail()) {
+            <div
+              class="flex flex-col gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-3 text-[13px] text-warn"
+            >
+              <span>{{ t('invite.otherAccount', { email: signedInEmail()! }) }}</span>
+              <button
+                type="button"
+                class="self-start text-[12px] underline underline-offset-2"
+                (click)="signOut()"
+              >
+                {{ t('invite.signOutAndContinue') }}
+              </button>
+            </div>
+          }
+
+          <form class="flex flex-col gap-4" (submit)="accept($event)">
+            @if (!preview()!.accountExists) {
+              <label class="flex flex-col gap-1.5">
+                <span class="text-xs text-ink-2">{{ t('signup.name') }}</span>
+                <input
+                  type="text"
+                  name="name"
+                  autocomplete="name"
+                  class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+                  [ngModel]="name()"
+                  (ngModelChange)="name.set($event)"
+                />
+              </label>
+            }
+
+            <div class="flex flex-col gap-1.5">
+              <span class="text-xs text-ink-2">{{ t('login.password') }}</span>
+              <div
+                class="flex h-11 items-center gap-2.5 rounded-card border border-line bg-surface px-3.5"
+              >
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  name="password"
+                  [attr.autocomplete]="
+                    preview()!.accountExists ? 'current-password' : 'new-password'
+                  "
+                  class="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                  [ngModel]="password()"
+                  (ngModelChange)="password.set($event)"
+                />
+                <button
+                  type="button"
+                  class="text-ink-3"
+                  [attr.aria-label]="t('login.showPassword')"
+                  (click)="showPassword.set(!showPassword())"
+                >
+                  <ui-icon name="eye" [size]="17" />
+                </button>
+              </div>
+              @if (!preview()!.accountExists) {
+                <span class="text-[11px] text-ink-3">{{ t('signup.passwordHint') }}</span>
+              }
+            </div>
+
+            @if (error()) {
+              <p
+                class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+              >
+                <ui-icon name="alert" [size]="15" />
+                <span>{{ error() }}</span>
+              </p>
+            }
+
+            <button
+              type="submit"
+              class="flex h-[46px] items-center justify-center rounded-card bg-inv text-sm font-medium text-inv-ink disabled:opacity-60"
+              [disabled]="submitting() || !complete()"
+            >
+              {{
+                submitting()
+                  ? t('state.loading')
+                  : preview()!.accountExists
+                    ? t('invite.signInAndJoin')
+                    : t('invite.createAndJoin')
+              }}
+            </button>
+          </form>
+        }
+
+        <p class="text-center text-[12px] text-ink-3">
+          {{ t('invite.expiresOn', { date: (preview()!.expiresAt ?? '').slice(0, 10) }) }}
+        </p>
+      </div>
+    }
+  </main>
+</div>

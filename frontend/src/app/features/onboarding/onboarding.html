@@ -1,0 +1,276 @@
+<app-wizard-shell [step]="stepNumber()" [heading]="heading()" [subheading]="subheading()">
+  @if (step() === 'preset') {
+    <div class="flex flex-col gap-4">
+      <div class="grid gap-3 sm:grid-cols-3">
+        @for (preset of presets(); track preset.code) {
+          <button
+            type="button"
+            class="flex flex-col gap-2.5 rounded-card border p-4 text-left"
+            [class.border-inv]="chosenPreset() === preset.code"
+            [class.border-line]="chosenPreset() !== preset.code"
+            [class.bg-surface]="chosenPreset() !== preset.code"
+            [class.bg-surface-2]="chosenPreset() === preset.code"
+            (click)="choose(preset.code)"
+          >
+            <span class="flex items-center gap-2">
+              <ui-icon name="board" [size]="16" class="text-ink-3" />
+              <span class="text-sm font-medium">{{ presetLabel(preset.code) }}</span>
+            </span>
+            <span class="text-[12px] leading-[1.6] text-ink-2">{{
+              presetSummary(preset.code)
+            }}</span>
+            <span class="mt-1 flex flex-col gap-1 font-mono text-[11px] text-ink-3">
+              <span>{{ t('onboarding.statusCount', { count: preset.statusCount }) }}</span>
+              <span>{{
+                preset.estimateUnit
+                  ? t('preset.estimate.' + preset.estimateUnit)
+                  : t('preset.noEstimates')
+              }}</span>
+            </span>
+          </button>
+        } @empty {
+          <p class="text-[13px] text-ink-2">{{ t('state.loading') }}</p>
+        }
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        @for (preset of presets(); track preset.code) {
+          <button
+            type="button"
+            class="text-[12px] text-ink-2 underline-offset-2 hover:underline"
+            (click)="togglePreview(preset.code)"
+          >
+            {{ previewOpen() === preset.code ? t('onboarding.hidePreview') : t('onboarding.preview') }}
+            {{ presetLabel(preset.code) }}
+          </button>
+        }
+      </div>
+
+      @if (previewOpen()) {
+        <div class="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
+          @if (preview(); as detail) {
+            <div class="flex flex-wrap gap-2">
+              @for (status of detail.statuses; track status.code) {
+                <span
+                  class="flex items-center gap-1.5 rounded-field border border-line px-2.5 py-1 text-[12px]"
+                >
+                  <span
+                    class="h-[9px] w-[9px] rounded-sm"
+                    [style.background]="status.swatch"
+                  ></span>
+                  {{ statusLabel(status.code, status.label) }}
+                  @if (status.wipLimit) {
+                    <span class="font-mono text-[10px] text-ink-3">WIP {{ status.wipLimit }}</span>
+                  }
+                </span>
+              }
+            </div>
+            <p class="text-[12px] text-ink-3">
+              {{
+                t('onboarding.previewCounts', {
+                  transitions: detail.transitions.length,
+                  fields: detail.fields.length,
+                  rules: detail.rules.length,
+                })
+              }}
+            </p>
+          } @else {
+            <p class="text-[13px] text-ink-2">{{ t('state.loading') }}</p>
+          }
+        </div>
+      }
+
+      <p class="text-[12px] text-ink-3">{{ t('onboarding.presetHint') }}</p>
+
+      @if (error()) {
+        <p
+          class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+        >
+          <ui-icon name="alert" [size]="15" />
+          <span>{{ error() }}</span>
+        </p>
+      }
+
+      <div class="flex items-center justify-end">
+        <button
+          type="button"
+          class="flex h-[42px] items-center gap-2 rounded-card bg-inv px-5 text-sm font-medium text-inv-ink disabled:opacity-60"
+          [disabled]="submitting()"
+          (click)="toProject()"
+        >
+          {{ t('onboarding.next') }}
+          <ui-icon name="chevron-right" [size]="16" />
+        </button>
+      </div>
+    </div>
+  } @else if (step() === 'project') {
+    <form class="flex flex-col gap-6" (submit)="$event.preventDefault(); createProject()">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-xs text-ink-2">{{ t('onboarding.projectName') }}</span>
+        <input
+          type="text"
+          name="projectName"
+          class="h-11 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+          [ngModel]="projectName()"
+          (ngModelChange)="onProjectName($event)"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-xs text-ink-2">{{ t('onboarding.projectCode') }}</span>
+        <input
+          type="text"
+          name="projectCode"
+          maxlength="4"
+          class="h-11 w-32 rounded-card border border-line-strong bg-surface px-3.5 font-mono text-sm uppercase outline-none"
+          [ngModel]="projectCodeValue()"
+          (ngModelChange)="onProjectCode($event)"
+        />
+        <span class="font-mono text-[11px] text-ink-3">
+          {{ t('onboarding.projectKeys', { code: projectCodeValue() || 'NOW' }) }}
+        </span>
+      </label>
+
+      <p class="rounded-card border border-line bg-surface px-3.5 py-3 text-[13px] text-ink-2">
+        {{ t('onboarding.projectPreset', { preset: presetLabel(chosenPreset()) }) }}
+      </p>
+
+      @if (error()) {
+        <p
+          class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+        >
+          <ui-icon name="alert" [size]="15" />
+          <span>{{ error() }}</span>
+        </p>
+      }
+
+      <div class="flex items-center justify-between">
+        <button
+          type="button"
+          class="flex h-[42px] items-center gap-2 rounded-card border border-line px-4 text-sm text-ink-2"
+          (click)="backToPreset()"
+        >
+          {{ t('onboarding.back') }}
+        </button>
+        <button
+          type="submit"
+          class="flex h-[42px] items-center gap-2 rounded-card bg-inv px-5 text-sm font-medium text-inv-ink disabled:opacity-60"
+          [disabled]="submitting() || !completeProject()"
+        >
+          {{ submitting() ? t('state.loading') : t('onboarding.next') }}
+          <ui-icon name="chevron-right" [size]="16" />
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-2.5">
+        @for (row of rows(); track $index) {
+          <div class="flex items-center gap-2">
+            <input
+              type="email"
+              class="h-11 min-w-0 flex-1 rounded-card border border-line-strong bg-surface px-3.5 text-sm outline-none"
+              [placeholder]="t('onboarding.emailPlaceholder')"
+              [ngModel]="row.email"
+              [name]="'invite' + $index"
+              (ngModelChange)="setEmail($index, $event)"
+            />
+            <select
+              class="h-11 rounded-card border border-line-strong bg-surface px-2.5 text-[13px] outline-none"
+              [ngModel]="row.role"
+              [name]="'role' + $index"
+              (ngModelChange)="setRole($index, $event)"
+            >
+              @for (role of roles; track role) {
+                <option [value]="role">{{ t('role.' + role) }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              class="flex h-9 w-9 flex-none items-center justify-center rounded-field text-ink-3"
+              [attr.aria-label]="t('common.remove')"
+              (click)="removeRow($index)"
+            >
+              <ui-icon name="x" [size]="15" />
+            </button>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="flex h-10 items-center gap-2 self-start rounded-field px-2 text-[13px] text-ink-2"
+          (click)="addRow()"
+        >
+          <ui-icon name="plus" [size]="15" />
+          {{ t('onboarding.addAddress') }}
+        </button>
+      </div>
+
+      <p class="text-[12px] text-ink-3">{{ t('onboarding.pasteHint') }}</p>
+
+      @if (!emailVerified()) {
+        <div
+          class="flex flex-col gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-3 text-[13px] text-warn"
+        >
+          <span class="flex items-start gap-2">
+            <ui-icon name="alert" [size]="15" />
+            <span>{{ t('onboarding.verifyToInvite') }}</span>
+          </span>
+          <button
+            type="button"
+            class="self-start text-[12px] underline underline-offset-2"
+            (click)="resendVerification()"
+          >
+            {{ t('onboarding.resend') }}
+          </button>
+        </div>
+      }
+
+      @if (inviteErrors().length) {
+        <ul class="flex flex-col gap-1 text-[12px] text-warn">
+          @for (message of inviteErrors(); track message) {
+            <li>{{ message }}</li>
+          }
+        </ul>
+      }
+
+      @if (error()) {
+        <p
+          class="flex items-start gap-2 rounded-card border border-warn bg-warn-soft px-3.5 py-2.5 text-[13px] text-warn"
+        >
+          <ui-icon name="alert" [size]="15" />
+          <span>{{ error() }}</span>
+        </p>
+      }
+
+      <div class="flex items-center justify-between">
+        <button
+          type="button"
+          class="flex h-[42px] items-center gap-2 rounded-card border border-line px-4 text-sm text-ink-2"
+          (click)="backToProject()"
+        >
+          {{ t('onboarding.back') }}
+        </button>
+
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="flex h-[42px] items-center rounded-card px-4 text-sm text-ink-2"
+            (click)="skipInvites()"
+          >
+            {{ t('onboarding.skip') }}
+          </button>
+          <button
+            type="button"
+            class="flex h-[42px] items-center gap-2 rounded-card bg-inv px-5 text-sm font-medium text-inv-ink disabled:opacity-60"
+            [disabled]="submitting() || !filledRows().length || !emailVerified()"
+            (click)="sendInvites()"
+          >
+            {{ submitting() ? t('state.loading') : t('onboarding.sendInvites') }}
+            <ui-icon name="arrow-right" [size]="16" />
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</app-wizard-shell>
