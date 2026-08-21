@@ -97,10 +97,8 @@ export class TaskDetail {
   protected readonly history = this.details.history;
   protected readonly rules = this.details.rules;
 
-  protected readonly canSeeProtected = computed(() => {
-    const role = this.store.currentUser()?.role;
-    return role === 'admin' || role === 'manager';
-  });
+  protected readonly canSeeProtected = (permission: string): boolean =>
+    this.store.can(permission);
 
   protected readonly customRows = computed<CustomRow[]>(() => {
     const custom = this.detail()?.custom ?? {};
@@ -110,13 +108,18 @@ export class TaskDetail {
         field,
         raw,
         display: raw === null ? '' : this.renderValue(field, raw),
-        editable: field.restrictedToRole === null || this.canSeeProtected(),
+        editable: field.requiredPermission === null || this.canSeeProtected(field.requiredPermission),
       };
     });
   });
 
   protected readonly hasRestrictedField = computed(() =>
-    this.settings.customFields().some((field) => field.restrictedToRole !== null),
+    this.settings
+      .customFields()
+      .some(
+        (field) =>
+          field.requiredPermission !== null && !this.canSeeProtected(field.requiredPermission),
+      ),
   );
 
   protected readonly overdue = computed(() =>

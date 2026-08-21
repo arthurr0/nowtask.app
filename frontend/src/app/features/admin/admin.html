@@ -112,12 +112,12 @@
                     }
                     <span
                       class="flex-none rounded-full px-2.5 py-0.5 text-[11px]"
-                      [class.bg-inv]="user.role === 'admin'"
-                      [class.text-inv-ink]="user.role === 'admin'"
-                      [class.border]="user.role !== 'admin'"
-                      [class.border-line]="user.role !== 'admin'"
-                      [class.text-ink-2]="user.role !== 'admin'"
-                      >{{ t('role.' + user.role) }}</span
+                      [class.bg-inv]="user.role?.code === 'admin'"
+                      [class.text-inv-ink]="user.role?.code === 'admin'"
+                      [class.border]="user.role?.code !== 'admin'"
+                      [class.border-line]="user.role?.code !== 'admin'"
+                      [class.text-ink-2]="user.role?.code !== 'admin'"
+                      >{{ user.role?.name ?? '' }}</span
                     >
                     @if (isAdmin()) {
                       <ui-menu
@@ -266,34 +266,37 @@
               <div class="min-w-[700px]">
                 <div class="kap flex h-11 items-center border-b border-line bg-surface-2">
                   <span class="min-w-0 flex-1 pl-4">{{ t('admin.permission') }}</span>
-                  @for (role of roles; track role) {
-                    <span class="w-[104px] flex-none text-center">{{ t('role.' + role) }}</span>
+                  @for (role of roles(); track role.id) {
+                    <span class="w-[104px] flex-none truncate text-center" [title]="role.name">{{
+                      role.name
+                    }}</span>
                   }
                 </div>
 
-                @for (permission of admin.permissions(); track permission.key) {
+                @for (group of permissionGroups(); track group.group) {
                   <div
-                    class="flex h-[42px] items-center border-b border-line text-[13px] last:border-b-0"
+                    class="kap flex h-9 items-center border-b border-line bg-surface-2 pl-4 text-ink-3"
                   >
-                    <span class="min-w-0 flex-1 truncate pl-4 text-ink-2">{{
-                      t(permission.key)
-                    }}</span>
-                    @for (role of roles; track role) {
-                      <span class="flex w-[104px] flex-none justify-center">
-                        @switch (value(permission, role)) {
-                          @case ('yes') {
+                    {{ t('permissionGroup.' + group.group) }}
+                  </div>
+                  @for (permission of group.items; track permission.code) {
+                    <div
+                      class="flex h-[42px] items-center border-b border-line text-[13px] last:border-b-0"
+                    >
+                      <span class="min-w-0 flex-1 truncate pl-4 text-ink-2">{{
+                        t('permission.' + permission.code)
+                      }}</span>
+                      @for (role of roles(); track role.id) {
+                        <span class="flex w-[104px] flex-none justify-center">
+                          @if (grants(role, permission)) {
                             <ui-icon name="check" [size]="16" />
-                          }
-                          @case ('conditional') {
-                            <ui-icon name="lock" [size]="15" class="text-ink-3" />
-                          }
-                          @default {
+                          } @else {
                             <span class="text-ink-3">—</span>
                           }
-                        }
-                      </span>
-                    }
-                  </div>
+                        </span>
+                      }
+                    </div>
+                  }
                 }
               </div>
             </div>

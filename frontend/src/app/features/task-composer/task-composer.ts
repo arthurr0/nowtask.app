@@ -271,7 +271,7 @@ export class TaskComposerDialog {
     this.store.activeMembers().map((user) => ({
       value: user.id,
       label: user.name,
-      hint: this.t('role.' + user.role),
+      hint: user.role?.name ?? '',
     })),
   );
 

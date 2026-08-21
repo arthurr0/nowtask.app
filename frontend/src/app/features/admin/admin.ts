@@ -13,10 +13,10 @@ import type {
   ApiKeyDto,
   IntegrationDto,
   PermissionDto,
+  RoleDto,
   TeamDto,
   UserDto,
 } from '../../core/api-types';
-import type { RoleId } from '../../core/models';
 import { AdminStore, IntegrationsStore, MetricsStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
@@ -34,7 +34,7 @@ import { ApiKeyDialog, type ApiKeyDraft } from '../agents/api-key-dialog';
 
 type Section = 'people' | 'security' | 'keys' | 'integrations' | 'audit';
 
-const ROLES: readonly RoleId[] = ['admin', 'manager', 'member', 'guest'];
+
 
 @Component({
   selector: 'app-admin',
@@ -80,8 +80,8 @@ export class Admin implements OnInit {
     { id: 'audit', icon: 'log', label: 'admin.auditLog' },
   ] as const;
 
-  protected readonly roles = ROLES;
-  protected readonly isAdmin = computed(() => this.store.currentUser()?.role === 'admin');
+  protected readonly roles = computed<RoleDto[]>(() => this.admin.roles());
+  protected readonly isAdmin = computed(() => this.store.currentUser()?.role?.code === 'admin');
 
   protected readonly visibleMembers = computed(() => {
     const needle = this.search().trim().toLowerCase();
@@ -205,15 +205,25 @@ export class Admin implements OnInit {
   protected shortDateTime = dateTime;
   protected shortDate = shortDate;
 
-  value(permission: PermissionDto, role: RoleId): 'yes' | 'no' | 'conditional' {
-    return permission[role];
+  grants(role: RoleDto, permission: PermissionDto): boolean {
+    return role.permissions.includes(permission.code);
   }
 
+  protected readonly permissionGroups = computed<{ group: string; items: PermissionDto[] }[]>(() => {
+    const groups = new Map<string, PermissionDto[]>();
+    for (const permission of this.admin.permissions()) {
+      const items = groups.get(permission.group) ?? [];
+      items.push(permission);
+      groups.set(permission.group, items);
+    }
+    return [...groups].map(([group, items]) => ({ group, items }));
+  });
+
   memberMenu(user: UserDto): MenuItem[] {
-    const items: MenuItem[] = ROLES.map((role) => ({
-      id: 'role:' + role,
-      label: this.t('admin.setRole', { role: this.t('role.' + role) }),
-      checked: user.role === role,
+    const items: MenuItem[] = this.admin.roles().map((role) => ({
+      id: 'role:' + role.code,
+      label: this.t('admin.setRole', { role: role.name }),
+      checked: user.role?.code === role.code,
     }));
     items.push({
       id: 'capacity',
@@ -261,7 +271,7 @@ export class Admin implements OnInit {
   async onMemberMenu(item: MenuItem, user: UserDto): Promise<void> {
     if (item.id.startsWith('role:')) {
       const role = item.id.slice('role:'.length);
-      if (role === user.role) return;
+      if (role === user.role?.code) return;
       await this.run(() => this.admin.updateMember(user.id, { role }));
       return;
     }

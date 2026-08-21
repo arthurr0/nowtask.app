@@ -587,7 +587,7 @@
 
       <div class="flex-1"></div>
 
-      @if (hasRestrictedField() && !canSeeProtected()) {
+      @if (hasRestrictedField()) {
         <p class="flex items-start gap-2 border-t border-line pt-3.5 text-[11px] text-ink-3">
           <ui-icon name="lock" [size]="13" />
           <span>{{ t('task.protectedField') }}</span>

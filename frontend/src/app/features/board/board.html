@@ -80,7 +80,11 @@
   }
 </div>
 
-<div class="hidden flex-1 gap-4 overflow-x-auto p-5 lg:flex scroll-thin" cdkDropListGroup>
+<div
+  class="hidden flex-1 gap-4 overflow-x-auto p-5 lg:flex scroll-thin"
+  cdkDropListGroup
+  data-tour="board"
+>
   @for (column of columns(); track column.id) {
     @if (isCollapsed(column.id)) {
       <button
@@ -140,6 +144,7 @@
               class="group relative cursor-grab active:cursor-grabbing"
               cdkDrag
               [cdkDragData]="task.key"
+              [attr.data-tour]="$first ? 'card' : null"
               (click)="select(task)"
               (dblclick)="open(task)"
             >

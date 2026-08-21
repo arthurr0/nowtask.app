@@ -226,7 +226,7 @@ export class Settings implements OnInit {
           name: draft.name,
           type: draft.type,
           scopeLabel: draft.scopeLabel,
-          restrictedToRole: draft.restrictedToRole,
+          requiredPermission: draft.requiredPermission,
         });
       } else {
         await this.store.createCustomField(draft);

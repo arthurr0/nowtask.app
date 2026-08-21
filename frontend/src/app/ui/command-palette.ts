@@ -158,7 +158,7 @@ export class CommandPaletteDialog {
           id: 'person-' + person.id,
           group: 'palette.people',
           label: person.name,
-          hint: this.t('role.' + person.role),
+          hint: person.role?.name ?? '',
           icon: 'user',
           run: () => {
             this.view.reset();

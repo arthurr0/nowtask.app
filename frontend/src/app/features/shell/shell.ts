@@ -13,6 +13,7 @@ import { ViewState } from '../../data/view-state';
 import { RulesStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { AuthService } from '../../core/auth.service';
+import { OnboardingService } from '../../core/onboarding.service';
 import { Avatar } from '../../ui/avatar';
 import { CommandPalette, CommandPaletteDialog } from '../../ui/command-palette';
 import { ConfirmService } from '../../ui/confirm.service';
@@ -23,6 +24,8 @@ import { PageState } from '../../ui/page-state';
 import { PromptService } from '../../ui/prompt.service';
 import { ToastService } from '../../ui/toast.service';
 import { TaskComposerDialog } from '../task-composer/task-composer';
+import { OnboardingChecklist } from '../onboarding/checklist';
+import { OnboardingTour } from '../onboarding/tour';
 
 interface NavEntry {
   code: NavItemCode;
@@ -76,6 +79,8 @@ function defaultNavigation(): NavItemDto[] {
     PageState,
     TaskComposerDialog,
     CommandPaletteDialog,
+    OnboardingChecklist,
+    OnboardingTour,
   ],
   templateUrl: './shell.html',
 })
@@ -85,6 +90,7 @@ export class Shell implements OnInit {
   protected readonly state = inject(ViewState);
   protected readonly palette = inject(CommandPalette);
   protected readonly auth = inject(AuthService);
+  protected readonly onboarding = inject(OnboardingService);
   private readonly confirm = inject(ConfirmService);
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
@@ -158,6 +164,7 @@ export class Shell implements OnInit {
 
   ngOnInit(): void {
     void this.store.load();
+    void this.onboarding.refresh(true);
   }
 
   reload(): void {

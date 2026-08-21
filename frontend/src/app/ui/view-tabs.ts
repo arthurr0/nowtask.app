@@ -8,7 +8,10 @@ import { Icon } from './icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive, Icon],
   template: `
-    <div class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
+    <div
+      class="flex items-center gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5"
+      data-tour="views"
+    >
       @for (tab of tabs; track tab.path) {
         <a
           [routerLink]="tab.path"

@@ -129,8 +129,8 @@ const MODES: readonly { id: SetupMode; label: string; body: string; icon: string
 ];
 
 const REPO = 'https://github.com/arthurr0/nowtask.app.git';
-const DOCS = 'https://github.com/arthurr0/nowtask.app/blob/main/docs/ai-agents.md';
-const SERVER_DOCS = 'https://github.com/arthurr0/nowtask.app/tree/main/mcp';
+const DOCS = 'https://github.com/arthurr0/nowtask.app/blob/master/docs/ai-agents.md';
+const SERVER_DOCS = 'https://github.com/arthurr0/nowtask.app/tree/master/mcp';
 const DEFAULT_PATH = '~/nowtask.app/mcp';
 const KEY_PLACEHOLDER = 'nt_twoj_klucz';
 
@@ -177,7 +177,7 @@ export class Agents implements OnInit {
   protected readonly keyOpen = signal(false);
   protected readonly issuedKey = signal<string | null>(null);
 
-  protected readonly isAdmin = computed(() => this.store.currentUser()?.role === 'admin');
+  protected readonly isAdmin = computed(() => this.store.currentUser()?.role?.code === 'admin');
 
   protected readonly activeKey = computed(() => this.issuedKey() ?? KEY_PLACEHOLDER);
 

@@ -566,9 +566,13 @@
                       }}
                     </span>
                     <span class="flex flex-1 items-center gap-1.5 text-xs text-ink-2">
-                      @if (field.restrictedToRole) {
+                      @if (field.requiredPermission) {
                         <ui-icon name="lock" [size]="13" />
-                        {{ t('settings.roleOnly', { role: t('role.' + field.restrictedToRole) }) }}
+                        {{
+                          t('settings.permissionOnly', {
+                            permission: t('permission.' + field.requiredPermission),
+                          })
+                        }}
                       } @else {
                         {{ t('common.everyone') }}
                       }

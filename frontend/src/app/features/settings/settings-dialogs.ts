@@ -21,7 +21,7 @@ export interface CustomFieldDraft {
   fieldKey: string;
   type: string;
   scopeLabel: string;
-  restrictedToRole: string | null;
+  requiredPermission: string | null;
 }
 
 export interface StatusDraft {
@@ -43,7 +43,7 @@ const FIELD_TYPES = [
   'relation',
 ] as const;
 
-const ROLES = ['admin', 'manager', 'member', 'guest'] as const;
+const FIELD_PERMISSIONS = ['fields.view_protected', 'fields.manage', 'settings.manage'] as const;
 const CATEGORIES = ['notStarted', 'inFlight', 'done'] as const;
 
 @Component({
@@ -83,9 +83,9 @@ const CATEGORIES = ['notStarted', 'inFlight', 'done'] as const;
             [required]="true"
           />
           <ui-select-field
-            [value]="restrictedToRole()"
-            (valueChange)="restrictedToRole.set($event)"
-            [options]="roleOptions()"
+            [value]="requiredPermission()"
+            (valueChange)="requiredPermission.set($event)"
+            [options]="permissionOptions()"
             label="settings.fieldVisibility"
           />
         </div>
@@ -131,7 +131,7 @@ export class CustomFieldDialog {
   protected readonly fieldKey = signal('');
   protected readonly type = signal('text');
   protected readonly scopeLabel = signal('');
-  protected readonly restrictedToRole = signal('');
+  protected readonly requiredPermission = signal('');
   protected readonly error = signal('');
   private touchedKey = false;
 
@@ -144,7 +144,7 @@ export class CustomFieldDialog {
         this.fieldKey.set(field?.fieldKey ?? '');
         this.type.set(field?.type ?? 'text');
         this.scopeLabel.set(field?.scopeLabel ?? '');
-        this.restrictedToRole.set(field?.restrictedToRole ?? '');
+        this.requiredPermission.set(field?.requiredPermission ?? '');
         this.error.set('');
         this.touchedKey = field !== null;
       });
@@ -155,11 +155,11 @@ export class CustomFieldDialog {
     FIELD_TYPES.map((type) => ({ value: type, label: this.t('fieldType.' + type) })),
   );
 
-  protected readonly roleOptions = computed<SelectOption[]>(() => [
+  protected readonly permissionOptions = computed<SelectOption[]>(() => [
     { value: '', label: this.t('common.everyone') },
-    ...ROLES.map((role) => ({
-      value: role,
-      label: this.t('settings.roleOnly', { role: this.t('role.' + role) }),
+    ...FIELD_PERMISSIONS.map((permission) => ({
+      value: permission,
+      label: this.t('settings.permissionOnly', { permission: this.t('permission.' + permission) }),
     })),
   ]);
 
@@ -182,7 +182,7 @@ export class CustomFieldDialog {
       fieldKey,
       type: this.type(),
       scopeLabel: this.scopeLabel().trim(),
-      restrictedToRole: this.restrictedToRole() || null,
+      requiredPermission: this.requiredPermission() || null,
     });
   }
 }
