@@ -21,7 +21,10 @@ class TenantSchemaTest {
             "organization_member",
             "organization_invite",
             "email_verification",
-            "password_reset");
+            "password_reset",
+            "email_change",
+            "user_session",
+            "user_notification_pref");
 
     private static final Set<String> NULLABLE_ORGANIZATION_ID = Set.of("audit_event");
 
@@ -38,7 +41,10 @@ class TenantSchemaTest {
             "app_user",
             "organization_invite",
             "email_verification",
-            "password_reset");
+            "password_reset",
+            "email_change",
+            "user_session",
+            "user_notification_pref");
 
     @Test
     void everyDomainTableCarriesTheOrganization() throws SQLException {

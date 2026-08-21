@@ -21,7 +21,7 @@ public class AppUserDetailsService implements UserDetailsService {
         AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        if (user.isPending() || user.getPasswordHash() == null) {
+        if (user.isPending() || user.getPasswordHash() == null || !"active".equals(user.getState())) {
             throw new UsernameNotFoundException("The account is not active yet: " + email);
         }
 

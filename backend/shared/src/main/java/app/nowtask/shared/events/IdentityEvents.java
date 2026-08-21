@@ -66,6 +66,24 @@ public final class IdentityEvents {
             Instant at) {
     }
 
+    public record EmailChangeRequested(
+            UUID userId,
+            String name,
+            String newEmail,
+            String token,
+            Instant expiresAt,
+            String locale) {
+    }
+
+    public record EmailChanged(
+            UUID userId,
+            String name,
+            String previousEmail,
+            String newEmail,
+            Instant at,
+            String locale) {
+    }
+
     public record PasswordResetRequested(
             UUID userId,
             String name,

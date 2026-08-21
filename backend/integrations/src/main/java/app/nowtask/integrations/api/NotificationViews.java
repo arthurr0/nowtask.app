@@ -24,4 +24,7 @@ public final class NotificationViews {
 
     public record NotificationPage(List<NotificationView> items, int unread) {
     }
+
+    public record NotificationPrefView(String kind, boolean inApp, boolean email) {
+    }
 }

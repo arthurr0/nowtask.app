@@ -1,0 +1,14 @@
+[(#{mail.emailChange.title})]
+
+[(#{mail.emailChange.body(${name})})]
+
+[(#{mail.emailChange.when})]: [(${expires})]
+
+[(#{mail.emailChange.note})]
+
+[(#{mail.emailChange.action})]:
+[(${link})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

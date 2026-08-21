@@ -28,7 +28,7 @@ class OrganizationContextFilter extends OncePerRequestFilter {
     static final String SESSION_KEY = "activeOrganizationId";
 
     private static final List<String> WITHOUT_ORGANIZATION =
-            List.of("/api/auth/", "/api/meta", "/api/orgs", "/api/invites/", "/actuator/");
+            List.of("/api/auth/", "/api/account/", "/api/meta", "/api/orgs", "/api/invites/", "/actuator/");
 
     private final Organizations organizations;
     private final UserDirectory directory;

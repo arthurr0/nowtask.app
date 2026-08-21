@@ -19,7 +19,7 @@ import app.nowtask.identity.api.BulkInviteResultView;
 import app.nowtask.identity.api.InviteView;
 
 @RestController
-@RequestMapping("/api/admin/invites")
+@RequestMapping("/api/organization/invites")
 class AdminInviteController {
 
     private final InviteService invites;

@@ -26,7 +26,7 @@ import app.nowtask.identity.api.UserView;
 import app.nowtask.shared.PatchBody;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/organization")
 class AdminController {
     private final UserDirectory directory;
     private final Audits audits;

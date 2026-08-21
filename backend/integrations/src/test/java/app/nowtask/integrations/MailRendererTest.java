@@ -130,7 +130,7 @@ class MailRendererTest {
                 "memberName", "Piotr Nowak",
                 "memberEmail", "piotr@nowtask.app",
                 "organizationName", "Studio Kolektyw",
-                "link", APP_URL + "/app/admin",
+                "link", APP_URL + "/app/organization",
                 "preheader", "Zespół.")));
 
         all.put("password-reset", model(Map.of(
@@ -144,6 +144,19 @@ class MailRendererTest {
                 "changedAt", MailRenderer.dateTime(EXPIRES, locale),
                 "link", APP_URL + "/login",
                 "preheader", "Zmiana.")));
+
+        all.put("email-change", model(Map.of(
+                "name", "Marta",
+                "link", APP_URL + "/verify-email?mode=change&token=abc",
+                "expires", MailRenderer.dateTime(EXPIRES, locale),
+                "preheader", "Zmiana adresu.")));
+
+        all.put("email-changed", model(Map.of(
+                "name", "Marta",
+                "newEmail", "marta@kolektyw.pl",
+                "changedAt", MailRenderer.dateTime(EXPIRES, locale),
+                "link", APP_URL + "/login",
+                "preheader", "Adres zmieniony.")));
 
         all.put("notification", model(Map.of(
                 "title", "Przypisanie zadania",

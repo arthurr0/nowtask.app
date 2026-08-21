@@ -32,8 +32,8 @@ final class ApiKeyScopeRules {
         if (path.startsWith("/api/auth")) {
             return Rule.deny("Session login is not available to API keys");
         }
-        if (path.startsWith("/api/admin")) {
-            return Rule.deny("The administration panel, including key management, is not available to API keys");
+        if (path.startsWith("/api/organization")) {
+            return Rule.deny("The organization panel, including key management, is not available to API keys");
         }
         if (path.startsWith("/api/notifications")) {
             return Rule.deny("Notifications are personal and available only to signed-in people");

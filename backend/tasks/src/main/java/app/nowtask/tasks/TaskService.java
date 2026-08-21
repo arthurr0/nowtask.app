@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -427,7 +428,12 @@ public class TaskService implements Tasks {
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
 
-        return tasks.findBySprintCodeOrderByKeyAsc(workspace.settings().currentSprint()).stream()
+        String sprint = workspace.settings().currentSprint();
+        List<Task> scope = sprint == null || sprint.isBlank()
+                ? tasks.findAll(Sort.by("key"))
+                : tasks.findBySprintCodeOrderByKeyAsc(sprint);
+
+        return scope.stream()
                 .filter(task -> task.getStartDate() != null && task.getEndDate() != null)
                 .sorted(Comparator.comparing(Task::getStartDate))
                 .map(task -> new ScheduledTask(
@@ -602,7 +608,8 @@ public class TaskService implements Tasks {
         if (requested != null && !requested.isBlank()) {
             return requested.trim();
         }
-        return workspace.settings().currentSprint();
+        String current = workspace.settings().currentSprint();
+        return current == null || current.isBlank() ? null : current;
     }
 
     private Task require(String key) {

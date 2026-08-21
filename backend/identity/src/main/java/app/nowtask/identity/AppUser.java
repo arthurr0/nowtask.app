@@ -74,6 +74,25 @@ public class AppUser {
         this.passwordHash = passwordHash;
     }
 
+    public void rename(String name, String shortName, String initials) {
+        this.name = name;
+        this.shortName = shortName;
+        this.initials = initials;
+    }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
+
+    public void setInitials(String initials) {
+        this.initials = initials;
+    }
+
+    public void changeEmail(String email, Instant verifiedAt) {
+        this.email = email;
+        this.emailVerifiedAt = verifiedAt;
+    }
+
     public String getRoleCode() {
         return role;
     }

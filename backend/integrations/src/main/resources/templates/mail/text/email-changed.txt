@@ -1,0 +1,15 @@
+[(#{mail.emailChanged.title})]
+
+[(#{mail.emailChanged.body(${name})})]
+
+[(#{mail.emailChanged.newAddress})]: [(${newEmail})]
+[(#{mail.emailChanged.when})]: [(${changedAt})]
+
+[(#{mail.emailChanged.note})]
+
+[(#{mail.emailChanged.action})]:
+[(${link})]
+
+--
+nowtask, [(#{mail.footer.tagline})]
+[(${appUrl})]

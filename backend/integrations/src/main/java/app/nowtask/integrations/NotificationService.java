@@ -15,10 +15,18 @@ import app.nowtask.shared.NotFoundException;
 public class NotificationService {
 
     private final NotificationRepository notifications;
+    private final NotificationPreferenceService preferences;
+    private final NotificationMailer mails;
     private final UserDirectory users;
 
-    NotificationService(NotificationRepository notifications, UserDirectory users) {
+    NotificationService(
+            NotificationRepository notifications,
+            NotificationPreferenceService preferences,
+            NotificationMailer mails,
+            UserDirectory users) {
         this.notifications = notifications;
+        this.preferences = preferences;
+        this.mails = mails;
         this.users = users;
     }
 
@@ -53,7 +61,15 @@ public class NotificationService {
         if (userId == null) {
             return;
         }
-        notifications.save(new Notification(userId, kind, titleKey, params, taskKey));
+
+        NotificationPreferenceService.Preference preference = preferences.of(userId, kind);
+
+        if (preference.inApp()) {
+            notifications.save(new Notification(userId, kind, titleKey, params, taskKey));
+        }
+        if (preference.email()) {
+            users.findById(userId).ifPresent(user -> mails.send(user.email(), kind, params, taskKey));
+        }
     }
 
     private static NotificationView toView(Notification row) {

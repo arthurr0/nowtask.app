@@ -29,7 +29,7 @@ import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.Permission;
 
 @RestController
-@RequestMapping("/api/admin/api-keys")
+@RequestMapping("/api/organization/api-keys")
 class ApiKeyController {
     private final ApiKeys keys;
     private final UserDirectory directory;

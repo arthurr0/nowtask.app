@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import app.nowtask.identity.PasswordResetService;
+import app.nowtask.identity.SessionService;
 import app.nowtask.identity.SignupService;
 import app.nowtask.identity.api.ApiKeyIdentity;
 import app.nowtask.identity.api.ApiKeyScope;
@@ -34,18 +35,21 @@ class AuthController {
     private final UserDirectory directory;
     private final SignupService signups;
     private final PasswordResetService passwordResets;
+    private final SessionService sessions;
 
     AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository contextRepository,
             UserDirectory directory,
             SignupService signups,
-            PasswordResetService passwordResets) {
+            PasswordResetService passwordResets,
+            SessionService sessions) {
         this.authenticationManager = authenticationManager;
         this.contextRepository = contextRepository;
         this.directory = directory;
         this.signups = signups;
         this.passwordResets = passwordResets;
+        this.sessions = sessions;
     }
 
     record LoginRequest(@NotBlank String email, @NotBlank String password) {
@@ -114,6 +118,7 @@ class AuthController {
     ResponseEntity<Void> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
         if (request.getSession(false) != null) {
+            sessions.forget(request.getSession(false).getId());
             request.getSession(false).invalidate();
         }
         return ResponseEntity.noContent().build();

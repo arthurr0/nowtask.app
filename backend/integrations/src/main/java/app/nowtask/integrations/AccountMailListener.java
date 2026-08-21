@@ -91,7 +91,7 @@ class AccountMailListener {
         model.put("memberName", event.name());
         model.put("memberEmail", event.email());
         model.put("organizationName", event.organizationName());
-        model.put("link", link("/app/admin"));
+        model.put("link", link("/app/organization"));
         model.put("preheader", renderer.message("mail.memberJoined.preheader", locale));
 
         String subject = renderer.message("mail.memberJoined.subject", locale, event.name());
@@ -110,6 +110,34 @@ class AccountMailListener {
         model.put("preheader", renderer.message("mail.passwordReset.preheader", locale));
 
         send(event.email(), "password-reset", locale, renderer.message("mail.passwordReset.subject", locale), model);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onEmailChangeRequested(IdentityEvents.EmailChangeRequested event) {
+        Locale locale = MailRenderer.locale(event.locale());
+
+        Map<String, Object> model = MailRenderer.model();
+        model.put("name", event.name());
+        model.put("link", link("/verify-email?mode=change&token=" + encode(event.token())));
+        model.put("expires", expiry(event.expiresAt(), locale));
+        model.put("preheader", renderer.message("mail.emailChange.preheader", locale));
+
+        send(event.newEmail(), "email-change", locale, renderer.message("mail.emailChange.subject", locale), model);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onEmailChanged(IdentityEvents.EmailChanged event) {
+        Locale locale = MailRenderer.locale(event.locale());
+
+        Map<String, Object> model = MailRenderer.model();
+        model.put("name", event.name());
+        model.put("newEmail", event.newEmail());
+        model.put("changedAt", expiry(event.at(), locale));
+        model.put("link", link("/login"));
+        model.put("preheader", renderer.message("mail.emailChanged.preheader", locale));
+
+        send(event.previousEmail(), "email-changed", locale,
+                renderer.message("mail.emailChanged.subject", locale), model);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)

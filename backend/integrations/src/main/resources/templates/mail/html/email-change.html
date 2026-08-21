@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{mail/html/layout :: page(~{::content})}">
+  <body>
+    <th:block th:fragment="content">
+      <th:block th:replace="~{mail/html/parts :: eyebrow(#{mail.emailChange.eyebrow})}" />
+      <th:block th:replace="~{mail/html/parts :: heading(#{mail.emailChange.title})}" />
+      <th:block th:replace="~{mail/html/parts :: paragraph(#{mail.emailChange.body(${name})})}" />
+      <th:block th:replace="~{mail/html/parts :: button(${link}, #{mail.emailChange.action})}" />
+      <th:block th:replace="~{mail/html/parts :: rule}" />
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 12px 0 0">
+        <th:block th:replace="~{mail/html/parts :: fact(#{mail.emailChange.when}, ${expires})}" />
+      </table>
+
+      <th:block th:replace="~{mail/html/parts :: note(#{mail.emailChange.note})}" />
+    </th:block>
+  </body>
+</html>

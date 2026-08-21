@@ -348,7 +348,8 @@ public class WorkspaceConfigService {
             updateSetting("currency", required(patch.text("currency"), "Waluta"));
         }
         if (patch.has("currentSprint")) {
-            updateSetting("current_sprint", required(patch.text("currentSprint"), "Current sprint"));
+            String sprint = patch.text("currentSprint");
+            updateSetting("current_sprint", sprint == null || sprint.isBlank() ? null : sprint.trim());
         }
         if (patch.has("allowUserOverride")) {
             updateSetting("allow_user_override", flag(patch, "allowUserOverride"));

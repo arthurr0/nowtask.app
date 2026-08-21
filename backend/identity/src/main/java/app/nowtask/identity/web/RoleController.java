@@ -19,7 +19,7 @@ import app.nowtask.identity.api.RoleView;
 import app.nowtask.shared.PatchBody;
 
 @RestController
-@RequestMapping("/api/admin/roles")
+@RequestMapping("/api/organization/roles")
 class RoleController {
 
     private final RoleService roles;
