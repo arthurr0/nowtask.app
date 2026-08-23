@@ -463,6 +463,8 @@ export interface NotificationPageDto {
 
 export type IntegrationKind = 'webhook' | 'email';
 
+export type WebhookFormat = 'generic' | 'discord' | 'slack';
+
 export interface IntegrationDeliveryDto {
   id: string;
   at: string;

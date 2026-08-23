@@ -508,6 +508,16 @@ export const en: Dictionary = {
   'organization.integrationName': 'Name',
   'organization.integrationNamePlaceholder': 'e.g. Team channel',
   'organization.integrationNameRequired': 'The integration needs a name.',
+  'organization.integrationFormat': 'Format',
+  'organization.integrationFormat.generic': 'Plain JSON',
+  'organization.integrationFormat.discord': 'Discord',
+  'organization.integrationFormat.slack': 'Slack',
+  'organization.integrationFormatHint':
+    'Discord and Slack only accept their own message shape and reject plain JSON.',
+  'organization.integrationUrlPlaceholder.discord':
+    'https://discord.com/api/webhooks/ID/TOKEN',
+  'organization.integrationUrlPlaceholder.slack':
+    'https://hooks.slack.com/services/T000/B000/XXXX',
   'organization.integrationUrl': 'URL',
   'organization.integrationUrlPlaceholder': 'https://example.com/webhook',
   'organization.integrationUrlRequired': 'Enter an address starting with http.',

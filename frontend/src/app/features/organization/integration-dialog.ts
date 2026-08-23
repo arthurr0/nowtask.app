@@ -10,7 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
-import type { IntegrationKind } from '../../core/api-types';
+import type { IntegrationKind, WebhookFormat } from '../../core/api-types';
 import { Dialog } from '../../ui/dialog';
 import { Icon } from '../../ui/icon';
 import { SelectField, type SelectOption } from '../../ui/select-field';
@@ -23,6 +23,7 @@ export interface IntegrationDraft {
 }
 
 const KINDS: readonly IntegrationKind[] = ['webhook', 'email'];
+const FORMATS: readonly WebhookFormat[] = ['generic', 'discord', 'slack'];
 const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'] as const;
 
 @Component({
@@ -54,11 +55,18 @@ const EVENTS = ['taskCreated', 'taskStatusChanged', 'taskAssigned', 'ruleNotify'
           [error]="error()"
         />
         @if (kind() === 'webhook') {
+          <ui-select-field
+            [value]="format()"
+            (valueChange)="format.set($any($event))"
+            [options]="formatOptions()"
+            label="organization.integrationFormat"
+            hint="organization.integrationFormatHint"
+          />
           <ui-text-field
             [value]="url()"
             (valueChange)="url.set($event)"
             label="organization.integrationUrl"
-            placeholder="organization.integrationUrlPlaceholder"
+            [placeholder]="urlPlaceholder()"
             [required]="true"
           />
           <ui-text-field
@@ -129,6 +137,7 @@ export class IntegrationDialog {
 
   protected readonly events = EVENTS;
   protected readonly kind = signal<IntegrationKind>('webhook');
+  protected readonly format = signal<WebhookFormat>('generic');
   protected readonly name = signal('');
   protected readonly url = signal('');
   protected readonly secret = signal('');
@@ -141,6 +150,7 @@ export class IntegrationDialog {
       if (!this.open()) return;
       untracked(() => {
         this.kind.set('webhook');
+        this.format.set('generic');
         this.name.set('');
         this.url.set('');
         this.secret.set('');
@@ -153,6 +163,19 @@ export class IntegrationDialog {
 
   protected readonly kindOptions = computed<SelectOption[]>(() =>
     KINDS.map((kind) => ({ value: kind, label: this.t('organization.integrationKind.' + kind) })),
+  );
+
+  protected readonly formatOptions = computed<SelectOption[]>(() =>
+    FORMATS.map((format) => ({
+      value: format,
+      label: this.t('organization.integrationFormat.' + format),
+    })),
+  );
+
+  protected readonly urlPlaceholder = computed(() =>
+    this.format() === 'generic'
+      ? 'organization.integrationUrlPlaceholder'
+      : 'organization.integrationUrlPlaceholder.' + this.format(),
   );
 
   protected toggleEvent(event: string): void {
@@ -177,6 +200,7 @@ export class IntegrationDialog {
         return;
       }
       config['url'] = url;
+      config['format'] = this.format();
       if (this.secret().trim()) config['secret'] = this.secret().trim();
     } else {
       const to = this.to().trim();

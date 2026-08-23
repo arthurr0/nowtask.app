@@ -23,6 +23,7 @@ class WebhookChannel {
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final String SIGNATURE_HEADER = "X-Nowtask-Signature";
     private static final String EVENT_HEADER = "X-Nowtask-Event";
+    private static final int DISCORD_LIMIT = 2000;
 
     private final HttpClient http;
     private final ObjectMapper json;
@@ -66,7 +67,7 @@ class WebhookChannel {
         try {
             HttpResponse<String> response = http.send(request.build(), HttpResponse.BodyHandlers.ofString());
             boolean ok = response.statusCode() >= 200 && response.statusCode() < 300;
-            return new Delivery(ok, "HTTP " + response.statusCode());
+            return new Delivery(ok, ok ? "HTTP " + response.statusCode() : detail(response));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return new Delivery(false, "Delivery interrupted");
@@ -76,13 +77,42 @@ class WebhookChannel {
     }
 
     private String payload(Integration integration, String event, String taskKey, String message) {
+        return switch (WebhookFormats.of(integration.text("format"))) {
+            case DISCORD -> write(Map.of("content",
+                    trimmed(text(event, taskKey, "**", "**") + line(message), DISCORD_LIMIT)));
+            case SLACK -> write(Map.of("text", text(event, taskKey, "*", "*") + line(message)));
+            case GENERIC -> write(generic(integration, event, taskKey, message));
+        };
+    }
+
+    private static Map<String, Object> generic(
+            Integration integration, String event, String taskKey, String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("event", event);
         body.put("at", Instant.now().toString());
         body.put("integration", integration.getName());
         body.put("taskKey", taskKey);
         body.put("message", message);
+        return body;
+    }
 
+    private static String text(String event, String taskKey, String open, String close) {
+        StringBuilder content = new StringBuilder(open).append(event).append(close);
+        if (taskKey != null && !taskKey.isBlank()) {
+            content.append(" · ").append(taskKey);
+        }
+        return content.toString();
+    }
+
+    private static String line(String message) {
+        return message == null || message.isBlank() ? "" : "\n" + message;
+    }
+
+    private static String trimmed(String prefix, int limit) {
+        return prefix.length() <= limit ? prefix : prefix.substring(0, limit);
+    }
+
+    private String write(Map<String, Object> body) {
         try {
             return json.writeValueAsString(body);
         } catch (JacksonException e) {
@@ -98,6 +128,14 @@ class WebhookChannel {
         } catch (java.security.GeneralSecurityException e) {
             return "";
         }
+    }
+
+    private static String detail(HttpResponse<String> response) {
+        String body = response.body() == null ? "" : response.body().strip();
+        if (body.isBlank()) {
+            return "HTTP " + response.statusCode();
+        }
+        return "HTTP " + response.statusCode() + ": " + (body.length() > 300 ? body.substring(0, 300) : body);
     }
 
     private static String reason(Exception e) {

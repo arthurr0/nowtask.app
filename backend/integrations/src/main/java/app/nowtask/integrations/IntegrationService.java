@@ -2,6 +2,7 @@ package app.nowtask.integrations;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -175,8 +176,15 @@ public class IntegrationService implements Channels {
             throw new RuleViolationException("The events field has to be a list of events");
         }
 
-        if ("webhook".equals(kind) && text(checked, "url").isBlank()) {
-            throw new RuleViolationException("A webhook requires an address in the url field");
+        if ("webhook".equals(kind)) {
+            if (text(checked, "url").isBlank()) {
+                throw new RuleViolationException("A webhook requires an address in the url field");
+            }
+            String format = text(checked, "format");
+            if (!format.isBlank() && !WebhookFormats.NAMES.contains(format.toLowerCase(Locale.ROOT))) {
+                throw new RuleViolationException(
+                        "The webhook format has to be one of: generic, discord, slack");
+            }
         }
         if ("email".equals(kind) && text(checked, "to").isBlank()) {
             throw new RuleViolationException("A mail integration requires an address in the to field");
