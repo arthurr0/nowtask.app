@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
 import app.nowtask.shared.events.TaskEvents;
 
 @Component
@@ -53,6 +55,12 @@ class IntegrationEventListener {
     }
 
     private void send(String event, String taskKey, String message) {
-        executor.execute(() -> integrations.dispatch(event, taskKey, message));
+        OrganizationContext scope = OrganizationContextHolder.currentOrNull();
+        if (scope == null || !scope.hasOrganization()) {
+            return;
+        }
+
+        executor.execute(
+                () -> OrganizationContextHolder.runAs(scope, () -> integrations.dispatch(event, taskKey, message)));
     }
 }
