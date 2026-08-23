@@ -512,10 +512,8 @@ export const pl = {
   'organization.integrationFormat.slack': 'Slack',
   'organization.integrationFormatHint':
     'Discord i Slack przyjmują tylko własny kształt wiadomości, zwykły JSON odrzucają.',
-  'organization.integrationUrlPlaceholder.discord':
-    'https://discord.com/api/webhooks/ID/TOKEN',
-  'organization.integrationUrlPlaceholder.slack':
-    'https://hooks.slack.com/services/T000/B000/XXXX',
+  'organization.integrationUrlPlaceholder.discord': 'https://discord.com/api/webhooks/ID/TOKEN',
+  'organization.integrationUrlPlaceholder.slack': 'https://hooks.slack.com/services/T000/B000/XXXX',
   'organization.integrationUrl': 'Adres',
   'organization.integrationUrlPlaceholder': 'https://przyklad.pl/webhook',
   'organization.integrationUrlRequired': 'Podaj adres zaczynający się od http.',
