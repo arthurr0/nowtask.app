@@ -1,5 +1,13 @@
 server:
   port: 8081
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 30d
+      cookie:
+        http-only: true
+        same-site: lax
+        max-age: 30d
 
 spring:
   application:
@@ -8,6 +16,10 @@ spring:
     url: ${NOWTASK_DB_URL:jdbc:postgresql://localhost:5433/nowtask}
     username: ${NOWTASK_APP_DB_USER:nowtask_app}
     password: ${NOWTASK_APP_DB_PASSWORD:nowtask_app}
+  session:
+    jdbc:
+      initialize-schema: never
+      cleanup-cron: '0 30 * * * *'
   jpa:
     open-in-view: false
     hibernate:

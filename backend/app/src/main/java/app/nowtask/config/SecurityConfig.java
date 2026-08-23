@@ -1,5 +1,7 @@
 package app.nowtask.config;
 
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,6 +19,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.session.web.http.CookieSerializer;
 import app.nowtask.identity.api.ApiKeyAuthenticator;
 import app.nowtask.identity.api.AuditLog;
 import app.nowtask.identity.api.Organizations;
@@ -34,7 +37,9 @@ class SecurityConfig {
             Organizations organizations,
             SessionTracking sessionTracking,
             UserDirectory directory,
-            ObjectMapper objectMapper) throws Exception {
+            ObjectMapper objectMapper,
+            CookieSerializer cookieSerializer,
+            @Value("${server.servlet.session.timeout:30m}") Duration sessionTimeout) throws Exception {
 
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
@@ -83,6 +88,8 @@ class SecurityConfig {
                         new ApiKeyAuthenticationFilter(apiKeyAuthenticator, errorWriter), AuthorizationFilter.class)
                 .addFilterBefore(
                         new SessionActivityFilter(sessionTracking, errorWriter), AuthorizationFilter.class)
+                .addFilterBefore(
+                        new SessionCookieRefreshFilter(cookieSerializer, sessionTimeout), AuthorizationFilter.class)
                 .addFilterBefore(
                         new OrganizationContextFilter(organizations, directory, errorWriter),
                         AuthorizationFilter.class)

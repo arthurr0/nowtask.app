@@ -24,7 +24,9 @@ class TenantSchemaTest {
             "password_reset",
             "email_change",
             "user_session",
-            "user_notification_pref");
+            "user_notification_pref",
+            "spring_session",
+            "spring_session_attributes");
 
     private static final Set<String> NULLABLE_ORGANIZATION_ID = Set.of("audit_event");
 
@@ -44,7 +46,9 @@ class TenantSchemaTest {
             "password_reset",
             "email_change",
             "user_session",
-            "user_notification_pref");
+            "user_notification_pref",
+            "spring_session",
+            "spring_session_attributes");
 
     @Test
     void everyDomainTableCarriesTheOrganization() throws SQLException {
