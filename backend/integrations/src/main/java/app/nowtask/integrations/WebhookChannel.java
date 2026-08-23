@@ -51,7 +51,8 @@ class WebhookChannel {
             return new Delivery(false, "A webhook accepts only http and https addresses");
         }
 
-        String body = payload(integration, event, taskKey, message);
+        String body = payload(WebhookFormats.resolve(integration.text("format"), target),
+                integration, event, taskKey, message);
 
         HttpRequest.Builder request = HttpRequest.newBuilder(target)
                 .timeout(TIMEOUT)
@@ -76,8 +77,9 @@ class WebhookChannel {
         }
     }
 
-    private String payload(Integration integration, String event, String taskKey, String message) {
-        return switch (WebhookFormats.of(integration.text("format"))) {
+    private String payload(
+            WebhookFormats format, Integration integration, String event, String taskKey, String message) {
+        return switch (format) {
             case DISCORD -> write(Map.of("content",
                     trimmed(text(event, taskKey, "**", "**") + line(message), DISCORD_LIMIT)));
             case SLACK -> write(Map.of("text", text(event, taskKey, "*", "*") + line(message)));
