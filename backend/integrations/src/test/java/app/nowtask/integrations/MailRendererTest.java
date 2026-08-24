@@ -98,6 +98,41 @@ class MailRendererTest {
         });
     }
 
+    @Test
+    void aNotificationShowsTheTaskTitleNextToItsKey() {
+        context.run(loaded -> {
+            MailRenderer renderer = renderer(loaded);
+            Locale locale = Locale.forLanguageTag("pl");
+
+            Map<String, Object> model = templates(locale).get("notification");
+            MailMessage message = renderer.render("notification", locale, "x", model);
+
+            assertThat(message.html()).contains("NT-142", "Tytuł", "Kopanie rudy w kopalni");
+            assertThat(message.text()).contains("Zadanie: NT-142", "Tytuł: Kopanie rudy w kopalni");
+
+            model.put("taskTitle", null);
+            MailMessage bare = renderer.render("notification", locale, "x", model);
+
+            assertThat(bare.html()).contains("NT-142").doesNotContain("Kopanie rudy w kopalni");
+            assertThat(bare.text()).contains("Zadanie: NT-142").doesNotContain("Tytuł:");
+        });
+    }
+
+    @Test
+    void theSubjectCarriesTheTaskKeyAndTitleWhenBothAreKnown() {
+        context.run(loaded -> {
+            MailRenderer renderer = renderer(loaded);
+            Locale locale = Locale.forLanguageTag("pl");
+
+            assertThat(MailSubjects.notification(renderer, locale, "Nowe powiadomienie", "NT-142", "Kopanie rudy"))
+                    .isEqualTo("nowtask: Nowe powiadomienie (NT-142: Kopanie rudy)");
+            assertThat(MailSubjects.notification(renderer, locale, "Nowe powiadomienie", "NT-142", null))
+                    .isEqualTo("nowtask: Nowe powiadomienie (NT-142)");
+            assertThat(MailSubjects.notification(renderer, locale, "Nowe powiadomienie", null, "Kopanie rudy"))
+                    .isEqualTo("nowtask: Nowe powiadomienie");
+        });
+    }
+
     private static MailRenderer renderer(org.springframework.context.ApplicationContext loaded) {
         return new MailRenderer(
                 loaded.getBean(SpringTemplateEngine.class), loaded.getBean(MessageSource.class), APP_URL);
@@ -163,6 +198,7 @@ class MailRendererTest {
                 "event", "taskAssigned",
                 "message", "NT-142: task assigned",
                 "taskKey", "NT-142",
+                "taskTitle", "Kopanie rudy w kopalni",
                 "link", APP_URL + "/app/tasks/NT-142",
                 "preheader", "Powiadomienie.")));
 

@@ -165,7 +165,7 @@ public class IntegrationService implements Channels {
     private Delivery send(
             Integration integration, String event, String taskKey, String message, EventDetails context) {
         return "email".equals(integration.getKind())
-                ? mail.send(integration, event, taskKey, message)
+                ? mail.send(integration, event, taskKey, message, context)
                 : webhooks.send(integration, event, taskKey, message, context);
     }
 

@@ -22,7 +22,7 @@ class NotificationMailer {
         this.executor = executor;
     }
 
-    void send(String email, String kind, Map<String, Object> params, String taskKey) {
+    void send(String email, String kind, Map<String, Object> params, String taskKey, String taskTitle) {
         if (email == null || email.isBlank()) {
             return;
         }
@@ -31,20 +31,21 @@ class NotificationMailer {
         Object[] args = params == null ? new Object[0] : params.values().toArray();
         String message = renderer.message("mail.notify." + kind, locale, args);
         String title = renderer.message("mail.notify.title", locale);
+        boolean hasTask = taskKey != null && !taskKey.isBlank();
+        String task = hasTask && taskTitle != null && !taskTitle.isBlank() ? taskTitle : null;
 
         Map<String, Object> model = MailRenderer.model();
         model.put("title", title);
         model.put("event", kind);
         model.put("message", message);
         model.put("taskKey", taskKey);
-        model.put("link", taskKey == null || taskKey.isBlank()
-                ? renderer.appUrl() + "/app/board"
-                : renderer.appUrl() + "/app/tasks/" + taskKey);
+        model.put("taskTitle", task);
+        model.put("link", hasTask
+                ? renderer.appUrl() + "/app/tasks/" + taskKey
+                : renderer.appUrl() + "/app/board");
         model.put("preheader", renderer.message("mail.notification.preheader", locale));
 
-        String subject = taskKey == null || taskKey.isBlank()
-                ? renderer.message("mail.notification.subject", locale, title)
-                : renderer.message("mail.notification.subjectTask", locale, title, taskKey);
+        String subject = MailSubjects.notification(renderer, locale, title, taskKey, task);
 
         executor.execute(() -> mailer.send(email, renderer.render("notification", locale, subject, model)));
     }

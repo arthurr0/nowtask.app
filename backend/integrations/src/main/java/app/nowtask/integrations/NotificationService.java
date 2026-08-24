@@ -9,6 +9,7 @@ import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.integrations.api.NotificationViews.NotificationPage;
 import app.nowtask.integrations.api.NotificationViews.NotificationView;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.events.TaskCommands;
 
 @Service
 @Transactional
@@ -18,16 +19,19 @@ public class NotificationService {
     private final NotificationPreferenceService preferences;
     private final NotificationMailer mails;
     private final UserDirectory users;
+    private final TaskCommands tasks;
 
     NotificationService(
             NotificationRepository notifications,
             NotificationPreferenceService preferences,
             NotificationMailer mails,
-            UserDirectory users) {
+            UserDirectory users,
+            TaskCommands tasks) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.mails = mails;
         this.users = users;
+        this.tasks = tasks;
     }
 
     @Transactional(readOnly = true)
@@ -68,8 +72,16 @@ public class NotificationService {
             notifications.save(new Notification(userId, kind, titleKey, params, taskKey));
         }
         if (preference.email()) {
-            users.findById(userId).ifPresent(user -> mails.send(user.email(), kind, params, taskKey));
+            String taskTitle = title(taskKey);
+            users.findById(userId).ifPresent(user -> mails.send(user.email(), kind, params, taskKey, taskTitle));
         }
+    }
+
+    private String title(String taskKey) {
+        if (taskKey == null || taskKey.isBlank()) {
+            return null;
+        }
+        return tasks.facts(taskKey).map(TaskCommands.TaskFacts::title).orElse(null);
     }
 
     private static NotificationView toView(Notification row) {

@@ -18,7 +18,7 @@ class MailChannel {
         this.renderer = renderer;
     }
 
-    Delivery send(Integration integration, String event, String taskKey, String message) {
+    Delivery send(Integration integration, String event, String taskKey, String message, EventDetails details) {
         String to = integration.text("to");
         if (to.isBlank()) {
             return new Delivery(false, "The mail integration has no recipient address");
@@ -26,6 +26,9 @@ class MailChannel {
 
         Locale locale = MailConfig.DEFAULT_LOCALE;
         String key = taskKey == null || taskKey.isBlank() ? null : taskKey;
+        String taskTitle = details == null || details.title() == null || details.title().isBlank()
+                ? null
+                : details.title();
         String title = label(event, locale);
 
         Map<String, Object> model = MailRenderer.model();
@@ -33,12 +36,11 @@ class MailChannel {
         model.put("event", event);
         model.put("message", message);
         model.put("taskKey", key);
+        model.put("taskTitle", key == null ? null : taskTitle);
         model.put("link", key == null ? null : renderer.appUrl() + "/app/tasks/" + key);
         model.put("preheader", renderer.message("mail.notification.preheader", locale));
 
-        String subject = key == null
-                ? renderer.message("mail.notification.subject", locale, title)
-                : renderer.message("mail.notification.subjectTask", locale, title, key);
+        String subject = MailSubjects.notification(renderer, locale, title, key, taskTitle);
 
         List<String> recipients = Arrays.stream(to.split("\\s*,\\s*"))
                 .map(String::trim)

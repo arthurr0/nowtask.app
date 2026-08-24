@@ -3,7 +3,8 @@
 [(${message})]
 
 [(#{mail.notification.event})]: [(${event})]
-[# th:if="${taskKey}"][(#{mail.notification.task})]: [(${taskKey})][/]
+[# th:if="${taskKey}"][(#{mail.notification.task})]: [(${taskKey})]
+[# th:if="${taskTitle}"][(#{mail.notification.taskTitle})]: [(${taskTitle})][/][/]
 [# th:if="${link}"]
 [(#{mail.notification.action})]:
 [(${link})][/]

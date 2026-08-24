@@ -14,6 +14,9 @@
         <th:block th:replace="~{mail/html/parts :: fact(#{mail.notification.event}, ${event})}" />
         <th:block th:if="${taskKey}">
           <th:block th:replace="~{mail/html/parts :: fact(#{mail.notification.task}, ${taskKey})}" />
+          <th:block th:if="${taskTitle}">
+            <th:block th:replace="~{mail/html/parts :: fact(#{mail.notification.taskTitle}, ${taskTitle})}" />
+          </th:block>
         </th:block>
       </table>
 
