@@ -1,7 +1,17 @@
-import type { Routes } from '@angular/router';
+import { isDevMode } from '@angular/core';
+import type { Route, Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { onboardingGuard, orgGuard } from './core/org.guard';
 import { defaultViewGuard, taskViewGuard } from './core/view.guard';
+
+const devRoutes: Route[] = isDevMode()
+  ? [
+      {
+        path: 'system',
+        loadComponent: () => import('./features/system/system').then((m) => m.System),
+      },
+    ]
+  : [];
 
 export const routes: Routes = [
   {
@@ -122,10 +132,7 @@ export const routes: Routes = [
           import('./features/organization/organization').then((m) => m.Organization),
       },
       { path: 'admin', redirectTo: 'organization', pathMatch: 'full' },
-      {
-        path: 'system',
-        loadComponent: () => import('./features/system/system').then((m) => m.System),
-      },
+      ...devRoutes,
     ],
   },
   { path: '**', redirectTo: '' },

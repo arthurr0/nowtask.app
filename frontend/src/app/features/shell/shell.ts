@@ -4,6 +4,7 @@ import {
   OnInit,
   computed,
   inject,
+  isDevMode,
   signal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -105,6 +106,7 @@ export class Shell implements OnInit {
   private readonly router = inject(Router);
   protected readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
+  protected readonly devMode = isDevMode();
 
   protected readonly organization = computed(() => {
     const memberships = this.orgs.memberships();

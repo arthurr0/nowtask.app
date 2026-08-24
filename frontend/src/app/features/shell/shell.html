@@ -242,14 +242,16 @@
         <ui-icon name="users" [size]="16" />
         <span class="flex-1">{{ t('nav.organization') }}</span>
       </a>
-      <a
-        routerLink="/app/system"
-        routerLinkActive="bg-surface-2 !text-ink font-medium"
-        class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-ink-2"
-      >
-        <ui-icon name="layers" [size]="16" />
-        <span class="flex-1">{{ t('nav.system') }}</span>
-      </a>
+      @if (devMode) {
+        <a
+          routerLink="/app/system"
+          routerLinkActive="bg-surface-2 !text-ink font-medium"
+          class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-ink-2"
+        >
+          <ui-icon name="layers" [size]="16" />
+          <span class="flex-1">{{ t('nav.system') }}</span>
+        </a>
+      }
       <div class="flex h-[42px] items-center gap-2.5 rounded-field px-2">
         <ui-avatar [user]="store.currentUser()" [size]="26" />
         <span class="flex min-w-0 flex-1 flex-col">
