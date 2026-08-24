@@ -4,7 +4,6 @@
       <ui-menu
         class="w-full"
         [items]="orgMenu()"
-        [disabled]="orgMenu().length < 2"
         triggerClass="hoverable flex w-full items-center gap-2.5 rounded-field px-1 text-left"
         triggerHeight="40px"
         ariaLabel="nav.switchOrg"
@@ -20,9 +19,7 @@
             orgHandle() || t('app.workspace')
           }}</span>
         </span>
-        @if (orgMenu().length > 1) {
-          <ui-icon name="chevron-down" [size]="14" class="flex-none text-ink-3" />
-        }
+        <ui-icon name="chevron-down" [size]="14" class="flex-none text-ink-3" />
       </ui-menu>
     </div>
 

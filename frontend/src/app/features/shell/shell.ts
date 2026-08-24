@@ -61,6 +61,8 @@ const MOBILE_NAV: readonly {
   { path: '/app/settings', icon: 'user', label: 'mobile.me', code: null },
 ];
 
+const CREATE_ORG = 'create-org';
+
 function entry(code: NavItemCode): NavEntry | null {
   return NAV_ENTRIES.find((item) => item.code === code) ?? null;
 }
@@ -115,13 +117,19 @@ export class Shell implements OnInit {
     return organization ? `@${organization.slug}` : '';
   });
 
-  protected readonly orgMenu = computed<MenuItem[]>(() =>
-    this.orgs.memberships().map((item) => ({
+  protected readonly orgMenu = computed<MenuItem[]>(() => [
+    ...this.orgs.memberships().map((item) => ({
       id: item.organizationId,
       label: `@${item.slug}`,
       checked: item.organizationId === this.organization()?.organizationId,
     })),
-  );
+    {
+      id: CREATE_ORG,
+      label: 'nav.createOrg',
+      icon: 'plus',
+      separatorBefore: true,
+    },
+  ]);
 
   private readonly navItems = computed<NavItemDto[]>(() => {
     const stored = this.store.navigation().filter((item) => entry(item.code) !== null);
@@ -205,6 +213,10 @@ export class Shell implements OnInit {
   }
 
   async onOrgMenu(item: MenuItem): Promise<void> {
+    if (item.id === CREATE_ORG) {
+      window.location.assign('/orgs/new');
+      return;
+    }
     if (item.id === this.organization()?.organizationId) return;
     try {
       await this.orgs.switchTo(item.id);

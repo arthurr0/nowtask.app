@@ -85,6 +85,15 @@ function slugify(name: string): string {
         }
 
         <div class="flex items-center justify-end gap-3">
+          @if (canCancel()) {
+            <button
+              type="button"
+              class="flex h-[42px] items-center justify-center rounded-card px-4 text-sm text-ink-2"
+              (click)="cancel()"
+            >
+              {{ t('common.cancel') }}
+            </button>
+          }
           <button
             type="submit"
             class="flex h-[42px] items-center justify-center gap-2 rounded-card bg-inv px-5 text-sm font-medium text-inv-ink disabled:opacity-60"
@@ -115,7 +124,11 @@ export class CreateOrg {
     () => this.name().trim().length > 1 && this.slug().length > 2 && this.slugState() !== 'taken',
   );
 
+  protected readonly canCancel = computed(() => this.orgs.memberships().length > 0);
+
   constructor() {
+    void this.orgs.refresh();
+
     effect((onCleanup) => {
       const slug = this.slug();
       if (slug.length < 3) {
@@ -133,6 +146,10 @@ export class CreateOrg {
 
       onCleanup(() => clearTimeout(timer));
     });
+  }
+
+  protected async cancel(): Promise<void> {
+    await this.router.navigate(['/app']);
   }
 
   protected onNameChange(value: string): void {

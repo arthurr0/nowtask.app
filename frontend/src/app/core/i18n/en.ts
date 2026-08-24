@@ -23,6 +23,7 @@ export const en: Dictionary = {
   'nav.system': 'Design system',
   'nav.customize': 'Customize navigation',
   'nav.switchOrg': 'Switch organization',
+  'nav.createOrg': 'Create organization',
   'nav.hide': 'Hide',
   'nav.restoreDefaults': 'Restore defaults',
   'nav.applyView': 'Apply view',
