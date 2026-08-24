@@ -29,12 +29,8 @@ class WebhookChannel {
     private static final String EVENT_HEADER = "X-Nowtask-Event";
     private static final int DISCORD_LIMIT = 2000;
 
-    private static final Map<String, Integer> COLORS = Map.of(
-            IntegrationService.EVENT_TASK_CREATED, 0x22C55E,
-            IntegrationService.EVENT_TASK_STATUS_CHANGED, 0x3B82F6,
-            IntegrationService.EVENT_TASK_ASSIGNED, 0xA855F7,
-            IntegrationService.EVENT_RULE_NOTIFY, 0xF59E0B);
-    private static final int NEUTRAL = 0x6B7280;
+    private static final int BRAND = 0x55585F;
+    private static final String MARK = "/brand/favicon-32.png";
 
     private final HttpClient http;
     private final ObjectMapper json;
@@ -120,13 +116,14 @@ class WebhookChannel {
 
         Map<String, Object> embed = new LinkedHashMap<>();
         embed.put("author", Map.of("name", label));
-        embed.put("title", heading(taskKey, details));
+        embed.put("title", taskKey);
         embed.put("url", link(taskKey));
         if (!body.isBlank() && !body.equals(details.assignee())) {
             embed.put("description", body);
         }
 
         List<Map<String, Object>> fields = new ArrayList<>();
+        discordField(fields, "title", details.title(), false);
         discordField(fields, "assignee", details.assignee(), true);
         discordField(fields, "priority", details.priority(), true);
         discordField(fields, "due", details.due(), true);
@@ -135,8 +132,8 @@ class WebhookChannel {
             embed.put("fields", fields);
         }
 
-        embed.put("color", COLORS.getOrDefault(event, NEUTRAL));
-        embed.put("footer", Map.of("text", footer(details)));
+        embed.put("color", BRAND);
+        embed.put("footer", Map.of("text", footer(details), "icon_url", appUrl + MARK));
         embed.put("timestamp", Instant.now().toString());
 
         return Map.of("embeds", List.of(embed));
@@ -152,12 +149,13 @@ class WebhookChannel {
         }
 
         StringBuilder headline = new StringBuilder("*").append(label).append("* <")
-                .append(link(taskKey)).append("|").append(heading(taskKey, details)).append(">");
+                .append(link(taskKey)).append("|").append(taskKey).append(">");
         if (!body.isBlank() && !body.equals(details.assignee())) {
             headline.append("\n").append(body);
         }
 
         List<Map<String, Object>> fields = new ArrayList<>();
+        slackField(fields, "title", details.title());
         slackField(fields, "assignee", details.assignee());
         slackField(fields, "priority", details.priority());
         slackField(fields, "due", details.due());
@@ -190,11 +188,6 @@ class WebhookChannel {
             return;
         }
         fields.add(Map.of("type", "mrkdwn", "text", "*" + field(key) + "*\n" + value));
-    }
-
-    private static String heading(String taskKey, EventDetails details) {
-        String title = details.title();
-        return title == null || title.isBlank() ? taskKey : taskKey + " · " + title;
     }
 
     private static String join(List<String> labels) {

@@ -124,7 +124,7 @@ class IntegrationDispatchTest {
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(received.get())
                 .as("the webhook body")
-                .contains("MINING-1 · Kopanie rudy w kopalni")
+                .contains("Kopanie rudy w kopalni")
                 .contains("Reported → Cancelled")
                 .contains("Osoba C")
                 .contains("Wysoki"));

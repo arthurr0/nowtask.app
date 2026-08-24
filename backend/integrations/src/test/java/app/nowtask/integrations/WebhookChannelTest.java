@@ -58,23 +58,28 @@ class WebhookChannelTest {
         var embed = json.readTree(body).path("embeds").get(0);
 
         assertThat(embed.path("author").path("name").asString()).isEqualTo("Zmiana statusu");
-        assertThat(embed.path("title").asString()).isEqualTo("MINING-1 · Kopanie rudy w kopalni");
+        assertThat(embed.path("title").asString()).isEqualTo("MINING-1");
         assertThat(embed.path("url").asString()).isEqualTo(APP_URL + "/app/tasks/MINING-1");
         assertThat(embed.path("description").asString()).isEqualTo("Reported → Cancelled");
-        assertThat(embed.path("color").asInt()).isEqualTo(0x3B82F6);
+        assertThat(embed.path("color").asInt()).isEqualTo(0x55585F);
         assertThat(embed.path("footer").path("text").asString()).isEqualTo("nowtask · Artur Kołecki");
+        assertThat(embed.path("footer").path("icon_url").asString())
+                .isEqualTo(APP_URL + "/brand/favicon-32.png");
         assertThat(embed.path("timestamp").asString()).isNotBlank();
 
         var fields = embed.path("fields");
-        assertThat(fields).hasSize(4);
-        assertThat(fields.get(0).path("name").asString()).isEqualTo("Przypisane");
-        assertThat(fields.get(0).path("value").asString()).isEqualTo("Artur Kołecki");
-        assertThat(fields.get(0).path("inline").asBoolean()).isTrue();
-        assertThat(fields.get(1).path("name").asString()).isEqualTo("Priorytet");
-        assertThat(fields.get(2).path("name").asString()).isEqualTo("Termin");
-        assertThat(fields.get(3).path("name").asString()).isEqualTo("Etykiety");
-        assertThat(fields.get(3).path("value").asString()).isEqualTo("bug, backend");
-        assertThat(fields.get(3).path("inline").asBoolean()).isFalse();
+        assertThat(fields).hasSize(5);
+        assertThat(fields.get(0).path("name").asString()).isEqualTo("Zadanie");
+        assertThat(fields.get(0).path("value").asString()).isEqualTo("Kopanie rudy w kopalni");
+        assertThat(fields.get(0).path("inline").asBoolean()).isFalse();
+        assertThat(fields.get(1).path("name").asString()).isEqualTo("Przypisane");
+        assertThat(fields.get(1).path("value").asString()).isEqualTo("Artur Kołecki");
+        assertThat(fields.get(1).path("inline").asBoolean()).isTrue();
+        assertThat(fields.get(2).path("name").asString()).isEqualTo("Priorytet");
+        assertThat(fields.get(3).path("name").asString()).isEqualTo("Termin");
+        assertThat(fields.get(4).path("name").asString()).isEqualTo("Etykiety");
+        assertThat(fields.get(4).path("value").asString()).isEqualTo("bug, backend");
+        assertThat(fields.get(4).path("inline").asBoolean()).isFalse();
     }
 
     @Test
@@ -83,7 +88,8 @@ class WebhookChannelTest {
         String body = capture(Map.of("format", "discord"), "taskCreated", "MINING-3", "Kopanie rudy", bare);
         var embed = json.readTree(body).path("embeds").get(0);
 
-        assertThat(embed.path("fields").isMissingNode()).isTrue();
+        assertThat(embed.path("fields")).hasSize(1);
+        assertThat(embed.path("fields").get(0).path("name").asString()).isEqualTo("Zadanie");
         assertThat(embed.path("footer").path("text").asString()).isEqualTo("nowtask");
     }
 
@@ -93,7 +99,7 @@ class WebhookChannelTest {
         var embed = json.readTree(body).path("embeds").get(0);
 
         assertThat(embed.path("description").isMissingNode()).isTrue();
-        assertThat(embed.path("fields").get(0).path("value").asString()).isEqualTo("Artur Kołecki");
+        assertThat(embed.path("fields").get(1).path("value").asString()).isEqualTo("Artur Kołecki");
     }
 
     @Test
@@ -112,10 +118,11 @@ class WebhookChannelTest {
 
         assertThat(json.readTree(body).path("text").asString()).isEqualTo("Nowe zadanie: MINING-2");
         assertThat(block.path("text").path("text").asString())
-                .isEqualTo("*Nowe zadanie* <" + APP_URL
-                        + "/app/tasks/MINING-2|MINING-2 · Kopanie rudy w kopalni>\nKopanie rudy");
-        assertThat(block.path("fields")).hasSize(4);
+                .isEqualTo("*Nowe zadanie* <" + APP_URL + "/app/tasks/MINING-2|MINING-2>\nKopanie rudy");
+        assertThat(block.path("fields")).hasSize(5);
         assertThat(block.path("fields").get(0).path("text").asString())
+                .isEqualTo("*Zadanie*\nKopanie rudy w kopalni");
+        assertThat(block.path("fields").get(1).path("text").asString())
                 .isEqualTo("*Przypisane*\nArtur Kołecki");
     }
 
