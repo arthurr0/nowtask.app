@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,7 +51,8 @@ class WebhookChannel {
         this.http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     }
 
-    Delivery send(Integration integration, String event, String taskKey, String message) {
+    Delivery send(
+            Integration integration, String event, String taskKey, String message, EventDetails details) {
         String url = integration.text("url");
         if (url.isBlank()) {
             return new Delivery(false, "The webhook has no address");
@@ -69,7 +71,7 @@ class WebhookChannel {
         }
 
         String body = payload(WebhookFormats.resolve(integration.text("format"), target),
-                integration, event, taskKey, message);
+                integration, event, taskKey, message, details);
 
         HttpRequest.Builder request = HttpRequest.newBuilder(target)
                 .timeout(TIMEOUT)
@@ -95,15 +97,20 @@ class WebhookChannel {
     }
 
     private String payload(
-            WebhookFormats format, Integration integration, String event, String taskKey, String message) {
+            WebhookFormats format,
+            Integration integration,
+            String event,
+            String taskKey,
+            String message,
+            EventDetails details) {
         return switch (format) {
-            case DISCORD -> write(discord(event, taskKey, message));
-            case SLACK -> write(slack(event, taskKey, message));
+            case DISCORD -> write(discord(event, taskKey, message, details));
+            case SLACK -> write(slack(event, taskKey, message, details));
             case GENERIC -> write(generic(integration, event, taskKey, message));
         };
     }
 
-    private Map<String, Object> discord(String event, String taskKey, String message) {
+    private Map<String, Object> discord(String event, String taskKey, String message, EventDetails details) {
         String label = label(event);
         String body = trimmed(message == null ? "" : message.strip(), DISCORD_LIMIT);
 
@@ -113,36 +120,103 @@ class WebhookChannel {
 
         Map<String, Object> embed = new LinkedHashMap<>();
         embed.put("author", Map.of("name", label));
-        embed.put("title", taskKey);
+        embed.put("title", heading(taskKey, details));
         embed.put("url", link(taskKey));
-        if (!body.isBlank()) {
+        if (!body.isBlank() && !body.equals(details.assignee())) {
             embed.put("description", body);
         }
+
+        List<Map<String, Object>> fields = new ArrayList<>();
+        discordField(fields, "assignee", details.assignee(), true);
+        discordField(fields, "priority", details.priority(), true);
+        discordField(fields, "due", details.due(), true);
+        discordField(fields, "labels", join(details.labels()), false);
+        if (!fields.isEmpty()) {
+            embed.put("fields", fields);
+        }
+
         embed.put("color", COLORS.getOrDefault(event, NEUTRAL));
+        embed.put("footer", Map.of("text", footer(details)));
         embed.put("timestamp", Instant.now().toString());
 
         return Map.of("embeds", List.of(embed));
     }
 
-    private Map<String, Object> slack(String event, String taskKey, String message) {
+    private Map<String, Object> slack(String event, String taskKey, String message, EventDetails details) {
         String label = label(event);
         String body = message == null ? "" : message.strip();
-        String headline = taskKey == null || taskKey.isBlank()
-                ? "*" + label + "*"
-                : "*" + label + "* <" + link(taskKey) + "|" + taskKey + ">";
-        String text = body.isBlank() ? headline : headline + "\n" + body;
+
+        if (taskKey == null || taskKey.isBlank()) {
+            String text = body.isBlank() ? "*" + label + "*" : "*" + label + "*\n" + body;
+            return Map.of("text", label, "blocks", List.of(section(text, List.of())));
+        }
+
+        StringBuilder headline = new StringBuilder("*").append(label).append("* <")
+                .append(link(taskKey)).append("|").append(heading(taskKey, details)).append(">");
+        if (!body.isBlank() && !body.equals(details.assignee())) {
+            headline.append("\n").append(body);
+        }
+
+        List<Map<String, Object>> fields = new ArrayList<>();
+        slackField(fields, "assignee", details.assignee());
+        slackField(fields, "priority", details.priority());
+        slackField(fields, "due", details.due());
+        slackField(fields, "labels", join(details.labels()));
 
         return Map.of(
-                "text", taskKey == null || taskKey.isBlank() ? label : label + ": " + taskKey,
-                "blocks", List.of(Map.of(
-                        "type", "section",
-                        "text", Map.of("type", "mrkdwn", "text", text))));
+                "text", label + ": " + taskKey,
+                "blocks", List.of(section(headline.toString(), fields)));
+    }
+
+    private static Map<String, Object> section(String text, List<Map<String, Object>> fields) {
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("type", "section");
+        block.put("text", Map.of("type", "mrkdwn", "text", text));
+        if (!fields.isEmpty()) {
+            block.put("fields", fields);
+        }
+        return block;
+    }
+
+    private void discordField(List<Map<String, Object>> fields, String key, String value, boolean inline) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        fields.add(Map.of("name", field(key), "value", value, "inline", inline));
+    }
+
+    private void slackField(List<Map<String, Object>> fields, String key, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        fields.add(Map.of("type", "mrkdwn", "text", "*" + field(key) + "*\n" + value));
+    }
+
+    private static String heading(String taskKey, EventDetails details) {
+        String title = details.title();
+        return title == null || title.isBlank() ? taskKey : taskKey + " · " + title;
+    }
+
+    private static String join(List<String> labels) {
+        return labels == null || labels.isEmpty() ? null : String.join(", ", labels);
+    }
+
+    private static String footer(EventDetails details) {
+        String actor = details.actor();
+        return actor == null || actor.isBlank() ? "nowtask" : "nowtask · " + actor;
     }
 
     private String label(String event) {
-        String code = "mail.event." + event;
+        return resolve("mail.event." + event, event);
+    }
+
+    private String field(String key) {
+        return resolve("mail.field." + key, key);
+    }
+
+    private String resolve(String code, String fallback) {
         String resolved = messages.getMessage(code, null, code, MailConfig.DEFAULT_LOCALE);
-        return code.equals(resolved) ? event : resolved;
+        return code.equals(resolved) ? fallback : resolved;
     }
 
     private String link(String taskKey) {

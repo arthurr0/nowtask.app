@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -46,48 +47,89 @@ class WebhookChannelTest {
                 .isEqualTo(WebhookFormats.GENERIC);
     }
 
+    private static final EventDetails FULL = new EventDetails(
+            "Kopanie rudy w kopalni", "Artur Kołecki", "Wysoki", "30 sie 2026",
+            List.of("bug", "backend"), "Artur Kołecki");
+
     @Test
-    void sendsADiscordEmbedThatLinksTheTask() throws Exception {
-        String body = capture(Map.of("format", "discord"), "taskStatusChanged", "MINING-1", "Nowe → Anulowane");
+    void sendsADiscordEmbedWithTheTaskAndItsFields() throws Exception {
+        String body = capture(
+                Map.of("format", "discord"), "taskStatusChanged", "MINING-1", "Reported → Cancelled", FULL);
         var embed = json.readTree(body).path("embeds").get(0);
 
         assertThat(embed.path("author").path("name").asString()).isEqualTo("Zmiana statusu");
-        assertThat(embed.path("title").asString()).isEqualTo("MINING-1");
+        assertThat(embed.path("title").asString()).isEqualTo("MINING-1 · Kopanie rudy w kopalni");
         assertThat(embed.path("url").asString()).isEqualTo(APP_URL + "/app/tasks/MINING-1");
-        assertThat(embed.path("description").asString()).isEqualTo("Nowe → Anulowane");
+        assertThat(embed.path("description").asString()).isEqualTo("Reported → Cancelled");
         assertThat(embed.path("color").asInt()).isEqualTo(0x3B82F6);
+        assertThat(embed.path("footer").path("text").asString()).isEqualTo("nowtask · Artur Kołecki");
         assertThat(embed.path("timestamp").asString()).isNotBlank();
-        assertThat(json.readTree(body).path("content").isMissingNode()).isTrue();
+
+        var fields = embed.path("fields");
+        assertThat(fields).hasSize(4);
+        assertThat(fields.get(0).path("name").asString()).isEqualTo("Przypisane");
+        assertThat(fields.get(0).path("value").asString()).isEqualTo("Artur Kołecki");
+        assertThat(fields.get(0).path("inline").asBoolean()).isTrue();
+        assertThat(fields.get(1).path("name").asString()).isEqualTo("Priorytet");
+        assertThat(fields.get(2).path("name").asString()).isEqualTo("Termin");
+        assertThat(fields.get(3).path("name").asString()).isEqualTo("Etykiety");
+        assertThat(fields.get(3).path("value").asString()).isEqualTo("bug, backend");
+        assertThat(fields.get(3).path("inline").asBoolean()).isFalse();
+    }
+
+    @Test
+    void leavesOutTheFieldsATaskDoesNotHave() throws Exception {
+        EventDetails bare = new EventDetails("Kopanie rudy", null, null, null, List.of(), null);
+        String body = capture(Map.of("format", "discord"), "taskCreated", "MINING-3", "Kopanie rudy", bare);
+        var embed = json.readTree(body).path("embeds").get(0);
+
+        assertThat(embed.path("fields").isMissingNode()).isTrue();
+        assertThat(embed.path("footer").path("text").asString()).isEqualTo("nowtask");
+    }
+
+    @Test
+    void doesNotRepeatTheAssigneeInTheDescription() throws Exception {
+        String body = capture(Map.of("format", "discord"), "taskAssigned", "MINING-1", "Artur Kołecki", FULL);
+        var embed = json.readTree(body).path("embeds").get(0);
+
+        assertThat(embed.path("description").isMissingNode()).isTrue();
+        assertThat(embed.path("fields").get(0).path("value").asString()).isEqualTo("Artur Kołecki");
     }
 
     @Test
     void fallsBackToPlainDiscordContentWithoutATask() throws Exception {
-        String body = capture(Map.of("format", "discord"), "test", null, "Test message from nowtask");
+        String body = capture(Map.of("format", "discord"), "test", null, "Test message from nowtask",
+                EventDetails.of(null));
 
         assertThat(json.readTree(body).path("content").asString())
                 .isEqualTo("Wysyłka próbna\nTest message from nowtask");
     }
 
     @Test
-    void sendsSlackBlocksWithALinkedTask() throws Exception {
-        String body = capture(Map.of("format", "slack"), "taskCreated", "MINING-2", "Kopanie rudy");
-        var tree = json.readTree(body);
+    void sendsSlackBlocksWithALinkedTaskAndFields() throws Exception {
+        String body = capture(Map.of("format", "slack"), "taskCreated", "MINING-2", "Kopanie rudy", FULL);
+        var block = json.readTree(body).path("blocks").get(0);
 
-        assertThat(tree.path("text").asString()).isEqualTo("Nowe zadanie: MINING-2");
-        assertThat(tree.path("blocks").get(0).path("text").path("text").asString())
-                .isEqualTo("*Nowe zadanie* <" + APP_URL + "/app/tasks/MINING-2|MINING-2>\nKopanie rudy");
+        assertThat(json.readTree(body).path("text").asString()).isEqualTo("Nowe zadanie: MINING-2");
+        assertThat(block.path("text").path("text").asString())
+                .isEqualTo("*Nowe zadanie* <" + APP_URL
+                        + "/app/tasks/MINING-2|MINING-2 · Kopanie rudy w kopalni>\nKopanie rudy");
+        assertThat(block.path("fields")).hasSize(4);
+        assertThat(block.path("fields").get(0).path("text").asString())
+                .isEqualTo("*Przypisane*\nArtur Kołecki");
     }
 
     @Test
     void keepsTheInternalPayloadForAPlainWebhook() throws Exception {
-        String body = capture(Map.of(), "taskAssigned", "NOW-12", "Przypisano");
+        String body = capture(Map.of(), "taskAssigned", "NOW-12", "Przypisano", FULL);
 
         assertThat(json.readTree(body).path("event").asString()).isEqualTo("taskAssigned");
         assertThat(json.readTree(body).path("taskKey").asString()).isEqualTo("NOW-12");
         assertThat(json.readTree(body).path("message").asString()).isEqualTo("Przypisano");
     }
 
-    private String capture(Map<String, Object> config, String event, String taskKey, String message)
+    private String capture(
+            Map<String, Object> config, String event, String taskKey, String message, EventDetails details)
             throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         AtomicReference<String> received = new AtomicReference<>("");
@@ -102,7 +144,7 @@ class WebhookChannelTest {
             var checked = new java.util.LinkedHashMap<String, Object>(config);
             checked.put("url", "http://127.0.0.1:" + server.getAddress().getPort() + "/hook");
             var delivery = new WebhookChannel(json, messages, APP_URL)
-                    .send(new Integration("webhook", "kanał", checked), event, taskKey, message);
+                    .send(new Integration("webhook", "kanał", checked), event, taskKey, message, details);
             assertThat(delivery.ok()).isTrue();
             return received.get();
         } finally {

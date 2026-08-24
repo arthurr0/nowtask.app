@@ -9,6 +9,7 @@ public interface TaskCommands {
 
     record TaskFacts(
             String taskKey,
+            String title,
             String statusCode,
             String priority,
             List<String> labels,

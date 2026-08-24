@@ -37,18 +37,21 @@ public class IntegrationService implements Channels {
     private final DeliveryLog log;
     private final WebhookChannel webhooks;
     private final MailChannel mail;
+    private final EventDetailsLookup details;
 
     IntegrationService(
             IntegrationRepository integrations,
             IntegrationDeliveryRepository deliveries,
             DeliveryLog log,
             WebhookChannel webhooks,
-            MailChannel mail) {
+            MailChannel mail,
+            EventDetailsLookup details) {
         this.integrations = integrations;
         this.deliveries = deliveries;
         this.log = log;
         this.webhooks = webhooks;
         this.mail = mail;
+        this.details = details;
     }
 
     @Transactional(readOnly = true)
@@ -115,7 +118,7 @@ public class IntegrationService implements Channels {
 
     public TestResult test(UUID id) {
         Integration integration = find(id);
-        Delivery result = send(integration, "test", null, "Test message from nowtask");
+        Delivery result = send(integration, "test", null, "Test message from nowtask", EventDetails.of(null));
         log.record(integration.getId(), "test", null, result);
         return new TestResult(result.ok(), result.detail());
     }
@@ -135,14 +138,20 @@ public class IntegrationService implements Channels {
             return new Delivery(false, "Channel " + name + " is disabled");
         }
 
-        Delivery result = send(integration, EVENT_RULE_NOTIFY, taskKey, message);
+        Delivery result = send(integration, EVENT_RULE_NOTIFY, taskKey, message, details.of(taskKey, null));
         log.record(integration.getId(), EVENT_RULE_NOTIFY, taskKey, result);
         return result;
     }
 
-    public void dispatch(String event, String taskKey, String message) {
-        for (Integration integration : enabledFor(event)) {
-            Delivery result = send(integration, event, taskKey, message);
+    public void dispatch(String event, String taskKey, String message, UUID actorId) {
+        List<Integration> targets = enabledFor(event);
+        if (targets.isEmpty()) {
+            return;
+        }
+
+        EventDetails context = details.of(taskKey, actorId);
+        for (Integration integration : targets) {
+            Delivery result = send(integration, event, taskKey, message, context);
             log.record(integration.getId(), event, taskKey, result);
         }
     }
@@ -153,10 +162,11 @@ public class IntegrationService implements Channels {
                 .toList();
     }
 
-    private Delivery send(Integration integration, String event, String taskKey, String message) {
+    private Delivery send(
+            Integration integration, String event, String taskKey, String message, EventDetails context) {
         return "email".equals(integration.getKind())
                 ? mail.send(integration, event, taskKey, message)
-                : webhooks.send(integration, event, taskKey, message);
+                : webhooks.send(integration, event, taskKey, message, context);
     }
 
     private Integration find(UUID id) {

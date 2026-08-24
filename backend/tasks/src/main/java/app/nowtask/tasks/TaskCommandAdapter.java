@@ -23,6 +23,13 @@ class TaskCommandAdapter implements TaskCommands {
     private final Workspace workspace;
     private final JdbcClient jdbc;
 
+    private static final String SELECT = """
+            SELECT t.task_key, t.title, s.code AS status_code, t.priority, t.assignee_id, t.reviewer_id,
+                   t.due_date, t.estimate
+            FROM task t
+            JOIN status_def s ON s.id = t.status_id
+            """;
+
     TaskCommandAdapter(TaskService tasks, Workspace workspace, JdbcClient jdbc) {
         this.tasks = tasks;
         this.workspace = workspace;
@@ -32,36 +39,49 @@ class TaskCommandAdapter implements TaskCommands {
     @Override
     @Transactional(readOnly = true)
     public Optional<TaskFacts> facts(String taskKey) {
-        return allFacts().stream().filter(entry -> entry.taskKey().equals(taskKey)).findFirst();
+        return jdbc.sql(SELECT + " WHERE t.task_key = ?")
+                .param(taskKey)
+                .query((rs, rowNum) -> row(rs, labels(taskKey)))
+                .optional();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TaskFacts> allFacts() {
-        Map<String, List<String>> labels = new LinkedHashMap<>();
-        jdbc.sql("SELECT t.task_key, l.label FROM task_label l JOIN task t ON t.id = l.task_id")
-                .query((rs, rowNum) -> Map.entry(rs.getString("task_key"), rs.getString("label")))
+        Map<String, List<String>> labels = labels(null);
+        return jdbc.sql(SELECT + " ORDER BY t.task_key")
+                .query((rs, rowNum) -> row(rs, labels))
+                .list();
+    }
+
+    private Map<String, List<String>> labels(String taskKey) {
+        Map<String, List<String>> byKey = new LinkedHashMap<>();
+        var query = taskKey == null
+                ? jdbc.sql("SELECT t.task_key, l.label FROM task_label l JOIN task t ON t.id = l.task_id")
+                : jdbc.sql("SELECT t.task_key, l.label FROM task_label l JOIN task t ON t.id = l.task_id"
+                        + " WHERE t.task_key = ?").param(taskKey);
+
+        query.query((rs, rowNum) -> Map.entry(rs.getString("task_key"), rs.getString("label")))
                 .list()
-                .forEach(entry -> labels.computeIfAbsent(entry.getKey(), key -> new java.util.ArrayList<>())
+                .forEach(entry -> byKey.computeIfAbsent(entry.getKey(), key -> new java.util.ArrayList<>())
                         .add(entry.getValue()));
 
-        return jdbc.sql("""
-                SELECT t.task_key, s.code AS status_code, t.priority, t.assignee_id, t.reviewer_id,
-                       t.due_date, t.estimate
-                FROM task t
-                JOIN status_def s ON s.id = t.status_id
-                ORDER BY t.task_key
-                """)
-                .query((rs, rowNum) -> new TaskFacts(
-                        rs.getString("task_key"),
-                        rs.getString("status_code"),
-                        rs.getString("priority"),
-                        labels.getOrDefault(rs.getString("task_key"), List.of()),
-                        rs.getObject("assignee_id", UUID.class),
-                        rs.getObject("reviewer_id", UUID.class),
-                        rs.getObject("due_date", LocalDate.class),
-                        (Integer) rs.getObject("estimate")))
-                .list();
+        return byKey;
+    }
+
+    private static TaskFacts row(java.sql.ResultSet rs, Map<String, List<String>> labels)
+            throws java.sql.SQLException {
+        String key = rs.getString("task_key");
+        return new TaskFacts(
+                key,
+                rs.getString("title"),
+                rs.getString("status_code"),
+                rs.getString("priority"),
+                labels.getOrDefault(key, List.of()),
+                rs.getObject("assignee_id", UUID.class),
+                rs.getObject("reviewer_id", UUID.class),
+                rs.getObject("due_date", LocalDate.class),
+                (Integer) rs.getObject("estimate"));
     }
 
     @Override

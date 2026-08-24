@@ -34,6 +34,8 @@ class IntegrationDispatchTest {
 
     private static final UUID ORG = UUID.fromString("cccccccc-0000-0000-0000-00000000000c");
     private static final UUID USER = UUID.fromString("33333333-0000-0000-0000-000000000003");
+    private static final UUID PROJECT = UUID.fromString("44444444-0000-0000-0000-000000000004");
+    private static final UUID STATUS = UUID.fromString("55555555-0000-0000-0000-000000000005");
 
     private static final String APP_PASSWORD = "test_app_password";
     private static PostgreSQLContainer<?> container;
@@ -97,6 +99,7 @@ class IntegrationDispatchTest {
             owner.setAutoCommit(true);
             run(owner, "DELETE FROM integration_delivery WHERE organization_id = ?", ORG);
             run(owner, "DELETE FROM integration WHERE organization_id = ?", ORG);
+            run(owner, "DELETE FROM task WHERE organization_id = ?", ORG);
         }
     }
 
@@ -105,11 +108,26 @@ class IntegrationDispatchTest {
         OrganizationContextHolder.runAs(
                 new OrganizationContext(USER, ORG, null, null, Set.of()),
                 () -> events.publishEvent(new TaskEvents.TaskCreated(
-                        "NOW-1", "Nowe zadanie", USER, Instant.now(), null)));
+                        "MINING-1", "Kopanie rudy w kopalni", USER, Instant.now(), null)));
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(received.get())
                 .as("the webhook body")
-                .contains("NOW-1"));
+                .contains("MINING-1"));
+    }
+
+    @Test
+    void theDiscordEmbedCarriesTheTitleAssigneeAndPriorityOfTheTask() {
+        OrganizationContextHolder.runAs(
+                new OrganizationContext(USER, ORG, null, null, Set.of()),
+                () -> events.publishEvent(new TaskEvents.TaskStatusChanged(
+                        "MINING-1", "new", "canceled", "Reported", "Cancelled", USER, Instant.now(), null)));
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(received.get())
+                .as("the webhook body")
+                .contains("MINING-1 · Kopanie rudy w kopalni")
+                .contains("Reported → Cancelled")
+                .contains("Osoba C")
+                .contains("Wysoki"));
     }
 
     @Test
@@ -128,9 +146,18 @@ class IntegrationDispatchTest {
                     + " ON CONFLICT (id) DO NOTHING", USER);
             run(owner, "INSERT INTO organization (id, name, slug) VALUES (?, 'Firma C', 'firma-c')"
                     + " ON CONFLICT (id) DO NOTHING", ORG);
+            run(owner, "INSERT INTO project (id, organization_id, name, code, position)"
+                    + " VALUES (?, ?, 'Kopalnia', 'MINING', 0) ON CONFLICT (id) DO NOTHING", PROJECT, ORG);
+            run(owner, "INSERT INTO status_def (id, organization_id, project_id, code, label, category, position)"
+                    + " VALUES (?, ?, ?, 'new', 'Reported', 'notStarted', 0) ON CONFLICT (id) DO NOTHING",
+                    STATUS, ORG, PROJECT);
+            run(owner, "INSERT INTO task (id, organization_id, project_id, task_key, title, status_id,"
+                    + " priority, assignee_id) VALUES (?, ?, ?, 'MINING-1', 'Kopanie rudy w kopalni', ?,"
+                    + " 'high', ?)",
+                    UUID.randomUUID(), ORG, PROJECT, STATUS, USER);
             run(owner, "INSERT INTO integration (id, organization_id, kind, name, enabled, config)"
                     + " VALUES (?, ?, 'webhook', 'kanał zespołu', TRUE, ?::JSONB)",
-                    UUID.randomUUID(), ORG, "{\"url\": \"" + url + "\"}");
+                    UUID.randomUUID(), ORG, "{\"url\": \"" + url + "\", \"format\": \"discord\"}");
         }
     }
 
