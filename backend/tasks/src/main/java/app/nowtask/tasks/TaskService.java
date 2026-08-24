@@ -612,8 +612,8 @@ public class TaskService implements Tasks {
         }
 
         events.publishEvent(new TaskEvents.TaskStatusChanged(
-                task.getKey(), current.code(), target.code(), actorId, Instant.now(),
-                ActorContext.currentLabel()));
+                task.getKey(), current.code(), target.code(), current.label(), target.label(), actorId,
+                Instant.now(), ActorContext.currentLabel()));
     }
 
     private void record(Task task, String field, String oldValue, String newValue, UUID actorId) {

@@ -16,6 +16,8 @@ public final class TaskEvents {
             String taskKey,
             String fromStatusCode,
             String toStatusCode,
+            String fromStatusLabel,
+            String toStatusLabel,
             UUID actorId,
             Instant at,
             String ruleName) implements TaskEvent {

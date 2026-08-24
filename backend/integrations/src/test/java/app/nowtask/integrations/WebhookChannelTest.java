@@ -9,11 +9,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import tools.jackson.databind.ObjectMapper;
 
 class WebhookChannelTest {
 
+    private static final String APP_URL = "https://nowtask.app";
+
     private final ObjectMapper json = new ObjectMapper();
+    private final MessageSource messages = bundle();
+
+    private static MessageSource bundle() {
+        ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
+        source.setBasename("classpath:mail/messages");
+        source.setDefaultEncoding("UTF-8");
+        source.setDefaultLocale(MailConfig.DEFAULT_LOCALE);
+        source.setFallbackToSystemLocale(false);
+        source.setUseCodeAsDefaultMessage(true);
+        return source;
+    }
 
     @Test
     void picksDiscordFromTheAddressWhenNoFormatIsConfigured() {
@@ -32,18 +47,35 @@ class WebhookChannelTest {
     }
 
     @Test
-    void sendsDiscordContentInsteadOfTheInternalPayload() throws Exception {
-        String body = capture(Map.of("format", "discord"), "taskCreated", "NOW-12", "Zadanie trafiło na tablicę");
+    void sendsADiscordEmbedThatLinksTheTask() throws Exception {
+        String body = capture(Map.of("format", "discord"), "taskStatusChanged", "MINING-1", "Nowe → Anulowane");
+        var embed = json.readTree(body).path("embeds").get(0);
 
-        assertThat(json.readTree(body).path("content").asString())
-                .isEqualTo("**taskCreated** · NOW-12\nZadanie trafiło na tablicę");
+        assertThat(embed.path("author").path("name").asString()).isEqualTo("Zmiana statusu");
+        assertThat(embed.path("title").asString()).isEqualTo("MINING-1");
+        assertThat(embed.path("url").asString()).isEqualTo(APP_URL + "/app/tasks/MINING-1");
+        assertThat(embed.path("description").asString()).isEqualTo("Nowe → Anulowane");
+        assertThat(embed.path("color").asInt()).isEqualTo(0x3B82F6);
+        assertThat(embed.path("timestamp").asString()).isNotBlank();
+        assertThat(json.readTree(body).path("content").isMissingNode()).isTrue();
     }
 
     @Test
-    void sendsSlackText() throws Exception {
-        String body = capture(Map.of("format", "slack"), "test", null, "Test message from nowtask");
+    void fallsBackToPlainDiscordContentWithoutATask() throws Exception {
+        String body = capture(Map.of("format", "discord"), "test", null, "Test message from nowtask");
 
-        assertThat(json.readTree(body).path("text").asString()).isEqualTo("*test*\nTest message from nowtask");
+        assertThat(json.readTree(body).path("content").asString())
+                .isEqualTo("Wysyłka próbna\nTest message from nowtask");
+    }
+
+    @Test
+    void sendsSlackBlocksWithALinkedTask() throws Exception {
+        String body = capture(Map.of("format", "slack"), "taskCreated", "MINING-2", "Kopanie rudy");
+        var tree = json.readTree(body);
+
+        assertThat(tree.path("text").asString()).isEqualTo("Nowe zadanie: MINING-2");
+        assertThat(tree.path("blocks").get(0).path("text").path("text").asString())
+                .isEqualTo("*Nowe zadanie* <" + APP_URL + "/app/tasks/MINING-2|MINING-2>\nKopanie rudy");
     }
 
     @Test
@@ -69,7 +101,7 @@ class WebhookChannelTest {
         try {
             var checked = new java.util.LinkedHashMap<String, Object>(config);
             checked.put("url", "http://127.0.0.1:" + server.getAddress().getPort() + "/hook");
-            var delivery = new WebhookChannel(json)
+            var delivery = new WebhookChannel(json, messages, APP_URL)
                     .send(new Integration("webhook", "kanał", checked), event, taskKey, message);
             assertThat(delivery.ok()).isTrue();
             return received.get();
