@@ -131,6 +131,27 @@ class TaskCommandAdapter implements TaskCommands {
         tasks.addComment(taskKey, body);
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void setTitle(String taskKey, String title) {
+        tasks.patch(taskKey, new PatchBody(Map.of("title", title)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void setDescription(String taskKey, String description) {
+        tasks.patch(taskKey, new PatchBody(Map.of("description", description == null ? "" : description)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<String> description(String taskKey) {
+        return jdbc.sql("SELECT description FROM task WHERE task_key = ?")
+                .param(taskKey)
+                .query(String.class)
+                .optional();
+    }
+
     private static Map<String, Object> mapWithNullable(String field, UUID value) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(field, value == null ? null : value.toString());

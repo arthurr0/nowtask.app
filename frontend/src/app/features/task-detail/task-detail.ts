@@ -10,9 +10,9 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { dateTime, fullDate, isOverdue, money } from '../../core/format';
-import type { CustomFieldDto } from '../../core/api-types';
+import type { CustomFieldDto, GitHubTaskLinkDto } from '../../core/api-types';
 import { customFieldKey, type TaskFieldKey } from '../../core/task-fields';
-import { SettingsStore, TaskDetailStore } from '../../data/feature.stores';
+import { IntegrationsStore, SettingsStore, TaskDetailStore } from '../../data/feature.stores';
 import { WorkspaceStore, type NewTaskInput } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
 import { ConfirmService } from '../../ui/confirm.service';
@@ -38,6 +38,15 @@ interface CustomRow {
 const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 const CLEAR = '__clear__';
 
+const GITHUB_ICONS: Record<string, string> = {
+  issue: 'log',
+  pull: 'git-branch',
+  commit: 'save',
+  branch: 'git-branch',
+  release: 'flag',
+  workflow: 'bolt',
+};
+
 @Component({
   selector: 'app-task-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,12 +57,14 @@ export class TaskDetail {
   protected readonly store = inject(WorkspaceStore);
   protected readonly details = inject(TaskDetailStore);
   private readonly settings = inject(SettingsStore);
+  private readonly integrations = inject(IntegrationsStore);
   private readonly confirm = inject(ConfirmService);
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
+  protected readonly label = this.i18n.label;
 
   readonly key = input.required<string>();
 
@@ -63,13 +74,40 @@ export class TaskDetail {
   protected readonly labelDraft = signal('');
   protected readonly addingLabel = signal(false);
   protected readonly busy = signal(false);
+  protected readonly gitHubLinks = signal<GitHubTaskLinkDto[]>([]);
 
   constructor() {
     effect(() => {
       const key = this.key();
       void this.details.load(key);
       void this.settings.load();
+      void this.loadGitHubLinks(key);
     });
+  }
+
+  private async loadGitHubLinks(key: string): Promise<void> {
+    try {
+      this.gitHubLinks.set(await this.integrations.taskLinks(key));
+    } catch {
+      this.gitHubLinks.set([]);
+    }
+  }
+
+  protected gitHubIcon(link: GitHubTaskLinkDto): string {
+    return GITHUB_ICONS[link.kind] ?? 'git-branch';
+  }
+
+  protected gitHubLabel(link: GitHubTaskLinkDto): string {
+    if (link.kind === 'pull' || link.kind === 'issue') return '#' + link.number;
+    if (link.kind === 'commit') return link.ref.slice(0, 7);
+    return link.ref;
+  }
+
+  protected gitHubTone(link: GitHubTaskLinkDto): string {
+    const state = (link.checkState || link.state || '').toLowerCase();
+    if (['merged', 'success', 'approved', 'published'].includes(state)) return 'ok';
+    if (['failure', 'timed_out', 'changes_requested', 'deleted'].includes(state)) return 'bad';
+    return 'plain';
   }
 
   protected readonly detail = this.details.detail;

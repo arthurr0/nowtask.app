@@ -168,6 +168,42 @@
         </section>
       }
 
+      @if (gitHubLinks().length) {
+        <section class="flex max-w-[720px] flex-col gap-2">
+          <h2 class="kap">{{ t('task.github') }}</h2>
+          <div class="flex flex-col">
+            @for (link of gitHubLinks(); track link.kind + link.repo + link.ref) {
+              <a
+                [href]="link.url"
+                target="_blank"
+                rel="noreferrer noopener"
+                class="flex min-h-9 flex-wrap items-center gap-2.5 border-b border-line py-1.5 text-xs last:border-0"
+              >
+                <ui-icon [name]="gitHubIcon(link)" [size]="14" class="flex-none text-ink-3" />
+                <span class="w-[64px] flex-none truncate font-mono text-ink-3">{{
+                  gitHubLabel(link)
+                }}</span>
+                <span class="min-w-0 flex-1 truncate">{{ link.title }}</span>
+                @if (link.state) {
+                  <span
+                    class="flex-none rounded-full px-2 py-0.5 text-[11px]"
+                    [class.text-ink-3]="gitHubTone(link) === 'plain'"
+                    [class.text-done-ink]="gitHubTone(link) === 'ok'"
+                    [class.text-warn]="gitHubTone(link) === 'bad'"
+                    >{{ label('task.github.' + link.state, link.state) }}</span
+                  >
+                }
+                @if (link.authorLogin) {
+                  <span class="w-[110px] flex-none truncate text-right text-ink-3">{{
+                    link.authorLogin
+                  }}</span>
+                }
+              </a>
+            }
+          </div>
+        </section>
+      }
+
       <section class="flex max-w-[720px] flex-col gap-2.5">
         <div class="flex items-center gap-2.5">
           <h2 class="kap">{{ t('task.subtasks') }}</h2>

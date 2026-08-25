@@ -17,6 +17,13 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <rect x="15.6" y="5" width="4.4" height="7" rx="1.2" />
         </symbol>
         <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" /></symbol>
+        <symbol id="i-git-branch" viewBox="0 0 24 24">
+          <circle cx="7" cy="6" r="2.4" />
+          <circle cx="7" cy="18" r="2.4" />
+          <circle cx="17" cy="9" r="2.4" />
+          <path d="M7 8.4v7.2" />
+          <path d="M17 11.4c0 2.6-2.1 4.7-4.7 4.7H9.4" />
+        </symbol>
         <symbol id="i-timeline" viewBox="0 0 24 24"><path d="M4 7h9M7 12h11M4 17h7" /></symbol>
         <symbol id="i-calendar" viewBox="0 0 24 24">
           <rect x="4" y="6" width="16" height="14" rx="2" />

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
 import app.nowtask.integrations.api.Channels;
+import app.nowtask.integrations.api.GitHubTasks;
 import app.nowtask.shared.ActorContext;
 import app.nowtask.shared.events.TaskCommands;
 import app.nowtask.shared.events.TaskCommands.TaskFacts;
@@ -29,11 +30,13 @@ public class RuleEngine {
     private final TaskCommands tasks;
     private final UserDirectory users;
     private final Channels channels;
+    private final GitHubTasks github;
 
-    RuleEngine(TaskCommands tasks, UserDirectory users, Channels channels) {
+    RuleEngine(TaskCommands tasks, UserDirectory users, Channels channels, GitHubTasks github) {
         this.tasks = tasks;
         this.users = users;
         this.channels = channels;
+        this.github = github;
     }
 
     public TaskOutcome runOn(AutomationRule rule, String taskKey) {
@@ -136,6 +139,21 @@ public class RuleEngine {
                     tasks.addComment(key, value);
                     return applied(kind, value);
                 }
+                case "githubComment" -> {
+                    if (value == null || value.isBlank()) {
+                        return skipped(kind, value, "run.valueMissing");
+                    }
+                    return outcome(kind, value, github.comment(key, value));
+                }
+                case "githubCloseIssue" -> {
+                    return outcome(kind, value, github.closeIssue(key));
+                }
+                case "githubLabel" -> {
+                    if (value == null || value.isBlank()) {
+                        return skipped(kind, value, "run.valueMissing");
+                    }
+                    return outcome(kind, value, github.addLabel(key, value.trim()));
+                }
                 default -> {
                     return skipped(kind, value, "run.actionNotSupported");
                 }
@@ -204,6 +222,29 @@ public class RuleEngine {
             case "estimate" -> compareNumber(facts.estimate(), op, values);
             case "assignee" -> compareAssignee(facts.assigneeId(), op, values);
             case "dueIn" -> compareDueIn(facts.dueDate(), op, values);
+            case "github" -> compareGitHub(facts.taskKey(), op, values);
+            default -> true;
+        };
+    }
+
+    private ActionOutcome outcome(String kind, String value, Channels.Delivery delivery) {
+        return delivery.ok() ? applied(kind, value) : skipped(kind, value, "run.githubFailed");
+    }
+
+    private boolean compareGitHub(String taskKey, String op, List<String> values) {
+        boolean present = values.stream().anyMatch(value -> switch (strip(value, "github.")) {
+            case "openPull" -> github.hasOpenPull(taskKey);
+            case "mergedPull" -> github.hasMergedPull(taskKey);
+            case "failedChecks" -> github.lastWorkflowFailed(taskKey);
+            case "linked" -> !github.linksOf(taskKey).isEmpty();
+            default -> false;
+        });
+
+        return switch (op == null ? "" : op) {
+            case "is", "isOneOf" -> present;
+            case "isNot", "isNoneOf" -> !present;
+            case "isEmpty" -> github.linksOf(taskKey).isEmpty();
+            case "isNotEmpty" -> !github.linksOf(taskKey).isEmpty();
             default -> true;
         };
     }

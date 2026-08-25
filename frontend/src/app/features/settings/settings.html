@@ -379,6 +379,47 @@
         </section>
       }
 
+      @case ('github') {
+        <section class="flex flex-col gap-6">
+          <header class="flex flex-col gap-1">
+            <h1 class="text-[17px] font-semibold tracking-[-0.01em]">{{ t('account.github') }}</h1>
+            <p class="max-w-[720px] text-[13px] text-ink-2">{{ t('account.githubLead') }}</p>
+          </header>
+
+          @if (integrations.gitHubAccount(); as account) {
+            @if (!account.available) {
+              <p class="max-w-[720px] text-[13px] text-ink-3">{{ t('account.github.unavailable') }}</p>
+            } @else if (account.connected) {
+              <div class="flex max-w-[720px] flex-wrap items-center gap-3 rounded-[9px] border border-line bg-surface-2 p-3">
+                <ui-icon name="git-branch" [size]="16" class="flex-none text-ink-3" />
+                <span class="text-[13px] font-medium">{{ account.login }}</span>
+                <span class="h-px flex-1 bg-line"></span>
+                <button
+                  type="button"
+                  class="flex h-8 items-center rounded-[7px] border border-line-strong bg-surface px-3 text-xs"
+                  (click)="unlinkGitHub()"
+                >
+                  {{ t('account.github.unlink') }}
+                </button>
+              </div>
+              <p class="max-w-[720px] text-xs text-ink-3">{{ t('account.github.linkedNote') }}</p>
+            } @else {
+              <div class="flex max-w-[720px] flex-col items-start gap-3">
+                <button
+                  type="button"
+                  class="flex h-9 items-center gap-1.5 rounded-[7px] bg-inv pr-3.5 pl-2.5 text-[13px] font-medium text-inv-ink"
+                  (click)="startGitHubLink()"
+                >
+                  <ui-icon name="git-branch" [size]="15" />
+                  {{ t('account.github.link') }}
+                </button>
+                <p class="text-xs text-ink-3">{{ t('account.github.linkLead') }}</p>
+              </div>
+            }
+          }
+        </section>
+      }
+
       @case ('appearance') {
         <section class="flex flex-col gap-8">
           <header class="flex flex-col gap-1">

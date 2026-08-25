@@ -306,6 +306,53 @@ A channel can be named in the "Notify channel" rule action. Every delivery attem
 integration log together with its result, and delivery happens off the request thread, so a silent
 recipient does not slow the application down.
 
+The GitHub integration is a different animal, because it works both ways. One GitHub App belongs to
+the whole instance and every organization installs it on its own account, so the private key never
+lands in the database. Register the app at **github.com/settings/apps** with the webhook pointing at
+`{NOWTASK_APP_URL}/api/integrations/github/webhook`, the setup and callback URL at
+`{NOWTASK_APP_URL}/app/organization?section=integrations`, read and write access to Issues, read
+access to Pull requests, Contents and Metadata, and the events push, pull request, issues, issue
+comment and installation. Then set `NOWTASK_GITHUB_APP_ID`, `NOWTASK_GITHUB_APP_SLUG`,
+`NOWTASK_GITHUB_PRIVATE_KEY` (the PEM as GitHub hands it out, newlines may be escaped),
+`NOWTASK_GITHUB_WEBHOOK_SECRET`, and `NOWTASK_GITHUB_CLIENT_ID` with
+`NOWTASK_GITHUB_CLIENT_SECRET`. The client pair is what proves that whoever finishes the install in
+the browser really owns the installation, so without it a stranger could attach their installation
+to someone else's organization.
+
+With the app in place, **Organization → Integrations** shows an Install button, and after the
+install a `github` integration names the repositories, the projects it covers, the repository where
+issues opened from tasks land, and the status a task moves to on each kind of event: a branch created, a push, an opened pull
+request, an approving review, a review asking for changes, a merge, a failed CI run, a closed or
+reopened issue. A task is recognised by its key in a branch name, a commit message, a pull request
+title, an issue title or a release note, so `feature/NOW-12-import` and `NOW-12 fix the importer`
+both reach NOW-12.
+
+The integration listens to pushes, branches created and deleted, pull requests, code reviews and
+review comments, issues and their comments, finished CI runs and published releases. What comes in
+becomes a comment on the task, what changes in the task is pushed back to its issue, and a marker in
+the issue body together with a delivery record keeps the two sides from bouncing updates off each
+other. Every delivery from GitHub is remembered for a week so a redelivery changes nothing twice.
+
+Everything that arrives is also kept as a link on the task, so the task page has a **GitHub** section
+listing its pull requests, issues, commits, branches, CI runs and releases with their state and a
+link straight to GitHub.
+
+Each person links their own GitHub account in **Settings → GitHub account**. The consent asks for
+identity only, never for code. Once linked, a comment or a review that arrives from that account is
+written into the task as that person rather than as whoever connected the app, and the integration
+can assign a task to whoever opened the pull request. Someone who has not linked an account still
+comes through, only attributed to the connecting account.
+
+One integration per repository is the way to tie a project to its own repository. Name the project
+key prefixes in the integration and it works in both directions: a commit in the backend repository
+no longer moves a frontend task that its message happens to mention, and an issue opened from a task
+lands in the repository belonging to that task's project rather than in whichever integration came
+first. Leave the projects empty and the integration covers everything, as before.
+
+Automation rules can read and write GitHub too. A condition on the `github` field tests for
+`openPull`, `mergedPull`, `failedChecks` or `linked`, and the actions comment on the linked issue or
+pull request, close the issue or add a label to it.
+
 Account mail runs through the same module: address confirmation, an invitation and its reminder, a
 welcome message once the address is confirmed, a note to the inviter when someone joins, a password
 reset link and a confirmation that the password changed. Every message goes out as HTML with a plain

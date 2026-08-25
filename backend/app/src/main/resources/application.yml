@@ -72,3 +72,10 @@ nowtask:
     from: ${NOWTASK_MAIL_FROM:nowtask@localhost}
     from-name: ${NOWTASK_MAIL_FROM_NAME:nowtask}
     reply-to: ${NOWTASK_MAIL_REPLY_TO:}
+  github:
+    app-id: ${NOWTASK_GITHUB_APP_ID:}
+    slug: ${NOWTASK_GITHUB_APP_SLUG:}
+    private-key: ${NOWTASK_GITHUB_PRIVATE_KEY:}
+    webhook-secret: ${NOWTASK_GITHUB_WEBHOOK_SECRET:}
+    client-id: ${NOWTASK_GITHUB_CLIENT_ID:}
+    client-secret: ${NOWTASK_GITHUB_CLIENT_SECRET:}

@@ -34,7 +34,15 @@ export interface RuleDraft {
 }
 
 const TRIGGERS = ['statusChanged', 'assigned', 'manual', 'schedule'] as const;
-const CONDITION_FIELDS = ['priority', 'status', 'label', 'estimate', 'assignee', 'dueIn'] as const;
+const CONDITION_FIELDS = [
+  'priority',
+  'status',
+  'label',
+  'estimate',
+  'assignee',
+  'dueIn',
+  'github',
+] as const;
 const CONDITION_OPS = [
   'isOneOf',
   'isNoneOf',
@@ -54,6 +62,9 @@ const ACTION_KINDS = [
   'addLabel',
   'setDueDate',
   'comment',
+  'githubComment',
+  'githubCloseIssue',
+  'githubLabel',
 ] as const;
 
 const ACTION_ICONS: Record<string, string> = {
@@ -64,6 +75,9 @@ const ACTION_ICONS: Record<string, string> = {
   addLabel: 'flag',
   setDueDate: 'calendar',
   comment: 'message',
+  githubComment: 'git-branch',
+  githubCloseIssue: 'git-branch',
+  githubLabel: 'git-branch',
 };
 
 let sequence = 0;

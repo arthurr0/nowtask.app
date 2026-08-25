@@ -8,7 +8,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { IntegrationsStore } from '../../data/feature.stores';
 import { AccountService } from '../../core/account.service';
 import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -29,7 +30,14 @@ import { ViewControls } from '../../ui/view-controls';
 import { TextField } from '../../ui/text-field';
 import { DeleteAccountDialog, EmailChangeDialog, type EmailChangeDraft } from './account-dialogs';
 
-type Section = 'profile' | 'security' | 'notifications' | 'appearance' | 'views' | 'language';
+type Section =
+  | 'profile'
+  | 'security'
+  | 'notifications'
+  | 'github'
+  | 'appearance'
+  | 'views'
+  | 'language';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -54,6 +62,8 @@ export class Settings implements OnInit {
   protected readonly account = inject(AccountService);
   private readonly orgs = inject(OrgService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  protected readonly integrations = inject(IntegrationsStore);
   protected readonly prefs = inject(PrefsService);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
@@ -66,6 +76,7 @@ export class Settings implements OnInit {
     { id: 'profile', icon: 'user', label: 'account.profile' },
     { id: 'security', icon: 'lock', label: 'account.security' },
     { id: 'notifications', icon: 'bell', label: 'account.notifications' },
+    { id: 'github', icon: 'git-branch', label: 'account.github' },
   ];
 
   protected readonly personalSections: readonly { id: Section; icon: string; label: string }[] = [
@@ -176,7 +187,54 @@ export class Settings implements OnInit {
 
   ngOnInit(): void {
     void this.loadAccount();
+    void this.integrations.loadGitHubAccount().catch(() => undefined);
+
+    const params = this.route.snapshot.queryParamMap;
+    const code = params.get('code');
+    const state = params.get('state');
+
+    if (code && state) {
+      this.section.set('github');
+      void this.finishGitHubLink(code, state);
+    }
   }
+
+  async startGitHubLink(): Promise<void> {
+    try {
+      window.location.href = await this.integrations.startGitHubAccountLink();
+    } catch {
+      this.toast.error(this.t('common.actionFailed'));
+    }
+  }
+
+  async unlinkGitHub(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'account.github.unlink',
+      message: this.t('account.github.unlinkLead'),
+      confirmLabel: 'account.github.unlink',
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await this.integrations.unlinkGitHubAccount();
+      this.toast.success(this.t('common.saved'));
+    } catch {
+      this.toast.error(this.t('common.actionFailed'));
+    }
+  }
+
+  private async finishGitHubLink(code: string, state: string): Promise<void> {
+    try {
+      const account = await this.integrations.linkGitHubAccount(code, state);
+      this.toast.success(this.t('account.github.linked', { login: account.login }));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    } finally {
+      void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    }
+  }
+
 
   selectLanguage(code: string): void {
     if (code === 'pl' || code === 'en' || code === 'de') {

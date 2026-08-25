@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { dateTime, shortDate } from '../../core/format';
 import type {
@@ -153,6 +153,7 @@ export class Organization implements OnInit {
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   protected readonly t = inject(I18nService).t;
 
   protected readonly section = signal<Section>('people');
@@ -201,13 +202,25 @@ export class Organization implements OnInit {
   });
 
   ngOnInit(): void {
-    const requested = this.route.snapshot.queryParamMap.get('section');
+    const params = this.route.snapshot.queryParamMap;
+    const requested = params.get('section');
+    const installation = params.get('installation_id');
+
     void this.organization.load();
     void this.metrics.load();
     void this.fields.load();
+
     this.setSection(
-      SECTIONS.some((item) => item.id === requested) ? (requested as Section) : 'people',
+      SECTIONS.some((item) => item.id === requested)
+        ? (requested as Section)
+        : installation
+          ? 'integrations'
+          : 'people',
     );
+
+    if (installation) {
+      void this.finishGitHubInstall(installation, params.get('code') ?? '');
+    }
   }
 
   workloadOf(userId: string): { points: number; capacity: number } | null {
@@ -242,6 +255,7 @@ export class Organization implements OnInit {
     }
     if (section === 'integrations') {
       void this.integrations.load();
+      void this.integrations.loadGitHub().catch(() => undefined);
     }
     if (section === 'flow' || section === 'regional') {
       void this.loadWorkspaceSettings();
@@ -314,8 +328,21 @@ export class Organization implements OnInit {
 
   integrationTarget(integration: IntegrationDto): string {
     const config = integration.config ?? {};
+
+    if (integration.kind === 'github') {
+      const repos = Array.isArray(config['repos']) ? (config['repos'] as unknown[]) : [];
+      const issueRepo = config['issueRepo'];
+      const named = [...repos.map(String), issueRepo ? String(issueRepo) : ''].filter(Boolean);
+      return named.length ? [...new Set(named)].join(', ') : this.t('organization.github.allRepos');
+    }
+
     const value = integration.kind === 'webhook' ? config['url'] : config['to'];
     return value === undefined || value === null ? '' : String(value);
+  }
+
+  integrationIcon(integration: IntegrationDto): string {
+    if (integration.kind === 'github') return 'git-branch';
+    return integration.kind === 'webhook' ? 'link' : 'message';
   }
 
   protected shortDateTime = dateTime;
@@ -942,6 +969,37 @@ export class Organization implements OnInit {
       this.workspaceSettings.set(await this.store.loadWorkspaceSettings());
     } catch {
       this.workspaceSettings.set(null);
+    }
+  }
+
+  installGitHub(): void {
+    const url = this.integrations.gitHub()?.installUrl;
+    if (url) window.location.href = url;
+  }
+
+  async disconnectGitHub(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'organization.github.disconnect',
+      message: this.t('organization.github.disconnectLead'),
+      confirmLabel: 'organization.github.disconnect',
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    await this.run(() => this.integrations.disconnectGitHub());
+  }
+
+  private async finishGitHubInstall(installationId: string, code: string): Promise<void> {
+    try {
+      const status = await this.integrations.connectGitHub(installationId, code);
+      this.toast.success(this.t('organization.github.connected', { account: status.account }));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    } finally {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { section: 'integrations' },
+      });
     }
   }
 

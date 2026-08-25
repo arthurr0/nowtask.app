@@ -29,6 +29,23 @@ public final class IntegrationViews {
     public record DeliveryView(UUID id, Instant at, String event, String taskKey, boolean ok, String detail) {
     }
 
+    public record GitHubAccountView(
+            boolean available,
+            boolean connected,
+            String login,
+            String avatarUrl) {
+    }
+
+    public record GitHubStatusView(
+            boolean available,
+            String installUrl,
+            boolean connected,
+            String account,
+            boolean suspended,
+            List<String> repositories,
+            String detail) {
+    }
+
     public record TestResult(boolean ok, String detail) {
     }
 }

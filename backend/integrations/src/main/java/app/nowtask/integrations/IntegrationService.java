@@ -25,7 +25,7 @@ public class IntegrationService implements Channels {
     public static final String EVENT_TASK_ASSIGNED = "taskAssigned";
     public static final String EVENT_RULE_NOTIFY = "ruleNotify";
 
-    private static final Set<String> KINDS = Set.of("webhook", "email");
+    private static final Set<String> KINDS = Set.of("webhook", "email", GitHubSettings.KIND);
     private static final Set<String> EVENTS = Set.of(
             EVENT_TASK_CREATED, EVENT_TASK_STATUS_CHANGED, EVENT_TASK_ASSIGNED, EVENT_RULE_NOTIFY);
 
@@ -37,6 +37,7 @@ public class IntegrationService implements Channels {
     private final DeliveryLog log;
     private final WebhookChannel webhooks;
     private final MailChannel mail;
+    private final GitHubChannel github;
     private final EventDetailsLookup details;
 
     IntegrationService(
@@ -45,12 +46,14 @@ public class IntegrationService implements Channels {
             DeliveryLog log,
             WebhookChannel webhooks,
             MailChannel mail,
+            GitHubChannel github,
             EventDetailsLookup details) {
         this.integrations = integrations;
         this.deliveries = deliveries;
         this.log = log;
         this.webhooks = webhooks;
         this.mail = mail;
+        this.github = github;
         this.details = details;
     }
 
@@ -63,7 +66,7 @@ public class IntegrationService implements Channels {
     public IntegrationView create(NewIntegration request) {
         String kind = request.kind() == null ? "" : request.kind().trim();
         if (!KINDS.contains(kind)) {
-            throw new RuleViolationException("The integration kind has to be one of: webhook, email");
+            throw new RuleViolationException("The integration kind has to be one of: webhook, email, github");
         }
 
         String name = request.name() == null ? "" : request.name().trim();
@@ -158,15 +161,18 @@ public class IntegrationService implements Channels {
 
     private List<Integration> enabledFor(String event) {
         return integrations.findByEnabledTrue().stream()
+                .filter(integration -> !GitHubSettings.KIND.equals(integration.getKind()))
                 .filter(integration -> integration.listensTo(event))
                 .toList();
     }
 
     private Delivery send(
             Integration integration, String event, String taskKey, String message, EventDetails context) {
-        return "email".equals(integration.getKind())
-                ? mail.send(integration, event, taskKey, message, context)
-                : webhooks.send(integration, event, taskKey, message, context);
+        return switch (integration.getKind()) {
+            case "email" -> mail.send(integration, event, taskKey, message, context);
+            case GitHubSettings.KIND -> github.check(integration);
+            default -> webhooks.send(integration, event, taskKey, message, context);
+        };
     }
 
     private Integration find(UUID id) {
@@ -199,8 +205,29 @@ public class IntegrationService implements Channels {
         if ("email".equals(kind) && text(checked, "to").isBlank()) {
             throw new RuleViolationException("A mail integration requires an address in the to field");
         }
+        if (GitHubSettings.KIND.equals(kind)) {
+            GitHubSettings settings = GitHubSettings.of(checked);
+            for (String repo : settings.repos()) {
+                requireRepo(repo);
+            }
+            if (!settings.issueRepo().isBlank()) {
+                requireRepo(settings.issueRepo());
+            }
+            for (String project : settings.projects()) {
+                if (!project.matches("[A-Za-z][A-Za-z0-9]*")) {
+                    throw new RuleViolationException(
+                            "A project is named by its key prefix, such as NOW, got: " + project);
+                }
+            }
+        }
 
         return checked;
+    }
+
+    private static void requireRepo(String repo) {
+        if (!repo.matches("[A-Za-z0-9._-]+/[A-Za-z0-9._-]+")) {
+            throw new RuleViolationException("A GitHub repository has to look like owner/name, got: " + repo);
+        }
     }
 
     private static String text(Map<String, Object> config, String key) {

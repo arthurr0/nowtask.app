@@ -512,13 +512,22 @@ POST   /api/integrations             {kind, name, config} -> IntegrationDto
 PATCH  /api/integrations/{id}
 DELETE /api/integrations/{id}
 POST   /api/integrations/{id}/test   -> {ok, detail}
+GET    /api/integrations/github      -> GitHubStatusDto
+POST   /api/integrations/github/connect  {installationId, code} -> GitHubStatusDto
+DELETE /api/integrations/github      -> GitHubStatusDto
+POST   /api/integrations/github/webhook  the endpoint GitHub itself calls
+GET    /api/integrations/github/account  -> GitHubAccountDto
+POST   /api/integrations/github/account/authorize -> {url}
+POST   /api/integrations/github/account/connect   {code, state} -> GitHubAccountDto
+DELETE /api/integrations/github/account  -> GitHubAccountDto
+GET    /api/integrations/github/task/{taskKey} -> GitHubTaskLinkDto[]
 ```
 
 Export returns a real file with a `Content-Disposition` header and contains exactly the columns and
 rows visible after the filters are applied.
 
-`IntegrationDto.kind`: `webhook` or `email`. A webhook configuration is an address, a secret and
-events. The "notify channel" rule action sends a request to the integration with the given name and
+`IntegrationDto.kind`: `webhook`, `email` or `github`. A webhook configuration is an address, a
+secret and events. The "notify channel" rule action sends a request to the integration with the given name and
 records the result.
 
 Task export gives the columns `Key`, `Title`, `Status`, followed by the list columns from `columns`
@@ -537,6 +546,54 @@ A webhook receives a `POST` with the body `{ event, at, integration, taskKey, me
 The timeout is 5 seconds, and the result of every attempt lands in the integration delivery log.
 Event delivery happens off the request thread, so an unresponsive recipient does not slow the
 application down.
+
+`IntegrationDto.config` for `github` is `{ repos?, projects?, issueRepo?, statusOnBranchCreated?,
+statusOnBranchPush?, statusOnPullOpen?, statusOnReviewApproved?, statusOnReviewChangesRequested?,
+statusOnPullMerged?, statusOnWorkflowFailure?, statusOnIssueClosed?, statusOnIssueReopened?,
+issueClosingStatuses?, syncIssues?, commentOnPull?, commentOnPush?, commentOnIssueComment?,
+commentOnReview?, commentOnWorkflow?, commentOnRelease?, commentOnBranch?, assignFromPull?,
+linkCommits? }`. The handled events are push, create, delete, pull_request,
+pull_request_review, pull_request_review_comment, issues, issue_comment, workflow_run, release and
+installation.
+Repositories are written as `owner/name`, anything else ends in a `422`; an empty `repos` covers
+every repository the installation reaches. `projects` holds task key prefixes such as `NOW`, and it
+binds the integration to those projects in both directions: an event only touches tasks whose key
+belongs to one of them, and an issue opened from a task is created by the integration covering that
+task's project. An empty `projects` covers every project, which is what an existing configuration
+without the field keeps doing. The status fields hold status codes, an empty one leaves
+the status alone. A `github` integration is never a target of the "notify channel" action and never
+receives task events over HTTP, its `test` reports whether the installation answers.
+
+`GitHubStatusDto` is `{ available, installUrl, connected, account, suspended, repositories, detail }`.
+`available` says whether the instance has a GitHub App configured at all, `installUrl` leads to the
+installation on GitHub, and after the install GitHub returns to the interface with `installation_id`
+and `code` in the query, which the frontend passes to `connect`. `connect` verifies through the
+OAuth code that the caller really reaches that installation, otherwise it ends in a `403`
+(`GITHUB_INSTALLATION_FOREIGN`, or `GITHUB_INSTALLATION_TAKEN` when another organization holds it).
+
+`GitHubAccountDto` is `{ available, connected, login, avatarUrl }` and covers the caller's own
+GitHub account, so it needs a session but no administrator role. `authorize` returns the GitHub
+consent URL and stores a one time `state` in the session; `connect` refuses with a `403`
+(`GITHUB_STATE_MISMATCH`) when the returned state does not match, and with a `409` when that GitHub
+account already belongs to somebody else here. A linked account decides who a GitHub comment or
+review is written by; without one the work is attributed to the account that connected the
+installation.
+
+`GitHubTaskLinkDto` is `{ kind, repo, number?, ref, url, state, title, authorLogin, detail,
+checkState, updatedAt }` with `kind` one of `issue`, `pull`, `commit`, `branch`, `release`,
+`workflow`. Reading a task's links needs a session only, since it says nothing the task itself does
+not.
+
+Automation gains the condition field `github`, whose values are `openPull`, `mergedPull`,
+`failedChecks` and `linked`, and the actions `githubComment`, `githubCloseIssue` and `githubLabel`.
+A GitHub call that fails leaves the run entry with `run.githubFailed`.
+
+`/api/integrations/github/webhook` is the only endpoint in this group open without a session, and it
+authenticates the caller by `X-Hub-Signature-256` (HMAC SHA-256 of the raw body against the instance
+webhook secret). A body that does not match ends in a `401` and touches nothing. The organization
+comes from the installation identifier in the payload, the work runs off the request thread as the
+account that connected the installation, and `X-GitHub-Delivery` is remembered for a week so a
+redelivery changes nothing twice.
 
 `/api/integrations` requires the administrator role and is not available to API keys.
 `/api/export/**` is available to API keys under the `tasks:read` scope.
@@ -576,3 +633,4 @@ So that parallel work does not collide, every area gets its own range:
 | `V40` to `V49` | organizations, roles, data isolation |
 | `V50` to `V59` | work form presets, sprints, field options |
 | `V60` to `V69` | onboarding, invitations, address verification |
+| `V70` to `V79` | task and view settings, GitHub integration, linked GitHub accounts |

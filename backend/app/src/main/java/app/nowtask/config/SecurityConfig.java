@@ -29,6 +29,11 @@ import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 class SecurityConfig {
+
+    private static final String GITHUB_WEBHOOK = "/api/integrations/github/webhook";
+    private static final String GITHUB_ACCOUNT = "/api/integrations/github/account/**";
+    private static final String GITHUB_TASK = "/api/integrations/github/task/*";
+
     @Bean
     SecurityFilterChain filterChain(
             HttpSecurity http,
@@ -52,6 +57,7 @@ class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepository)
                         .csrfTokenRequestHandler(csrfHandler)
+                        .ignoringRequestMatchers(GITHUB_WEBHOOK)
                         .ignoringRequestMatchers(request -> ApiKeyAuthenticationFilter.bearerToken(request) != null))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
@@ -73,6 +79,9 @@ class SecurityConfig {
                         .hasAuthority("PERM_MEMBERS_INVITE")
                         .requestMatchers(HttpMethod.GET, "/api/organization/audit").hasAuthority("PERM_AUDIT_READ")
                         .requestMatchers("/api/organization/**").hasAuthority("PERM_MEMBERS_MANAGE")
+                        .requestMatchers(HttpMethod.POST, GITHUB_WEBHOOK).permitAll()
+                        .requestMatchers("/api/integrations/github/account", GITHUB_ACCOUNT).authenticated()
+                        .requestMatchers(HttpMethod.GET, GITHUB_TASK).authenticated()
                         .requestMatchers("/api/integrations/**").hasAuthority("PERM_INTEGRATIONS_MANAGE")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

@@ -215,13 +215,17 @@ public class TaskService implements Tasks {
         requireEnabled(disabled, patch, "epicId", TaskField.EPIC);
         requireEnabled(disabled, patch, "sprintCode", TaskField.SPRINT);
 
+        boolean contentChanged = false;
+
         if (patch.has("title")) {
             String title = required(patch.text("title"), "Task title");
             record(task, "title", task.getTitle(), title, actor.id());
             task.setTitle(title);
+            contentChanged = true;
         }
         if (patch.has("description")) {
             task.setDescription(patch.text("description") == null ? "" : patch.text("description"));
+            contentChanged = true;
         }
         if (patch.has("priority")) {
             applyPriority(task, Priority.of(required(patch.text("priority"), "Priorytet")), actor.id());
@@ -263,6 +267,13 @@ public class TaskService implements Tasks {
         }
 
         task.touch();
+
+        if (contentChanged) {
+            events.publishEvent(new TaskEvents.TaskContentChanged(
+                    task.getKey(), task.getTitle(), task.getDescription(), actor.id(), Instant.now(),
+                    ActorContext.currentLabel()));
+        }
+
         return summaryOf(task);
     }
 

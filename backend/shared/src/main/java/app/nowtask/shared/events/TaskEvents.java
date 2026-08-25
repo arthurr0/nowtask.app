@@ -37,4 +37,13 @@ public final class TaskEvents {
 
     public record TaskDeleted(String taskKey, UUID actorId, Instant at, String ruleName) implements TaskEvent {
     }
+
+    public record TaskContentChanged(
+            String taskKey,
+            String title,
+            String description,
+            UUID actorId,
+            Instant at,
+            String ruleName) implements TaskEvent {
+    }
 }

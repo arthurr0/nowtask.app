@@ -5,6 +5,9 @@ import { firstValueFrom } from 'rxjs';
 import type {
   AgentsOverviewDto,
   ApiKeyDto,
+  GitHubAccountDto,
+  GitHubStatusDto,
+  GitHubTaskLinkDto,
   IntegrationDto,
   IntegrationTestDto,
   NotificationDto,
@@ -621,8 +624,12 @@ export class NotificationsStore extends LoadableStore {
 @Injectable({ providedIn: 'root' })
 export class IntegrationsStore extends LoadableStore {
   private readonly itemsSignal = signal<IntegrationDto[]>([]);
+  private readonly gitHubSignal = signal<GitHubStatusDto | null>(null);
+  private readonly gitHubAccountSignal = signal<GitHubAccountDto | null>(null);
 
   readonly items = this.itemsSignal.asReadonly();
+  readonly gitHub = this.gitHubSignal.asReadonly();
+  readonly gitHubAccount = this.gitHubAccountSignal.asReadonly();
 
   async load(): Promise<void> {
     await this.guard(async () => {
@@ -661,8 +668,63 @@ export class IntegrationsStore extends LoadableStore {
     return result;
   }
 
+  async loadGitHubAccount(): Promise<void> {
+    this.gitHubAccountSignal.set(
+      await firstValueFrom(this.http.get<GitHubAccountDto>('/api/integrations/github/account')),
+    );
+  }
+
+  async startGitHubAccountLink(): Promise<string> {
+    const reply = await firstValueFrom(
+      this.http.post<{ url: string }>('/api/integrations/github/account/authorize', {}),
+    );
+    return reply.url;
+  }
+
+  async linkGitHubAccount(code: string, state: string): Promise<GitHubAccountDto> {
+    const account = await firstValueFrom(
+      this.http.post<GitHubAccountDto>('/api/integrations/github/account/connect', { code, state }),
+    );
+    this.gitHubAccountSignal.set(account);
+    return account;
+  }
+
+  async unlinkGitHubAccount(): Promise<void> {
+    this.gitHubAccountSignal.set(
+      await firstValueFrom(this.http.delete<GitHubAccountDto>('/api/integrations/github/account')),
+    );
+  }
+
+  async loadGitHub(): Promise<void> {
+    this.gitHubSignal.set(
+      await firstValueFrom(this.http.get<GitHubStatusDto>('/api/integrations/github')),
+    );
+  }
+
+  async connectGitHub(installationId: string, code: string): Promise<GitHubStatusDto> {
+    const status = await firstValueFrom(
+      this.http.post<GitHubStatusDto>('/api/integrations/github/connect', { installationId, code }),
+    );
+    this.gitHubSignal.set(status);
+    return status;
+  }
+
+  async disconnectGitHub(): Promise<void> {
+    this.gitHubSignal.set(
+      await firstValueFrom(this.http.delete<GitHubStatusDto>('/api/integrations/github')),
+    );
+  }
+
+  async taskLinks(taskKey: string): Promise<GitHubTaskLinkDto[]> {
+    return firstValueFrom(
+      this.http.get<GitHubTaskLinkDto[]>(`/api/integrations/github/task/${taskKey}`),
+    );
+  }
+
   clear(): void {
     this.itemsSignal.set([]);
+    this.gitHubSignal.set(null);
+    this.gitHubAccountSignal.set(null);
     this.resetState();
   }
 }

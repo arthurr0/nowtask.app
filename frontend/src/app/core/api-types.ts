@@ -461,7 +461,7 @@ export interface NotificationPageDto {
   unread: number;
 }
 
-export type IntegrationKind = 'webhook' | 'email';
+export type IntegrationKind = 'webhook' | 'email' | 'github';
 
 export type WebhookFormat = 'generic' | 'discord' | 'slack';
 
@@ -489,6 +489,39 @@ export interface IntegrationDto {
 
 export interface IntegrationTestDto {
   ok: boolean;
+  detail: string;
+}
+
+export interface GitHubAccountDto {
+  available: boolean;
+  connected: boolean;
+  login: string;
+  avatarUrl: string;
+}
+
+export type GitHubLinkKind = 'issue' | 'pull' | 'commit' | 'branch' | 'release' | 'workflow';
+
+export interface GitHubTaskLinkDto {
+  kind: GitHubLinkKind;
+  repo: string;
+  number?: number;
+  ref: string;
+  url: string;
+  state: string;
+  title: string;
+  authorLogin: string;
+  detail: string;
+  checkState: string;
+  updatedAt?: string;
+}
+
+export interface GitHubStatusDto {
+  available: boolean;
+  installUrl: string;
+  connected: boolean;
+  account: string;
+  suspended: boolean;
+  repositories: string[];
   detail: string;
 }
 

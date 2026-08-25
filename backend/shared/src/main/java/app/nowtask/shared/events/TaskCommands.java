@@ -36,4 +36,10 @@ public interface TaskCommands {
     void setDueInDays(String taskKey, int days);
 
     void addComment(String taskKey, String body);
+
+    void setTitle(String taskKey, String title);
+
+    void setDescription(String taskKey, String description);
+
+    Optional<String> description(String taskKey);
 }
