@@ -17,7 +17,12 @@ import { OrgService } from '../../core/org.service';
 import { PrefsService } from '../../core/prefs.service';
 import { dateTime } from '../../core/format';
 import type { Accent, Density, Lang, RadiusStep, ThemeChoice } from '../../core/models';
-import type { NotificationPrefDto, SessionDto, TaskViewCode } from '../../core/api-types';
+import type {
+  NotificationPrefDto,
+  SessionDto,
+  TaskOpenMode,
+  TaskViewCode,
+} from '../../core/api-types';
 import { TASK_VIEWS } from '../../core/task-views';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { ConfirmService } from '../../ui/confirm.service';
@@ -31,13 +36,7 @@ import { TextField } from '../../ui/text-field';
 import { DeleteAccountDialog, EmailChangeDialog, type EmailChangeDraft } from './account-dialogs';
 
 type Section =
-  | 'profile'
-  | 'security'
-  | 'notifications'
-  | 'github'
-  | 'appearance'
-  | 'views'
-  | 'language';
+  'profile' | 'security' | 'notifications' | 'github' | 'appearance' | 'views' | 'language';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -124,6 +123,42 @@ export class Settings implements OnInit {
       this.toast.error(this.t('common.actionFailed'));
     } finally {
       this.defaultViewSaving.set(false);
+    }
+  }
+
+  protected readonly taskOpenChoices: readonly {
+    id: TaskOpenMode;
+    icon: string;
+    label: string;
+    hint: string;
+  }[] = [
+    {
+      id: 'dialog',
+      icon: 'columns',
+      label: 'settings.taskOpenDialog',
+      hint: 'settings.taskOpenDialogHint',
+    },
+    {
+      id: 'page',
+      icon: 'arrow-right',
+      label: 'settings.taskOpenPage',
+      hint: 'settings.taskOpenPageHint',
+    },
+  ];
+
+  protected readonly taskOpenSaving = signal(false);
+
+  async selectTaskOpenMode(mode: TaskOpenMode): Promise<void> {
+    if (this.store.taskOpenMode() === mode || this.taskOpenSaving()) return;
+
+    this.taskOpenSaving.set(true);
+    try {
+      await this.store.saveTaskOpenMode(mode);
+      this.toast.success(this.t('common.saved'));
+    } catch {
+      this.toast.error(this.t('common.actionFailed'));
+    } finally {
+      this.taskOpenSaving.set(false);
     }
   }
 
@@ -234,7 +269,6 @@ export class Settings implements OnInit {
       void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
     }
   }
-
 
   selectLanguage(code: string): void {
     if (code === 'pl' || code === 'en' || code === 'de') {

@@ -25,12 +25,13 @@ import { TemplatePortal } from '@angular/cdk/portal';
 import { I18nService } from '../core/i18n/i18n.service';
 import { Icon } from './icon';
 
-export type DialogSize = 'sm' | 'md' | 'lg';
+export type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
 
 const WIDTHS: Record<DialogSize, string> = {
   sm: 'min(92vw, 420px)',
   md: 'min(92vw, 580px)',
   lg: 'min(94vw, 820px)',
+  xl: 'min(96vw, 1180px)',
 };
 
 let dialogCounter = 0;
@@ -46,30 +47,34 @@ let dialogCounter = 0;
         [cdkTrapFocusAutoCapture]="true"
         role="dialog"
         aria-modal="true"
-        [attr.aria-labelledby]="titleId"
-        [attr.aria-describedby]="description() ? descriptionId : null"
+        [attr.aria-labelledby]="showHeader() ? titleId : null"
+        [attr.aria-label]="showHeader() ? null : t(title())"
+        [attr.aria-describedby]="showHeader() && description() ? descriptionId : null"
         class="ui-rise flex max-h-[86vh] w-full flex-col overflow-hidden rounded-panel border border-line bg-surface shadow-lift"
+        [style.height]="fill() ? '86vh' : null"
       >
-        <header class="flex flex-none items-start gap-3 border-b border-line px-4 py-3">
-          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <h2 [id]="titleId" class="truncate text-[15px] font-medium">{{ t(title()) }}</h2>
-            @if (description()) {
-              <p [id]="descriptionId" class="text-[12px] text-ink-2">{{ t(description()) }}</p>
+        @if (showHeader()) {
+          <header class="flex flex-none items-start gap-3 border-b border-line px-4 py-3">
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <h2 [id]="titleId" class="truncate text-[15px] font-medium">{{ t(title()) }}</h2>
+              @if (description()) {
+                <p [id]="descriptionId" class="text-[12px] text-ink-2">{{ t(description()) }}</p>
+              }
+            </div>
+            @if (dismissible()) {
+              <button
+                type="button"
+                class="hoverable -mr-1 flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-2"
+                [attr.aria-label]="t('ui.dialog.close')"
+                (click)="requestClose()"
+              >
+                <ui-icon name="x" [size]="16" />
+              </button>
             }
-          </div>
-          @if (dismissible()) {
-            <button
-              type="button"
-              class="hoverable -mr-1 flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-2"
-              [attr.aria-label]="t('ui.dialog.close')"
-              (click)="requestClose()"
-            >
-              <ui-icon name="x" [size]="16" />
-            </button>
-          }
-        </header>
+          </header>
+        }
 
-        <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 text-[13px] scroll-thin">
+        <div [class]="bodyClass()">
           <ng-content />
         </div>
 
@@ -95,6 +100,10 @@ export class Dialog {
   readonly dismissible = input(true);
   readonly closeOnBackdrop = input(true);
   readonly showFooter = input(true);
+  readonly showHeader = input(true);
+  readonly flush = input(false);
+  readonly fill = input(false);
+  readonly closeOnNavigation = input(true);
 
   readonly closed = output<void>();
 
@@ -104,6 +113,12 @@ export class Dialog {
   protected readonly descriptionId = `ui-dialog-desc-${dialogCounter}`;
 
   private readonly width = computed(() => WIDTHS[this.size()]);
+
+  protected readonly bodyClass = computed(() =>
+    this.flush()
+      ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+      : 'min-h-0 flex-1 overflow-y-auto px-4 py-3.5 text-[13px] scroll-thin',
+  );
 
   private overlayRef: OverlayRef | null = null;
 
@@ -131,7 +146,7 @@ export class Dialog {
       hasBackdrop: true,
       backdropClass: 'ui-scrim',
       width: this.width(),
-      disposeOnNavigation: true,
+      disposeOnNavigation: this.closeOnNavigation(),
     });
 
     overlayRef.attach(new TemplatePortal(this.panelTemplate(), this.viewContainerRef));

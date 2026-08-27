@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import app.nowtask.identity.api.ViewPreferences;
+import app.nowtask.shared.TaskOpenMode;
 import app.nowtask.shared.TaskView;
 
 @RestController
@@ -21,6 +22,9 @@ class ViewPreferenceController {
     record DefaultView(TaskView view) {
     }
 
+    record OpenMode(TaskOpenMode mode) {
+    }
+
     @GetMapping("/default-view")
     DefaultView defaultView() {
         return new DefaultView(preferences.currentDefaultView());
@@ -29,5 +33,15 @@ class ViewPreferenceController {
     @PutMapping("/default-view")
     DefaultView replaceDefaultView(@RequestBody DefaultView request) {
         return new DefaultView(preferences.replaceDefaultView(request.view()));
+    }
+
+    @GetMapping("/task-open-mode")
+    OpenMode taskOpenMode() {
+        return new OpenMode(preferences.currentTaskOpenMode());
+    }
+
+    @PutMapping("/task-open-mode")
+    OpenMode replaceTaskOpenMode(@RequestBody OpenMode request) {
+        return new OpenMode(preferences.replaceTaskOpenMode(request.mode()));
     }
 }

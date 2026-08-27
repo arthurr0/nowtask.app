@@ -225,6 +225,8 @@ export const pl = {
   'task.protectedField': 'Pole „Koszt” widoczne tylko dla roli Menedżer',
   'task.highPriority': 'Wysoki priorytet',
   'task.reviewers': '{count} recenzentów',
+  'task.detail': 'Szczegóły zadania',
+  'task.openFullPage': 'Otwórz na pełnej stronie',
   'task.notFound': 'Nie znaleziono zadania',
   'task.backToBoard': 'Wróć na tablicę',
   'task.linkCopied': 'Link skopiowany',
@@ -359,11 +361,18 @@ export const pl = {
   'settings.allProjects': 'Wszystkie projekty',
   'settings.views': 'Widoki zadań',
   'settings.viewsLead':
-    'Wybierz widok, który otwiera się po wejściu do aplikacji. Lista zawiera tylko widoki włączone w organizacji.',
+    'Wybierz widok, który otwiera się po wejściu do aplikacji, oraz sposób otwierania pojedynczego zadania. Lista zawiera tylko widoki włączone w organizacji.',
   'settings.defaultView': 'Domyślny widok',
   'settings.defaultViewHint':
     'Jeśli organizacja wyłączy wybrany widok, aplikacja otworzy pierwszy dostępny.',
   'settings.viewOpensFirst': 'otwiera się jako pierwszy',
+  'settings.taskOpen': 'Otwieranie zadania',
+  'settings.taskOpenHint':
+    'Bezpośredni link do zadania zawsze otwiera pełną stronę, niezależnie od tego ustawienia.',
+  'settings.taskOpenDialog': 'W oknie',
+  'settings.taskOpenDialogHint': 'Zadanie otwiera się nad bieżącym widokiem',
+  'settings.taskOpenPage': 'Na pełnej stronie',
+  'settings.taskOpenPageHint': 'Zadanie zastępuje bieżący widok',
   'settings.language': 'Język',
   'settings.langLead':
     'Język interfejsu jest niezależny od treści zadań. Tłumaczenia dociągają się osobnymi paczkami.',

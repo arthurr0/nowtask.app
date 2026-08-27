@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { I18nService } from '../core/i18n/i18n.service';
+import { TaskOpenService } from '../core/task-open.service';
 import { shortDate } from '../core/format';
 import { NotificationsStore } from '../data/feature.stores';
 import { WorkspaceStore } from '../data/workspace.store';
@@ -35,7 +35,7 @@ import { Menu, type MenuItem } from './menu';
 export class Notifications {
   private readonly store = inject(WorkspaceStore);
   private readonly notifications = inject(NotificationsStore);
-  private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
@@ -127,7 +127,7 @@ export class Notifications {
     }
 
     if (item.id.startsWith('task:')) {
-      void this.router.navigate(['/app/tasks', item.id.slice('task:'.length)]);
+      this.taskOpen.open(item.id.slice('task:'.length));
       return;
     }
 
@@ -139,7 +139,7 @@ export class Notifications {
       void this.notifications.markRead(id);
     }
     if (entry.taskKey) {
-      void this.router.navigate(['/app/tasks', entry.taskKey]);
+      this.taskOpen.open(entry.taskKey);
     }
   }
 }

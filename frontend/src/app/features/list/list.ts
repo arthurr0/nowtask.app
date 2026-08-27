@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import { isOverdue, shortDate } from '../../core/format';
 import type { ListColumn, TaskDto } from '../../core/api-types';
 import { LIST_COLUMNS, ViewState } from '../../data/view-state';
@@ -51,7 +51,7 @@ export class TaskList {
   private readonly toast = inject(ToastService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
-  private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
 
   readonly onlyMine = input(false);
 
@@ -282,7 +282,7 @@ export class TaskList {
   }
 
   open(task: TaskDto): void {
-    void this.router.navigate(['/app/tasks', task.key]);
+    this.taskOpen.open(task.key);
   }
 
   clearSelection(): void {
@@ -362,7 +362,7 @@ export class TaskList {
 
   private async copyLink(task: TaskDto): Promise<void> {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/app/tasks/${task.key}`);
+      await navigator.clipboard.writeText(this.taskOpen.link(task.key));
       this.toast.success(this.t('task.linkCopied'));
     } catch {
       this.toast.error(this.t('task.linkCopyFailed'));

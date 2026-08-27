@@ -16,6 +16,7 @@ import type {
   TaskDto,
   TaskPageDto,
   TaskFieldSettingDto,
+  TaskOpenMode,
   TaskQueryDto,
   TaskViewCode,
   TaskViewSettingDto,
@@ -192,6 +193,31 @@ export class WorkspaceStore {
   private patchDefaultView(defaultView: TaskViewCode): void {
     this.bootstrapSignal.update((bootstrap) =>
       bootstrap ? { ...bootstrap, defaultView } : bootstrap,
+    );
+  }
+
+  readonly taskOpenMode = computed<TaskOpenMode>(
+    () => this.bootstrapSignal()?.taskOpenMode ?? 'dialog',
+  );
+
+  async saveTaskOpenMode(mode: TaskOpenMode): Promise<void> {
+    const previous = this.bootstrapSignal()?.taskOpenMode;
+    this.patchTaskOpenMode(mode);
+
+    try {
+      const saved = await firstValueFrom(
+        this.http.put<{ mode: TaskOpenMode }>('/api/me/task-open-mode', { mode }),
+      );
+      this.patchTaskOpenMode(saved.mode);
+    } catch (error) {
+      if (previous) this.patchTaskOpenMode(previous);
+      throw error;
+    }
+  }
+
+  private patchTaskOpenMode(taskOpenMode: TaskOpenMode): void {
+    this.bootstrapSignal.update((bootstrap) =>
+      bootstrap ? { ...bootstrap, taskOpenMode } : bootstrap,
     );
   }
 

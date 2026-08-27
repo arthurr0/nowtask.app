@@ -227,6 +227,8 @@ export const de: Dictionary = {
   'task.protectedField': 'Feld „Kosten“ nur für die Rolle Manager sichtbar',
   'task.highPriority': 'Hohe Priorität',
   'task.reviewers': '{count} Prüfer',
+  'task.detail': 'Aufgabendetails',
+  'task.openFullPage': 'Ganze Seite öffnen',
   'task.notFound': 'Aufgabe nicht gefunden',
   'task.backToBoard': 'Zurück zum Board',
   'task.linkCopied': 'Link kopiert',
@@ -361,11 +363,18 @@ export const de: Dictionary = {
   'settings.allProjects': 'Alle Projekte',
   'settings.views': 'Aufgabenansichten',
   'settings.viewsLead':
-    'Wähle die Ansicht, die beim Start der App erscheint. Die Liste enthält nur Ansichten, die die Organisation aktiviert hat.',
+    'Wähle die Ansicht, die beim Start der App erscheint, und wie eine einzelne Aufgabe geöffnet wird. Die Liste enthält nur Ansichten, die die Organisation aktiviert hat.',
   'settings.defaultView': 'Standardansicht',
   'settings.defaultViewHint':
     'Schaltet die Organisation die gewählte Ansicht ab, öffnet die App die erste verfügbare.',
   'settings.viewOpensFirst': 'öffnet sich zuerst',
+  'settings.taskOpen': 'Aufgabe öffnen',
+  'settings.taskOpenHint':
+    'Ein direkter Link zu einer Aufgabe öffnet immer die ganze Seite, unabhängig von dieser Einstellung.',
+  'settings.taskOpenDialog': 'Im Dialog',
+  'settings.taskOpenDialogHint': 'Die Aufgabe öffnet sich über der aktuellen Ansicht',
+  'settings.taskOpenPage': 'Auf ganzer Seite',
+  'settings.taskOpenPageHint': 'Die Aufgabe ersetzt die aktuelle Ansicht',
   'settings.language': 'Sprache',
   'settings.langLead':
     'Die Interface-Sprache ist unabhängig vom Aufgabeninhalt. Übersetzungen laden als eigene Pakete.',

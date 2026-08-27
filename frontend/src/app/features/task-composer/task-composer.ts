@@ -8,8 +8,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import type { Priority } from '../../core/models';
 import type { TaskFieldKey } from '../../core/task-fields';
 import { ViewState } from '../../data/view-state';
@@ -236,7 +236,7 @@ export class TaskComposerDialog {
   protected readonly store = inject(WorkspaceStore);
   private readonly view = inject(ViewState);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
@@ -367,7 +367,7 @@ export class TaskComposerDialog {
   }
 
   private openTask(key: string): void {
-    void this.router.navigate(['/app/tasks', key]);
+    this.taskOpen.open(key);
   }
 
   private reset(): void {

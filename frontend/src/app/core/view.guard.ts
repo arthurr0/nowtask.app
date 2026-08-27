@@ -20,11 +20,13 @@ export function taskViewGuard(code: TaskViewCode): CanActivateFn {
   };
 }
 
-export const defaultViewGuard: CanActivateFn = async () => {
+export const defaultViewGuard: CanActivateFn = async (route) => {
   const store = inject(WorkspaceStore);
   const router = inject(Router);
 
   await store.load();
 
-  return router.createUrlTree([taskViewMeta(store.resolvedDefaultView()).path]);
+  return router.createUrlTree([taskViewMeta(store.resolvedDefaultView()).path], {
+    queryParams: route.queryParams,
+  });
 };

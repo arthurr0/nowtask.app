@@ -53,10 +53,16 @@ A modal window with a focus trap, background scroll lock, closing on Escape and 
 </ui-dialog>
 ```
 
-Inputs: `open` (model, `[(open)]`), `title`, `description`, `size` (`sm` | `md` | `lg`),
-`dismissible`, `closeOnBackdrop`, `showFooter`. Output: `closed: void`.
+Inputs: `open` (model, `[(open)]`), `title`, `description`, `size` (`sm` | `md` | `lg` | `xl`),
+`dismissible`, `closeOnBackdrop`, `showFooter`, `showHeader`, `flush`, `fill`, `closeOnNavigation`.
+Output: `closed: void`.
 The footer is content projected with the `dialogFooter` attribute; for a window without actions set
 `[showFooter]="false"`.
+
+For a window that hosts a whole screen instead of a form, `[showHeader]="false"` drops the built-in
+header (`title` then only labels the window for screen readers), `[flush]="true"` removes the padding
+and the body scroll so the content lays itself out, `[fill]="true"` keeps the panel at full height,
+and `[closeOnNavigation]="false"` keeps it open across router navigation.
 
 ## `confirm.service.ts`: `ConfirmService`
 

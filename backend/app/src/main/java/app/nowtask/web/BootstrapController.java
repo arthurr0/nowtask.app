@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import app.nowtask.automation.api.Automations;
+import app.nowtask.shared.TaskOpenMode;
 import app.nowtask.shared.TaskView;
 import app.nowtask.identity.OnboardingService;
 import app.nowtask.identity.api.NavItemView;
@@ -68,6 +69,7 @@ class BootstrapController {
             SettingsView settings,
             List<NavItemView> navigation,
             TaskView defaultView,
+            TaskOpenMode taskOpenMode,
             List<String> permissions,
             List<String> sprints,
             int activeRuleCount,
@@ -90,6 +92,7 @@ class BootstrapController {
                 workspace.settings(),
                 navPreferences.currentNavigation(),
                 viewPreferences.currentDefaultView(),
+                viewPreferences.currentTaskOpenMode(),
                 app.nowtask.shared.OrganizationContextHolder.current().permissions().stream()
                         .map(app.nowtask.shared.Permission::code)
                         .sorted()

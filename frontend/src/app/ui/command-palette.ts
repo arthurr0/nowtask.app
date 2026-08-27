@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService } from '../core/i18n/i18n.service';
+import { TaskOpenService } from '../core/task-open.service';
 import { TASK_VIEWS } from '../core/task-views';
 import type { SearchResultDto } from '../data/workspace.store';
 import { ViewState } from '../data/view-state';
@@ -112,6 +113,7 @@ export class CommandPaletteDialog {
   private readonly composer = inject(TaskComposer);
   private readonly prefs = inject(PrefsService);
   private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
@@ -151,7 +153,7 @@ export class CommandPaletteDialog {
           label: task.title,
           hint: task.key,
           icon: 'check',
-          run: () => void this.router.navigate(['/app/tasks', task.key]),
+          run: () => this.taskOpen.open(task.key),
         });
       }
       for (const person of results.people) {

@@ -5,10 +5,12 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import { dateTime, fullDate, isOverdue, money } from '../../core/format';
 import type { CustomFieldDto, GitHubTaskLinkDto } from '../../core/api-types';
 import { customFieldKey, type TaskFieldKey } from '../../core/task-fields';
@@ -27,6 +29,8 @@ import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 
 type Tab = 'feed' | 'comments' | 'history';
+
+export type TaskDetailChrome = 'page' | 'dialog';
 
 interface CustomRow {
   field: CustomFieldDto;
@@ -51,6 +55,7 @@ const GITHUB_ICONS: Record<string, string> = {
   selector: 'app-task-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, Icon, Avatar, Menu, InlineEdit, Switch, Topbar, ViewControls, PageState],
+  host: { class: 'flex min-h-0 flex-1 flex-col' },
   templateUrl: './task-detail.html',
 })
 export class TaskDetail {
@@ -62,11 +67,17 @@ export class TaskDetail {
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
   protected readonly label = this.i18n.label;
 
   readonly key = input.required<string>();
+  readonly chrome = input<TaskDetailChrome>('page');
+
+  readonly closeRequested = output<void>();
+
+  protected readonly inDialog = computed(() => this.chrome() === 'dialog');
 
   protected readonly tab = signal<Tab>('feed');
   protected readonly commentDraft = signal('');
@@ -463,9 +474,29 @@ export class TaskDetail {
     }
   }
 
+  close(): void {
+    this.closeRequested.emit();
+  }
+
+  openTask(key: string): void {
+    this.taskOpen.open(key);
+  }
+
+  openRelation(event: MouseEvent, key: string): void {
+    if (!this.inDialog()) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    this.taskOpen.open(key);
+  }
+
+  openFullPage(): void {
+    this.closeRequested.emit();
+    void this.router.navigate(['/app/tasks', this.key()]);
+  }
+
   async copyLink(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/app/tasks/${this.key()}`);
+      await navigator.clipboard.writeText(this.taskOpen.link(this.key()));
       this.toast.success(this.t('task.linkCopied'));
     } catch {
       this.toast.error(this.t('task.linkCopyFailed'));
@@ -523,7 +554,7 @@ export class TaskDetail {
       this.toast.success(this.t('composer.created', { key: created.key }), {
         action: {
           label: this.t('composer.openTask'),
-          run: () => void this.router.navigate(['/app/tasks', created.key]),
+          run: () => this.taskOpen.open(created.key),
         },
       });
     });
@@ -535,7 +566,11 @@ export class TaskDetail {
     try {
       await this.store.deleteTask(this.key());
       this.toast.success(this.t('board.deleted', { key: this.key() }));
-      void this.router.navigate(['/app']);
+      if (this.inDialog()) {
+        this.closeRequested.emit();
+      } else {
+        void this.router.navigate(['/app']);
+      }
     } catch (error) {
       this.toast.error(this.errorText(error));
     }

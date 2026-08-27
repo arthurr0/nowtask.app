@@ -11,6 +11,7 @@ COPY tasks/build.gradle.kts ./tasks/
 COPY automation/build.gradle.kts ./automation/
 COPY analytics/build.gradle.kts ./analytics/
 COPY integrations/build.gradle.kts ./integrations/
+COPY realtime/build.gradle.kts ./realtime/
 COPY exports/build.gradle.kts ./exports/
 COPY app/build.gradle.kts ./app/
 RUN ./gradlew --no-daemon :app:dependencies > /dev/null 2>&1 || true
@@ -22,6 +23,7 @@ COPY tasks/src ./tasks/src
 COPY automation/src ./automation/src
 COPY analytics/src ./analytics/src
 COPY integrations/src ./integrations/src
+COPY realtime/src ./realtime/src
 COPY exports/src ./exports/src
 COPY app/src ./app/src
 RUN ./gradlew --no-daemon :app:bootJar -x test

@@ -148,6 +148,8 @@ export type NavItemCode =
 
 export type TaskViewCode = 'board' | 'list' | 'timeline' | 'calendar';
 
+export type TaskOpenMode = 'dialog' | 'page';
+
 export interface NavItemDto {
   code: NavItemCode;
   hidden: boolean;
@@ -179,6 +181,7 @@ export interface BootstrapDto {
   settings: WorkspaceSettingsDto;
   navigation: NavItemDto[];
   defaultView: TaskViewCode;
+  taskOpenMode: TaskOpenMode;
   permissions: string[];
   sprints: string[];
   activeRuleCount: number;

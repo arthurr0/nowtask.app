@@ -30,6 +30,7 @@ import { PageState } from '../../ui/page-state';
 import { PromptService } from '../../ui/prompt.service';
 import { ToastService } from '../../ui/toast.service';
 import { TaskComposerDialog } from '../task-composer/task-composer';
+import { TaskDialog } from '../task-detail/task-dialog';
 import { OnboardingChecklist } from '../onboarding/checklist';
 import { OnboardingTour } from '../onboarding/tour';
 
@@ -87,6 +88,7 @@ function defaultNavigation(): NavItemDto[] {
     Menu,
     PageState,
     TaskComposerDialog,
+    TaskDialog,
     CommandPaletteDialog,
     OnboardingChecklist,
     OnboardingTour,

@@ -6,8 +6,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import { daysBetween } from '../../core/format';
 import { TimelineStore } from '../../data/feature.stores';
 import { ViewState } from '../../data/view-state';
@@ -68,7 +68,7 @@ export class Timeline implements OnInit {
   protected readonly composer = inject(TaskComposer);
   protected readonly timeline = inject(TimelineStore);
   protected readonly t = inject(I18nService).t;
-  private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
 
   protected readonly milestoneRow = MILESTONE_ROW;
   protected readonly rowHeight = ROW_HEIGHT;
@@ -261,7 +261,7 @@ export class Timeline implements OnInit {
   }
 
   open(taskKey: string | null): void {
-    if (taskKey) void this.router.navigate(['/app/tasks', taskKey]);
+    if (taskKey) this.taskOpen.open(taskKey);
   }
 
   private makeBar(start: string, end: string, progress: number): Bar | null {

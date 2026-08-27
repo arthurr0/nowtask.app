@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import type { TaskDto } from '../../core/api-types';
 import { RealtimeService } from '../../core/realtime.service';
 import { ViewState } from '../../data/view-state';
@@ -61,6 +62,7 @@ export class Board {
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
   private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
 
   protected readonly selectedKey = signal<string | null>(null);
   protected readonly mobileColumnId = signal<string | null>(null);
@@ -232,7 +234,7 @@ export class Board {
   }
 
   open(task: TaskDto): void {
-    void this.router.navigate(['/app/tasks', task.key]);
+    this.taskOpen.open(task.key);
   }
 
   newTask(column: BoardColumn): void {
@@ -382,7 +384,7 @@ export class Board {
   }
 
   private async copyLink(task: TaskDto): Promise<void> {
-    const url = `${window.location.origin}/app/tasks/${task.key}`;
+    const url = this.taskOpen.link(task.key);
     try {
       await navigator.clipboard.writeText(url);
       this.toast.success(this.t('task.linkCopied'));

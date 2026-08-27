@@ -227,6 +227,8 @@ export const en: Dictionary = {
   'task.protectedField': 'Field “Cost” is visible to the Manager role only',
   'task.highPriority': 'High priority',
   'task.reviewers': '{count} reviewers',
+  'task.detail': 'Task detail',
+  'task.openFullPage': 'Open full page',
   'task.notFound': 'Task not found',
   'task.backToBoard': 'Back to the board',
   'task.linkCopied': 'Link copied',
@@ -361,11 +363,18 @@ export const en: Dictionary = {
   'settings.allProjects': 'All projects',
   'settings.views': 'Task views',
   'settings.viewsLead':
-    'Pick the view that opens when you enter the app. The list holds only the views the organization keeps on.',
+    'Pick the view that opens when you enter the app and how a single task opens. The list holds only the views the organization keeps on.',
   'settings.defaultView': 'Default view',
   'settings.defaultViewHint':
     'If the organization turns the chosen view off, the app opens the first available one.',
   'settings.viewOpensFirst': 'opens first',
+  'settings.taskOpen': 'Opening a task',
+  'settings.taskOpenHint':
+    'A direct link to a task always opens the full page, whatever this setting says.',
+  'settings.taskOpenDialog': 'In a dialog',
+  'settings.taskOpenDialogHint': 'The task opens over the current view',
+  'settings.taskOpenPage': 'On a full page',
+  'settings.taskOpenPageHint': 'The task replaces the current view',
   'settings.language': 'Language',
   'settings.langLead':
     'Interface language is independent of task content. Translations load as separate bundles.',

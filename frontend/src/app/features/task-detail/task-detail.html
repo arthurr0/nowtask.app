@@ -22,7 +22,19 @@
 
     <span class="hidden flex-1 lg:block"></span>
 
-    <ui-view-controls />
+    @if (inDialog()) {
+      <button
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-[7px] border border-line bg-surface-2 text-ink-2"
+        [attr.aria-label]="t('task.openFullPage')"
+        [title]="t('task.openFullPage')"
+        (click)="openFullPage()"
+      >
+        <ui-icon name="arrow-right" [size]="16" />
+      </button>
+    } @else {
+      <ui-view-controls />
+    }
 
     <button
       type="button"
@@ -44,13 +56,24 @@
       <ui-icon name="dots" [size]="16" />
     </ui-menu>
 
-    <a
-      routerLink="/app/board"
-      class="flex h-8 w-8 items-center justify-center rounded-[7px] text-ink-2"
-      [attr.aria-label]="t('common.close')"
-    >
-      <ui-icon name="x" [size]="17" />
-    </a>
+    @if (inDialog()) {
+      <button
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-[7px] text-ink-2"
+        [attr.aria-label]="t('common.close')"
+        (click)="close()"
+      >
+        <ui-icon name="x" [size]="17" />
+      </button>
+    } @else {
+      <a
+        routerLink="/app/board"
+        class="flex h-8 w-8 items-center justify-center rounded-[7px] text-ink-2"
+        [attr.aria-label]="t('common.close')"
+      >
+        <ui-icon name="x" [size]="17" />
+      </a>
+    }
   </ui-topbar>
 
   <div class="flex flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden scroll-thin">
@@ -623,6 +646,7 @@
             <a
               class="flex-1 font-mono text-ink-2"
               [routerLink]="['/app/tasks', relation.taskKey]"
+              (click)="openRelation($event, relation.taskKey)"
               >{{ relation.taskKey }}</a
             >
             <button
@@ -654,11 +678,21 @@
 } @else {
   <div class="flex flex-1 flex-col items-center justify-center gap-4">
     <p class="text-[15px] text-ink-2">{{ t('task.notFound') }}</p>
-    <a
-      routerLink="/app/board"
-      class="flex h-9 items-center rounded-[7px] bg-inv px-4 text-[13px] font-medium text-inv-ink"
-    >
-      {{ t('task.backToBoard') }}
-    </a>
+    @if (inDialog()) {
+      <button
+        type="button"
+        class="flex h-9 items-center rounded-[7px] bg-inv px-4 text-[13px] font-medium text-inv-ink"
+        (click)="close()"
+      >
+        {{ t('common.close') }}
+      </button>
+    } @else {
+      <a
+        routerLink="/app/board"
+        class="flex h-9 items-center rounded-[7px] bg-inv px-4 text-[13px] font-medium text-inv-ink"
+      >
+        {{ t('task.backToBoard') }}
+      </a>
+    }
   </div>
 }

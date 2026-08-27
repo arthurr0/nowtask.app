@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { TaskOpenService } from '../../core/task-open.service';
 import type { TaskDto } from '../../core/api-types';
 import { RealtimeService } from '../../core/realtime.service';
 import { ViewState } from '../../data/view-state';
@@ -56,7 +56,7 @@ export class Calendar {
   private readonly toast = inject(ToastService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
-  private readonly router = inject(Router);
+  private readonly taskOpen = inject(TaskOpenService);
 
   protected readonly visiblePerDay = VISIBLE_PER_DAY;
 
@@ -167,7 +167,7 @@ export class Calendar {
   }
 
   open(task: TaskDto): void {
-    void this.router.navigate(['/app/tasks', task.key]);
+    this.taskOpen.open(task.key);
   }
 
   newTaskOn(day: CalendarDay): void {
