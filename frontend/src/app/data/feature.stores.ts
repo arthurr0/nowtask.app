@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { OnboardingService } from '../core/onboarding.service';
 import { firstValueFrom } from 'rxjs';
@@ -419,11 +419,13 @@ export class SettingsStore extends LoadableStore {
 
 @Injectable({ providedIn: 'root' })
 export class TaskDetailStore extends LoadableStore {
+  private readonly keySignal = signal<string | null>(null);
   private readonly detailSignal = signal<TaskDetailDto | null>(null);
   private readonly commentsSignal = signal<CommentDto[]>([]);
   private readonly historySignal = signal<HistoryDto[]>([]);
   private readonly rulesSignal = signal<RuleDto[]>([]);
 
+  readonly key = this.keySignal.asReadonly();
   readonly detail = this.detailSignal.asReadonly();
   readonly comments = this.commentsSignal.asReadonly();
   readonly history = this.historySignal.asReadonly();
@@ -434,6 +436,7 @@ export class TaskDetailStore extends LoadableStore {
   );
 
   async load(key: string): Promise<void> {
+    this.keySignal.set(key);
     await this.guard(async () => {
       const [detail, comments, history, rules] = await Promise.all([
         firstValueFrom(this.http.get<TaskDetailDto>(`/api/tasks/${key}`)),
@@ -446,6 +449,25 @@ export class TaskDetailStore extends LoadableStore {
       this.historySignal.set(history);
       this.rulesSignal.set(rules);
     });
+  }
+
+  async refresh(): Promise<void> {
+    const key = this.keySignal();
+    if (!key) return;
+
+    try {
+      const [detail, comments, history] = await Promise.all([
+        firstValueFrom(this.http.get<TaskDetailDto>(`/api/tasks/${key}`)),
+        firstValueFrom(this.http.get<CommentDto[]>(`/api/tasks/${key}/comments`)),
+        firstValueFrom(this.http.get<HistoryDto[]>(`/api/tasks/${key}/history`)),
+      ]);
+      if (this.keySignal() !== key) return;
+      this.detailSignal.set(detail);
+      this.commentsSignal.set(comments);
+      this.historySignal.set(history);
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) this.clear();
+    }
   }
 
   async toggleSubtask(key: string, subtaskId: string): Promise<void> {
@@ -571,6 +593,7 @@ export class TaskDetailStore extends LoadableStore {
   }
 
   clear(): void {
+    this.keySignal.set(null);
     this.detailSignal.set(null);
     this.commentsSignal.set([]);
     this.historySignal.set([]);
@@ -591,6 +614,10 @@ export class NotificationsStore extends LoadableStore {
     await this.guard(async () => {
       this.apply(await firstValueFrom(this.http.get<NotificationPageDto>('/api/notifications')));
     });
+  }
+
+  async refresh(): Promise<void> {
+    this.apply(await firstValueFrom(this.http.get<NotificationPageDto>('/api/notifications')));
   }
 
   async markRead(id: string): Promise<void> {

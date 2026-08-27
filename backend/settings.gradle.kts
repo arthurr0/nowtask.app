@@ -8,6 +8,7 @@ include(
     "automation",
     "analytics",
     "integrations",
+    "realtime",
     "exports",
     "app",
 )

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { I18nService } from '../../core/i18n/i18n.service';
 import type { TaskDto } from '../../core/api-types';
+import { RealtimeService } from '../../core/realtime.service';
 import { ViewState } from '../../data/view-state';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { Avatar } from '../../ui/avatar';
@@ -51,6 +52,7 @@ export class Calendar {
   protected readonly store = inject(WorkspaceStore);
   protected readonly view = inject(ViewState);
   protected readonly composer = inject(TaskComposer);
+  protected readonly realtime = inject(RealtimeService);
   private readonly toast = inject(ToastService);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;

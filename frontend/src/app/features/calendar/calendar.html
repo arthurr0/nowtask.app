@@ -123,6 +123,8 @@
                 class="flex flex-none items-center gap-1.5 rounded-[6px] border border-line bg-surface px-1.5 py-1 text-left"
                 cdkDrag
                 [cdkDragData]="task.key"
+                (cdkDragStarted)="realtime.pause()"
+                (cdkDragEnded)="realtime.resume()"
                 [attr.title]="task.key + ' ' + task.title"
                 (click)="open(task)"
               >

@@ -7,6 +7,7 @@ import {
   OrganizationStore,
   AgentsStore,
   MetricsStore,
+  NotificationsStore,
   RulesStore,
   SettingsStore,
   TaskDetailStore,
@@ -33,6 +34,7 @@ export class AuthService {
     inject(AgentsStore),
     inject(SettingsStore),
     inject(TaskDetailStore),
+    inject(NotificationsStore),
     inject(AccountService),
   ];
 

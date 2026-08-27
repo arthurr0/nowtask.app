@@ -30,6 +30,7 @@ import app.nowtask.shared.RuleViolationException;
 import app.nowtask.shared.StatusCategory;
 import app.nowtask.shared.TaskField;
 import app.nowtask.shared.TaskQuery;
+import app.nowtask.shared.events.RealtimeEvents;
 import app.nowtask.shared.events.TaskEvents;
 import app.nowtask.tasks.api.TaskViews.CommentView;
 import app.nowtask.tasks.api.TaskViews.HistoryView;
@@ -135,6 +136,7 @@ public class TaskService implements Tasks {
         TaskComment comment = new TaskComment(
                 UUID.randomUUID(), task.getId(), author.id(), required(body, "Comment body"), Instant.now());
         comments.save(comment);
+        changed(task.getKey(), "comment");
         return new CommentView(comment.getId(), comment.getAuthorId(), comment.getBody(), comment.getCreatedAt());
     }
 
@@ -198,6 +200,7 @@ public class TaskService implements Tasks {
                             ActorContext.currentLabel()));
         }
 
+        changed(task.getKey(), "created");
         return summaryOf(task);
     }
 
@@ -274,6 +277,7 @@ public class TaskService implements Tasks {
                     ActorContext.currentLabel()));
         }
 
+        changed(task.getKey(), "updated");
         return summaryOf(task);
     }
 
@@ -282,6 +286,7 @@ public class TaskService implements Tasks {
         for (Task task : tasks.findByKeyIn(keys)) {
             applyAssignee(task, assigneeId, actor.id());
             task.touch();
+            changed(task.getKey(), "updated");
         }
     }
 
@@ -290,6 +295,7 @@ public class TaskService implements Tasks {
         for (Task task : tasks.findByKeyIn(keys)) {
             applyStatus(task, statusId, actor.id());
             task.touch();
+            changed(task.getKey(), "updated");
         }
     }
 
@@ -309,6 +315,7 @@ public class TaskService implements Tasks {
 
         subtasks.save(subtask);
         recalculateProgress(task);
+        changed(task.getKey(), "subtask");
         return toView(subtask);
     }
 
@@ -331,6 +338,7 @@ public class TaskService implements Tasks {
         }
 
         recalculateProgress(task);
+        changed(task.getKey(), "subtask");
         return toView(subtask);
     }
 
@@ -338,6 +346,7 @@ public class TaskService implements Tasks {
         Task task = require(key);
         subtasks.delete(requireSubtask(task, subtaskId));
         recalculateProgress(task);
+        changed(task.getKey(), "subtask");
     }
 
     public TaskSummary toggleSubtask(String key, UUID subtaskId) {
@@ -346,6 +355,7 @@ public class TaskService implements Tasks {
 
         markDone(task, subtask, !subtask.isDone());
         recalculateProgress(task);
+        changed(task.getKey(), "subtask");
         return summaryOf(task);
     }
 
@@ -361,6 +371,7 @@ public class TaskService implements Tasks {
             events.publishEvent(
                     new TaskEvents.TaskLabelAdded(task.getKey(), value, users.currentUser().id(), Instant.now(),
                             ActorContext.currentLabel()));
+            changed(task.getKey(), "labels");
         }
 
         return List.copyOf(task.getLabels());
@@ -372,6 +383,7 @@ public class TaskService implements Tasks {
         if (task.getLabels().remove(label)) {
             task.touch();
             record(task, "label", label, null, users.currentUser().id());
+            changed(task.getKey(), "labels");
         }
 
         return List.copyOf(task.getLabels());
@@ -395,6 +407,8 @@ public class TaskService implements Tasks {
                 .update();
 
         record(task, "relation", null, relation + ":" + other.getKey(), users.currentUser().id());
+        changed(task.getKey(), "relations");
+        changed(other.getKey(), "relations");
         return relationsOf(task.getId());
     }
 
@@ -410,6 +424,8 @@ public class TaskService implements Tasks {
             throw new NotFoundException("The " + kind + " link to " + otherKey + " does not exist");
         }
 
+        changed(task.getKey(), "relations");
+        changed(other.getKey(), "relations");
         return relationsOf(task.getId());
     }
 
@@ -435,6 +451,7 @@ public class TaskService implements Tasks {
         task.setCustom(custom);
         task.touch();
         record(task, "custom." + fieldKey, null, value == null ? null : value.toString(), users.currentUser().id());
+        changed(task.getKey(), "custom");
 
         return detail(key);
     }
@@ -446,10 +463,12 @@ public class TaskService implements Tasks {
 
         if (existing.isPresent()) {
             watchers.delete(existing.get());
+            changed(task.getKey(), "watchers");
             return false;
         }
 
         watchers.save(new TaskWatcher(UUID.randomUUID(), task.getId(), userId));
+        changed(task.getKey(), "watchers");
         return true;
     }
 
@@ -545,6 +564,7 @@ public class TaskService implements Tasks {
                     .update();
             events.publishEvent(new TaskEvents.TaskDeleted(
                     task.getKey(), actor.id(), Instant.now(), ActorContext.currentLabel()));
+            changed(task.getKey(), "deleted");
         }
 
         tasks.deleteAll(found);
@@ -625,6 +645,16 @@ public class TaskService implements Tasks {
         events.publishEvent(new TaskEvents.TaskStatusChanged(
                 task.getKey(), current.code(), target.code(), current.label(), target.label(), actorId,
                 Instant.now(), ActorContext.currentLabel()));
+    }
+
+    private void changed(String taskKey, String change) {
+        OrganizationContext scope = OrganizationContextHolder.currentOrNull();
+        if (scope == null || !scope.hasOrganization()) {
+            return;
+        }
+
+        events.publishEvent(new RealtimeEvents.TaskChanged(
+                scope.organizationId(), taskKey, change, scope.userId(), Instant.now()));
     }
 
     private void record(Task task, String field, String oldValue, String newValue, UUID actorId) {

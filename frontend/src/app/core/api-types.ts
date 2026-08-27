@@ -643,3 +643,13 @@ export interface PresetDetailDto {
   views: string[];
   rules: { name: string; summary: string; supported: boolean }[];
 }
+
+export type RealtimeKind = 'task' | 'workspace' | 'notification';
+
+export interface RealtimeMessageDto {
+  type: RealtimeKind;
+  taskKey: string | null;
+  change: string;
+  actorId: string | null;
+  at: string;
+}

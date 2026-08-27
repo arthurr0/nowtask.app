@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   OnInit,
   computed,
   inject,
@@ -18,6 +19,7 @@ import { ActiveOrgService } from '../../core/active-org';
 import { TASK_VIEWS } from '../../core/task-views';
 import { OrgService } from '../../core/org.service';
 import { OnboardingService } from '../../core/onboarding.service';
+import { RealtimeService } from '../../core/realtime.service';
 import { Avatar } from '../../ui/avatar';
 import { CommandPalette, CommandPaletteDialog } from '../../ui/command-palette';
 import { ConfirmService } from '../../ui/confirm.service';
@@ -91,7 +93,7 @@ function defaultNavigation(): NavItemDto[] {
   ],
   templateUrl: './shell.html',
 })
-export class Shell implements OnInit {
+export class Shell implements OnInit, OnDestroy {
   protected readonly store = inject(WorkspaceStore);
   protected readonly rules = inject(RulesStore);
   protected readonly state = inject(ViewState);
@@ -100,6 +102,7 @@ export class Shell implements OnInit {
   private readonly orgs = inject(OrgService);
   private readonly activeOrg = inject(ActiveOrgService);
   protected readonly onboarding = inject(OnboardingService);
+  private readonly realtime = inject(RealtimeService);
   private readonly confirm = inject(ConfirmService);
   private readonly prompt = inject(PromptService);
   private readonly toast = inject(ToastService);
@@ -208,6 +211,11 @@ export class Shell implements OnInit {
   ngOnInit(): void {
     void this.store.load();
     void this.onboarding.refresh(true);
+    this.realtime.start();
+  }
+
+  ngOnDestroy(): void {
+    this.realtime.stop();
   }
 
   reload(): void {

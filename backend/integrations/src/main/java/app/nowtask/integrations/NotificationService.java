@@ -1,14 +1,19 @@
 package app.nowtask.integrations;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.integrations.api.NotificationViews.NotificationPage;
 import app.nowtask.integrations.api.NotificationViews.NotificationView;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.OrganizationContext;
+import app.nowtask.shared.OrganizationContextHolder;
+import app.nowtask.shared.events.RealtimeEvents;
 import app.nowtask.shared.events.TaskCommands;
 
 @Service
@@ -20,18 +25,21 @@ public class NotificationService {
     private final NotificationMailer mails;
     private final UserDirectory users;
     private final TaskCommands tasks;
+    private final ApplicationEventPublisher events;
 
     NotificationService(
             NotificationRepository notifications,
             NotificationPreferenceService preferences,
             NotificationMailer mails,
             UserDirectory users,
-            TaskCommands tasks) {
+            TaskCommands tasks,
+            ApplicationEventPublisher events) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.mails = mails;
         this.users = users;
         this.tasks = tasks;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -70,11 +78,22 @@ public class NotificationService {
 
         if (preference.inApp()) {
             notifications.save(new Notification(userId, kind, titleKey, params, taskKey));
+            announce(userId, taskKey);
         }
         if (preference.email()) {
             String taskTitle = title(taskKey);
             users.findById(userId).ifPresent(user -> mails.send(user.email(), kind, params, taskKey, taskTitle));
         }
+    }
+
+    private void announce(UUID userId, String taskKey) {
+        OrganizationContext scope = OrganizationContextHolder.currentOrNull();
+        if (scope == null || !scope.hasOrganization()) {
+            return;
+        }
+
+        events.publishEvent(
+                new RealtimeEvents.NotificationPosted(scope.organizationId(), userId, taskKey, Instant.now()));
     }
 
     private String title(String taskKey) {

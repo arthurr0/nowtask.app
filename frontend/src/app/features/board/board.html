@@ -145,6 +145,8 @@
               cdkDrag
               [cdkDragData]="task.key"
               [attr.data-tour]="$first ? 'card' : null"
+              (cdkDragStarted)="realtime.pause()"
+              (cdkDragEnded)="realtime.resume()"
               (click)="select(task)"
               (dblclick)="open(task)"
             >

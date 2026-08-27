@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":automation"))
     implementation(project(":analytics"))
     implementation(project(":integrations"))
+    implementation(project(":realtime"))
     implementation(project(":exports"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
