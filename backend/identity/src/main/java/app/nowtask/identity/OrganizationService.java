@@ -35,7 +35,8 @@ public class OrganizationService implements Organizations {
                    m.state        AS member_state,
                    r.id           AS role_id,
                    r.code         AS role_code,
-                   r.name         AS role_name
+                   r.name         AS role_name,
+                   o.created_by = m.user_id AS owner
             FROM organization_member m
             JOIN organization o      ON o.id = m.organization_id
             JOIN organization_role r ON r.id = m.role_id
@@ -64,7 +65,8 @@ public class OrganizationService implements Organizations {
                         rs.getString("member_state"),
                         rs.getObject("role_id", UUID.class),
                         rs.getString("role_code"),
-                        rs.getString("role_name")))
+                        rs.getString("role_name"),
+                        rs.getBoolean("owner")))
                 .list();
 
         return withPermissions(rows);
@@ -82,7 +84,8 @@ public class OrganizationService implements Organizations {
                         rs.getString("member_state"),
                         rs.getObject("role_id", UUID.class),
                         rs.getString("role_code"),
-                        rs.getString("role_name")))
+                        rs.getString("role_name"),
+                        rs.getBoolean("owner")))
                 .list();
 
         return withPermissions(rows).stream().findFirst();
@@ -106,7 +109,8 @@ public class OrganizationService implements Organizations {
                         roleId,
                         rs.getString("code"),
                         rs.getString("role_name"),
-                        permissionsOf(java.util.List.of(roleId)).getOrDefault(roleId, java.util.Set.of())))
+                        permissionsOf(java.util.List.of(roleId)).getOrDefault(roleId, java.util.Set.of()),
+                        false))
                 .optional();
     }
 
@@ -284,6 +288,7 @@ public class OrganizationService implements Organizations {
     @Override
     @Transactional
     public void markSeen(UUID userId, UUID organizationId) {
+        enterOrganization(organizationId);
         jdbc.sql("UPDATE organization_member SET last_seen_at = now() WHERE user_id = ? AND organization_id = ?")
                 .params(userId, organizationId)
                 .update();
@@ -306,7 +311,8 @@ public class OrganizationService implements Organizations {
                     row.roleId(),
                     row.roleCode(),
                     row.roleName(),
-                    byRole.getOrDefault(row.roleId(), Set.of())));
+                    byRole.getOrDefault(row.roleId(), Set.of()),
+                    row.owner()));
         }
 
         return views;
@@ -339,6 +345,7 @@ public class OrganizationService implements Organizations {
             String memberState,
             UUID roleId,
             String roleCode,
-            String roleName) {
+            String roleName,
+            boolean owner) {
     }
 }

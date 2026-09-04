@@ -21,7 +21,15 @@ import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { ApiKeyDialog, type ApiKeyDraft } from './api-key-dialog';
 
-type ClientId = 'claude-code' | 'claude-desktop' | 'cursor' | 'docker';
+type ClientId =
+  | 'claude-code'
+  | 'claude-desktop'
+  | 'cursor'
+  | 'codex'
+  | 'gemini'
+  | 'vscode'
+  | 'chatgpt'
+  | 'docker';
 type SetupMode = 'hosted' | 'local';
 
 interface ToolGroup {
@@ -116,12 +124,27 @@ const BOUNDARIES: readonly string[] = [
   'agents.boundaryDefault',
 ];
 
-const CLIENTS: readonly { id: ClientId; label: string; icon: string; hosted: boolean }[] = [
-  { id: 'claude-code', label: 'Claude Code', icon: 'grip', hosted: true },
-  { id: 'claude-desktop', label: 'Claude Desktop', icon: 'agent', hosted: true },
-  { id: 'cursor', label: 'Cursor', icon: 'pencil', hosted: true },
-  { id: 'docker', label: 'Docker', icon: 'layers', hosted: false },
+interface Client {
+  id: ClientId;
+  label: string;
+  icon: string;
+  modes: readonly SetupMode[];
+}
+
+const CLIENTS: readonly Client[] = [
+  { id: 'claude-code', label: 'Claude Code', icon: 'grip', modes: ['hosted', 'local'] },
+  { id: 'claude-desktop', label: 'Claude Desktop', icon: 'agent', modes: ['hosted', 'local'] },
+  { id: 'codex', label: 'Codex CLI', icon: 'shell', modes: ['hosted', 'local'] },
+  { id: 'chatgpt', label: 'ChatGPT', icon: 'message', modes: ['local'] },
+  { id: 'cursor', label: 'Cursor', icon: 'pencil', modes: ['hosted', 'local'] },
+  { id: 'gemini', label: 'Gemini CLI', icon: 'bolt', modes: ['hosted', 'local'] },
+  { id: 'vscode', label: 'VS Code', icon: 'columns', modes: ['hosted', 'local'] },
+  { id: 'docker', label: 'Docker', icon: 'layers', modes: ['local'] },
 ];
+
+const JSON_CLIENTS: readonly ClientId[] = ['claude-desktop', 'cursor', 'vscode', 'docker'];
+const DOCKER_CLIENTS: readonly ClientId[] = ['docker', 'chatgpt'];
+const CHATGPT_STEPS = ['agents.chatGpt1', 'agents.chatGpt2', 'agents.chatGpt3'] as const;
 
 const MODES: readonly { id: SetupMode; label: string; body: string; icon: string }[] = [
   { id: 'hosted', label: 'agents.modeHosted', body: 'agents.modeHostedBody', icon: 'link' },
@@ -168,8 +191,11 @@ export class Agents implements OnInit {
   protected readonly client = signal<ClientId>('claude-code');
 
   protected readonly clients = computed(() =>
-    this.mode() === 'hosted' ? CLIENTS.filter((item) => item.hosted) : CLIENTS,
+    CLIENTS.filter((item) => item.modes.includes(this.mode())),
   );
+
+  protected readonly chatGptSteps = CHATGPT_STEPS;
+  protected readonly isChatGpt = computed(() => this.client() === 'chatgpt');
 
   protected readonly isHosted = computed(() => this.mode() === 'hosted');
   protected readonly mcpUrl = `${location.origin}/mcp`;
@@ -195,83 +221,63 @@ export class Agents implements OnInit {
 
   protected readonly buildSnippet = computed(() => {
     const path = this.trimmedPath();
-    if (this.client() === 'docker') {
+    if (DOCKER_CLIENTS.includes(this.client())) {
       return [`git clone ${REPO}`, `docker build -t nowtask-mcp ${path}`].join('\n');
     }
     return [`git clone ${REPO}`, `cd ${path}`, 'npm install', 'npm run build'].join('\n');
   });
 
-  protected readonly configSnippet = computed(() => {
-    const key = this.activeKey();
-    if (this.isHosted()) {
-      if (this.client() === 'claude-code') {
-        return [
-          'claude mcp add --transport http nowtask \\',
-          `  ${this.mcpUrl} \\`,
-          `  --header "Authorization: Bearer ${key}"`,
-        ].join('\n');
-      }
-      return this.json({
-        type: 'http',
-        url: this.mcpUrl,
-        headers: { Authorization: `Bearer ${key}` },
-      });
-    }
-    if (this.client() === 'claude-code') {
-      return [
-        'claude mcp add nowtask \\',
-        `  -e NOWTASK_API_URL=${this.apiUrl} \\`,
-        `  -e NOWTASK_API_KEY=${key} \\`,
-        `  -- node ${this.trimmedPath()}/dist/index.js`,
-      ].join('\n');
-    }
-    if (this.client() === 'docker') {
-      return this.json({
-        command: 'docker',
-        args: [
-          'run',
-          '-i',
-          '--rm',
-          '-e',
-          'NOWTASK_MCP_TRANSPORT=stdio',
-          '-e',
-          `NOWTASK_API_URL=${this.apiUrl}`,
-          '-e',
-          `NOWTASK_API_KEY=${key}`,
-          'nowtask-mcp',
-        ],
-      });
-    }
-    return this.json({
-      command: 'node',
-      args: [`${this.trimmedPath()}/dist/index.js`],
-      env: { NOWTASK_API_URL: this.apiUrl, NOWTASK_API_KEY: key },
-    });
-  });
+  protected readonly configSnippet = computed(() =>
+    this.isHosted() ? this.hostedSnippet() : this.localSnippet(),
+  );
 
-  protected readonly configIsJson = computed(() => this.client() !== 'claude-code');
+  protected readonly configIsJson = computed(() => JSON_CLIENTS.includes(this.client()));
 
   protected readonly configHint = computed(() => {
+    const client = this.client();
     if (this.isHosted()) {
-      return this.client() === 'claude-code'
-        ? this.t('agents.hintHostedClaudeCode')
-        : this.t('agents.hintHostedFile');
+      switch (client) {
+        case 'claude-code':
+          return this.t('agents.hintHostedClaudeCode');
+        case 'codex':
+          return this.t('agents.hintHostedCodex');
+        case 'gemini':
+          return this.t('agents.hintHostedGemini');
+        case 'vscode':
+          return this.t('agents.hintVsCode');
+        default:
+          return this.t('agents.hintHostedFile');
+      }
     }
-    switch (this.client()) {
+    switch (client) {
       case 'claude-code':
         return this.t('agents.hintClaudeCode');
       case 'claude-desktop':
         return this.t('agents.hintClaudeDesktop');
       case 'cursor':
         return this.t('agents.hintCursor');
+      case 'codex':
+        return this.t('agents.hintCodex');
+      case 'gemini':
+        return this.t('agents.hintGemini');
+      case 'vscode':
+        return this.t('agents.hintVsCode');
+      case 'chatgpt':
+        return this.t('agents.hintChatGpt');
       default:
         return this.t('agents.hintDocker');
     }
   });
 
-  protected readonly configFileName = computed(() =>
-    this.client() === 'cursor' ? 'mcp.json' : 'claude_desktop_config.json',
-  );
+  protected readonly configFileName = computed(() => {
+    switch (this.client()) {
+      case 'cursor':
+      case 'vscode':
+        return 'mcp.json';
+      default:
+        return 'claude_desktop_config.json';
+    }
+  });
 
   ngOnInit(): void {
     void this.agents.load();
@@ -283,7 +289,8 @@ export class Agents implements OnInit {
 
   selectMode(id: SetupMode): void {
     this.mode.set(id);
-    if (id === 'hosted' && this.client() === 'docker') {
+    const current = CLIENTS.find((item) => item.id === this.client());
+    if (!current?.modes.includes(id)) {
       this.client.set('claude-code');
     }
   }
@@ -381,8 +388,105 @@ export class Agents implements OnInit {
     return path === '' ? DEFAULT_PATH : path;
   }
 
-  private json(server: Record<string, unknown>): string {
-    return JSON.stringify({ mcpServers: { nowtask: server } }, null, 2);
+  private hostedSnippet(): string {
+    const key = this.activeKey();
+    const auth = `Authorization: Bearer ${key}`;
+    switch (this.client()) {
+      case 'claude-code':
+        return [
+          'claude mcp add --transport http nowtask \\',
+          `  ${this.mcpUrl} \\`,
+          `  --header "${auth}"`,
+        ].join('\n');
+      case 'codex':
+        return [
+          `export NOWTASK_API_KEY=${key}`,
+          'codex mcp add nowtask \\',
+          `  --url ${this.mcpUrl} \\`,
+          '  --bearer-token-env-var NOWTASK_API_KEY',
+        ].join('\n');
+      case 'gemini':
+        return [
+          'gemini mcp add --transport http \\',
+          `  --header "${auth}" \\`,
+          `  nowtask ${this.mcpUrl}`,
+        ].join('\n');
+      case 'vscode':
+        return this.json(
+          { type: 'http', url: this.mcpUrl, headers: { Authorization: `Bearer ${key}` } },
+          'servers',
+        );
+      default:
+        return this.json({
+          type: 'http',
+          url: this.mcpUrl,
+          headers: { Authorization: `Bearer ${key}` },
+        });
+    }
+  }
+
+  private localSnippet(): string {
+    const key = this.activeKey();
+    const server = `${this.trimmedPath()}/dist/index.js`;
+    const env = { NOWTASK_API_URL: this.apiUrl, NOWTASK_API_KEY: key };
+    switch (this.client()) {
+      case 'claude-code':
+        return [
+          'claude mcp add nowtask \\',
+          `  -e NOWTASK_API_URL=${this.apiUrl} \\`,
+          `  -e NOWTASK_API_KEY=${key} \\`,
+          `  -- node ${server}`,
+        ].join('\n');
+      case 'codex':
+        return [
+          'codex mcp add nowtask \\',
+          `  --env NOWTASK_API_URL=${this.apiUrl} \\`,
+          `  --env NOWTASK_API_KEY=${key} \\`,
+          `  -- node ${server}`,
+        ].join('\n');
+      case 'gemini':
+        return [
+          'gemini mcp add \\',
+          `  -e NOWTASK_API_URL=${this.apiUrl} \\`,
+          `  -e NOWTASK_API_KEY=${key} \\`,
+          `  nowtask node ${server}`,
+        ].join('\n');
+      case 'vscode':
+        return this.json({ type: 'stdio', command: 'node', args: [server], env }, 'servers');
+      case 'chatgpt':
+        return [
+          'docker run -d --name nowtask-mcp \\',
+          '  -p 8765:8765 \\',
+          '  -e NOWTASK_MCP_TRANSPORT=http \\',
+          '  -e NOWTASK_MCP_HTTP_HOST=0.0.0.0 \\',
+          '  -e NOWTASK_MCP_ALLOWED_HOSTS=mcp.example.com \\',
+          `  -e NOWTASK_API_URL=${this.apiUrl} \\`,
+          `  -e NOWTASK_API_KEY=${key} \\`,
+          '  nowtask-mcp',
+        ].join('\n');
+      case 'docker':
+        return this.json({
+          command: 'docker',
+          args: [
+            'run',
+            '-i',
+            '--rm',
+            '-e',
+            'NOWTASK_MCP_TRANSPORT=stdio',
+            '-e',
+            `NOWTASK_API_URL=${this.apiUrl}`,
+            '-e',
+            `NOWTASK_API_KEY=${key}`,
+            'nowtask-mcp',
+          ],
+        });
+      default:
+        return this.json({ command: 'node', args: [server], env });
+    }
+  }
+
+  private json(server: Record<string, unknown>, root = 'mcpServers'): string {
+    return JSON.stringify({ [root]: { nowtask: server } }, null, 2);
   }
 
   private async copy(text: string, messageKey: string): Promise<void> {

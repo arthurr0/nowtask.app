@@ -189,19 +189,38 @@
                 <span class="text-xs leading-normal text-ink-3">{{ t('account.dangerHint') }}</span>
               </div>
               <div class="flex w-full max-w-[420px] flex-col gap-2.5">
-                <div class="flex items-center gap-3 rounded-panel border border-line px-3 py-2.5">
-                  <div class="flex min-w-0 flex-1 flex-col">
-                    <span class="text-[13px]">{{ t('account.leaveTitle') }}</span>
-                    <span class="text-xs text-ink-3">{{ t('account.leaveSummary') }}</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="flex h-8 flex-none items-center rounded-[7px] border border-line-strong bg-surface px-3 text-[13px]"
-                    (click)="leaveOrganization()"
+                @if (ownsOrganization()) {
+                  <div
+                    class="flex items-center gap-3 rounded-panel border border-warn/40 bg-warn/5 px-3 py-2.5"
                   >
-                    {{ t('account.leave') }}
-                  </button>
-                </div>
+                    <div class="flex min-w-0 flex-1 flex-col">
+                      <span class="text-[13px]">{{ t('account.deleteOrgTitle') }}</span>
+                      <span class="text-xs text-ink-3">{{ t('account.deleteOrgSummary') }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="flex h-8 flex-none items-center gap-1.5 rounded-[7px] border border-warn/60 px-3 text-[13px] text-warn"
+                      (click)="openOrgDeleteDialog()"
+                    >
+                      <ui-icon name="trash" [size]="14" />
+                      {{ t('common.delete') }}
+                    </button>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-3 rounded-panel border border-line px-3 py-2.5">
+                    <div class="flex min-w-0 flex-1 flex-col">
+                      <span class="text-[13px]">{{ t('account.leaveTitle') }}</span>
+                      <span class="text-xs text-ink-3">{{ t('account.leaveSummary') }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="flex h-8 flex-none items-center rounded-[7px] border border-line-strong bg-surface px-3 text-[13px]"
+                      (click)="leaveOrganization()"
+                    >
+                      {{ t('account.leave') }}
+                    </button>
+                  </div>
+                }
 
                 <div
                   class="flex items-center gap-3 rounded-panel border border-warn/40 bg-warn/5 px-3 py-2.5"
@@ -834,4 +853,15 @@
   [error]="deleteError()"
   (confirmed)="deleteAccount($event)"
   (cancelled)="deleteDialogOpen.set(false)"
+/>
+
+<app-delete-account-dialog
+  [open]="orgDeleteDialogOpen()"
+  [email]="auth.user()?.email || ''"
+  [error]="orgDeleteError()"
+  title="account.deleteOrgTitle"
+  warning="account.deleteOrgWarning"
+  confirmLabel="account.deleteOrgConfirm"
+  (confirmed)="deleteOrganization($event)"
+  (cancelled)="orgDeleteDialogOpen.set(false)"
 />

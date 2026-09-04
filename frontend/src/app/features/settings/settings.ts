@@ -59,7 +59,7 @@ export class Settings implements OnInit {
   protected readonly store = inject(WorkspaceStore);
   protected readonly auth = inject(AuthService);
   protected readonly account = inject(AccountService);
-  private readonly orgs = inject(OrgService);
+  protected readonly orgs = inject(OrgService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly integrations = inject(IntegrationsStore);
@@ -189,6 +189,9 @@ export class Settings implements OnInit {
   protected readonly emailError = signal('');
   protected readonly deleteDialogOpen = signal(false);
   protected readonly deleteError = signal('');
+  protected readonly orgDeleteDialogOpen = signal(false);
+  protected readonly orgDeleteError = signal('');
+  protected readonly ownsOrganization = computed(() => this.orgs.active()?.owner ?? false);
 
   protected readonly profileDirty = computed(() => {
     const user = this.auth.user();
@@ -427,8 +430,7 @@ export class Settings implements OnInit {
     if (!confirmed) return;
 
     try {
-      await this.account.leaveOrganization();
-      const memberships = await this.orgs.refresh(true);
+      const memberships = await this.orgs.leaveActive();
 
       if (memberships.length) {
         window.location.assign('/app');
@@ -445,6 +447,26 @@ export class Settings implements OnInit {
     this.deleteDialogOpen.set(true);
   }
 
+  openOrgDeleteDialog(): void {
+    this.orgDeleteError.set('');
+    this.orgDeleteDialogOpen.set(true);
+  }
+
+  async deleteOrganization(password: string): Promise<void> {
+    try {
+      const memberships = await this.orgs.deleteActive(password);
+      this.orgDeleteDialogOpen.set(false);
+
+      if (memberships.length) {
+        window.location.assign('/app');
+      } else {
+        await this.router.navigate(['/orgs/new']);
+      }
+    } catch (error) {
+      this.orgDeleteError.set(this.accountErrorText(error));
+    }
+  }
+
   async deleteAccount(password: string): Promise<void> {
     try {
       await this.account.deleteAccount(password);
@@ -459,6 +481,8 @@ export class Settings implements OnInit {
   private accountErrorText(error: unknown): string {
     const code = errorCode(error);
     if (code === 'PASSWORD_INVALID') return this.t('account.passwordWrong');
+    if (code === 'OWNER_CANNOT_LEAVE') return this.t('account.ownerCannotLeave');
+    if (code === 'OWNER_ONLY') return this.t('account.ownerOnly');
     if (code === 'PASSWORD_REUSED') return this.t('account.passwordReused');
     if (code === 'PASSWORD_TOO_COMMON') return this.t('account.passwordTooCommon');
     if (code === 'PASSWORD_NOT_SET') return this.t('account.passwordNotSet');

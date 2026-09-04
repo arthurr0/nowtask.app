@@ -942,6 +942,24 @@ export const pl = {
     'Wklej do ~/.cursor/mcp.json, żeby mieć serwer wszędzie, albo do .cursor/mcp.json w projekcie, żeby tylko w nim.',
   'agents.hintDocker':
     'Zbuduj obraz z kroku pierwszego, a potem wklej tę konfigurację do pliku swojego klienta MCP. Kontener startuje na żądanie i kończy się razem z sesją.',
+  'agents.hintHostedCodex':
+    'Uruchom w terminalu. Codex czyta klucz ze zmiennej środowiskowej przy każdym połączeniu, więc dodaj linię z export do profilu powłoki. Wpis ląduje w ~/.codex/config.toml.',
+  'agents.hintCodex':
+    'Uruchom w terminalu. Wpis ląduje w ~/.codex/config.toml, a Codex uruchamia serwer razem z sesją.',
+  'agents.hintHostedGemini':
+    'Uruchom w terminalu. Dodaj --scope user, jeśli serwer ma być dostępny w każdym projekcie. Wpis ląduje w settings.json Gemini CLI.',
+  'agents.hintGemini':
+    'Uruchom w terminalu. Dodaj --scope user, jeśli serwer ma być dostępny w każdym projekcie. Gemini uruchamia serwer razem z sesją.',
+  'agents.hintVsCode':
+    'Wklej do .vscode/mcp.json w projekcie albo do konfiguracji użytkownika (polecenie MCP: Open User Configuration). Copilot w trybie agenta zobaczy narzędzia po zapisaniu pliku.',
+  'agents.hintChatGpt':
+    'ChatGPT łączy się tylko ze zdalnymi serwerami po HTTPS i nie dodaje własnych nagłówków, więc klucz musi siedzieć w środowisku serwera. Uruchom kontener tą komendą, podmieniając mcp.example.com na swoją domenę, i wystaw port 8765 pod tym adresem po HTTPS. Każdy, kto dosięgnie tego adresu, działa z uprawnieniami wpisanego klucza, więc nadaj mu tylko potrzebne zakresy.',
+  'agents.chatGpt1':
+    'W ChatGPT otwórz Ustawienia, potem Aplikacje i konektory, Zaawansowane i włącz Tryb dewelopera. Wymaga planu Business, Enterprise lub Edu.',
+  'agents.chatGpt2':
+    'Wróć do konektorów, wybierz Utwórz, wpisz nazwę nowtask i adres serwera z końcówką /mcp, a jako uwierzytelnianie wybierz brak.',
+  'agents.chatGpt3':
+    'W nowej rozmowie włącz konektor nowtask w menu narzędzi i poproś na przykład o listę zadań w toku.',
   'agents.step4': 'Sprawdź połączenie',
   'agents.step4Body':
     'Uruchom klienta i poproś agenta o cokolwiek z nowtask, na przykład o listę zadań w toku. Potem odśwież ten ekran.',
@@ -1251,9 +1269,15 @@ export const pl = {
   'account.dangerHint': 'Operacje, których nie da się cofnąć.',
   'account.leaveTitle': 'Opuść organizację',
   'account.leaveSummary': 'Stracisz dostęp do zadań tej organizacji.',
-  'account.leaveHint':
-    'Twoje przypisania zostaną zdjęte, a komentarze zostaną. Jeśli jesteś jedyną osobą w organizacji, zostanie ona zamknięta.',
+  'account.leaveHint': 'Twoje przypisania zostaną zdjęte, a komentarze zostaną.',
   'account.leave': 'Opuść',
+  'account.ownerCannotLeave': 'Twórca nie opuszcza organizacji. Możesz ją usunąć w strefie ryzyka.',
+  'account.ownerOnly': 'Organizację może usunąć tylko jej twórca.',
+  'account.deleteOrgTitle': 'Usuń organizację',
+  'account.deleteOrgSummary': 'Utworzyłeś tę organizację, więc zamiast ją opuścić, zamykasz ją.',
+  'account.deleteOrgWarning':
+    'Organizacja zniknie dla wszystkich członków, klucze API przestaną działać, a zadania i historia przestaną być dostępne.',
+  'account.deleteOrgConfirm': 'Usuń organizację',
   'account.deleteTitle': 'Usuń konto',
   'account.deleteSummary': 'Trwale zamyka dostęp do nowtask.',
   'account.deleteLead': 'Tej operacji nie da się cofnąć.',

@@ -948,6 +948,24 @@ export const en: Dictionary = {
     'Paste into ~/.cursor/mcp.json for every project, or into .cursor/mcp.json inside one project only.',
   'agents.hintDocker':
     'Build the image from step one, then paste this configuration into your MCP client file. The container starts on demand and ends with the session.',
+  'agents.hintHostedCodex':
+    'Run this in a terminal. Codex reads the key from the environment variable on every connection, so add the export line to your shell profile. The entry lands in ~/.codex/config.toml.',
+  'agents.hintCodex':
+    'Run this in a terminal. The entry lands in ~/.codex/config.toml and Codex starts the server with the session.',
+  'agents.hintHostedGemini':
+    'Run this in a terminal. Add --scope user if the server should be available in every project. The entry lands in the Gemini CLI settings.json.',
+  'agents.hintGemini':
+    'Run this in a terminal. Add --scope user if the server should be available in every project. Gemini starts the server with the session.',
+  'agents.hintVsCode':
+    'Paste into .vscode/mcp.json inside the project or into the user configuration (command MCP: Open User Configuration). Copilot in agent mode sees the tools once the file is saved.',
+  'agents.hintChatGpt':
+    'ChatGPT only connects to remote servers over HTTPS and cannot add its own headers, so the key has to live in the server environment. Start the container with this command, replacing mcp.example.com with your domain, and expose port 8765 under that address over HTTPS. Anyone who can reach that address acts with the permissions of the key, so grant it only the scopes it needs.',
+  'agents.chatGpt1':
+    'In ChatGPT open Settings, then Apps & Connectors, Advanced, and turn on Developer mode. This needs a Business, Enterprise or Edu plan.',
+  'agents.chatGpt2':
+    'Go back to Connectors, choose Create, enter the name nowtask and the server address ending in /mcp, and pick no authentication.',
+  'agents.chatGpt3':
+    'In a new chat enable the nowtask connector in the tools menu and ask, for example, for the tasks in progress.',
   'agents.step4': 'Check the connection',
   'agents.step4Body':
     'Start the client and ask the agent for anything from nowtask, for example the tasks in progress. Then refresh this screen.',
@@ -1258,8 +1276,16 @@ export const en: Dictionary = {
   'account.dangerHint': 'Operations that cannot be undone.',
   'account.leaveTitle': 'Leave the organization',
   'account.leaveSummary': 'You lose access to the tasks of this organization.',
-  'account.leaveHint':
-    'Your assignments are dropped and your comments stay. If you are the only person in the organization, it gets closed.',
+  'account.leaveHint': 'Your assignments are dropped and your comments stay.',
+  'account.ownerCannotLeave':
+    'The creator does not leave the organization. You can delete it in the danger zone.',
+  'account.ownerOnly': 'Only the creator can delete the organization.',
+  'account.deleteOrgTitle': 'Delete the organization',
+  'account.deleteOrgSummary':
+    'You created this organization, so instead of leaving it you close it.',
+  'account.deleteOrgWarning':
+    'The organization disappears for every member, API keys stop working, and tasks and history become unavailable.',
+  'account.deleteOrgConfirm': 'Delete the organization',
   'account.leave': 'Leave',
   'account.deleteTitle': 'Delete the account',
   'account.deleteSummary': 'Closes access to nowtask for good.',

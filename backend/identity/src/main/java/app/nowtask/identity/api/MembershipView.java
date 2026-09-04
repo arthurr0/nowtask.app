@@ -12,5 +12,6 @@ public record MembershipView(
         UUID roleId,
         String roleCode,
         String roleName,
-        Set<Permission> permissions) {
+        Set<Permission> permissions,
+        boolean owner) {
 }

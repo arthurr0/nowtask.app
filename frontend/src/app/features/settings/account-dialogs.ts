@@ -113,13 +113,13 @@ export class EmailChangeDialog {
     <ui-dialog
       [open]="open()"
       size="sm"
-      title="account.deleteTitle"
+      [title]="title()"
       description="account.deleteLead"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
         <p class="rounded-panel border border-warn/40 bg-warn/5 p-3 text-[13px] text-ink-2">
-          {{ t('account.deleteWarning') }}
+          {{ t(warning()) }}
         </p>
         <ui-text-field
           [value]="confirmation()"
@@ -157,7 +157,7 @@ export class EmailChangeDialog {
           (click)="submit()"
         >
           <ui-icon name="trash" [size]="15" />
-          {{ t('account.deleteConfirm') }}
+          {{ t(confirmLabel()) }}
         </button>
       </div>
     </ui-dialog>
@@ -170,6 +170,9 @@ export class DeleteAccountDialog {
   readonly email = input('');
   readonly passwordRequired = input(true);
   readonly error = input('');
+  readonly title = input('account.deleteTitle');
+  readonly warning = input('account.deleteWarning');
+  readonly confirmLabel = input('account.deleteConfirm');
 
   readonly confirmed = output<string>();
   readonly cancelled = output<void>();

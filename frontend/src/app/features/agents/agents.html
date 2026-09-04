@@ -247,6 +247,15 @@
           <pre
             class="ml-[34px] overflow-x-auto rounded-panel border border-line bg-bg px-4 py-3 font-mono text-[11px] leading-[1.7] text-ink-2 scroll-thin"
             >{{ configSnippet() }}</pre>
+          @if (isChatGpt()) {
+            <ol
+              class="ml-[34px] flex list-decimal flex-col gap-1 pl-4 text-xs leading-[1.7] text-ink-3"
+            >
+              @for (step of chatGptSteps; track step) {
+                <li>{{ t(step) }}</li>
+              }
+            </ol>
+          }
         </li>
 
         <li class="flex flex-col gap-2.5">

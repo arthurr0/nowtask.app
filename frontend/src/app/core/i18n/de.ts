@@ -949,6 +949,24 @@ export const de: Dictionary = {
     'Füge es in ~/.cursor/mcp.json ein, damit es überall gilt, oder in .cursor/mcp.json innerhalb eines Projekts.',
   'agents.hintDocker':
     'Baue das Image aus Schritt eins und füge diese Konfiguration in die Datei deines MCP-Clients ein. Der Container startet bei Bedarf und endet mit der Sitzung.',
+  'agents.hintHostedCodex':
+    'Führe das im Terminal aus. Codex liest den Schlüssel bei jeder Verbindung aus der Umgebungsvariable, also trage die export-Zeile in dein Shell-Profil ein. Der Eintrag landet in ~/.codex/config.toml.',
+  'agents.hintCodex':
+    'Führe das im Terminal aus. Der Eintrag landet in ~/.codex/config.toml, und Codex startet den Server mit der Sitzung.',
+  'agents.hintHostedGemini':
+    'Führe das im Terminal aus. Mit --scope user steht der Server in jedem Projekt zur Verfügung. Der Eintrag landet in der settings.json der Gemini CLI.',
+  'agents.hintGemini':
+    'Führe das im Terminal aus. Mit --scope user steht der Server in jedem Projekt zur Verfügung. Gemini startet den Server mit der Sitzung.',
+  'agents.hintVsCode':
+    'Füge es in .vscode/mcp.json im Projekt oder in die Benutzerkonfiguration ein (Befehl MCP: Open User Configuration). Copilot im Agentenmodus sieht die Werkzeuge, sobald die Datei gespeichert ist.',
+  'agents.hintChatGpt':
+    'ChatGPT verbindet sich nur mit entfernten Servern über HTTPS und kann keine eigenen Header setzen, deshalb muss der Schlüssel in der Umgebung des Servers liegen. Starte den Container mit diesem Befehl, ersetze mcp.example.com durch deine Domain und stelle Port 8765 unter dieser Adresse per HTTPS bereit. Wer diese Adresse erreicht, handelt mit den Rechten des Schlüssels, also vergib nur die nötigen Berechtigungen.',
+  'agents.chatGpt1':
+    'Öffne in ChatGPT die Einstellungen, dann Apps und Konnektoren, Erweitert, und schalte den Entwicklermodus ein. Dafür ist ein Business-, Enterprise- oder Edu-Plan nötig.',
+  'agents.chatGpt2':
+    'Geh zurück zu den Konnektoren, wähle Erstellen, trage den Namen nowtask und die Serveradresse mit /mcp am Ende ein und wähle keine Authentifizierung.',
+  'agents.chatGpt3':
+    'Aktiviere in einem neuen Chat den Konnektor nowtask im Werkzeugmenü und bitte zum Beispiel um die Aufgaben in Arbeit.',
   'agents.step4': 'Verbindung prüfen',
   'agents.step4Body':
     'Starte den Client und bitte den Agenten um irgendetwas aus nowtask, etwa die Aufgaben in Arbeit. Danach aktualisiere diesen Bildschirm.',
@@ -1263,8 +1281,16 @@ export const de: Dictionary = {
   'account.dangerHint': 'Vorgänge, die sich nicht rückgängig machen lassen.',
   'account.leaveTitle': 'Organisation verlassen',
   'account.leaveSummary': 'Du verlierst den Zugriff auf die Aufgaben dieser Organisation.',
-  'account.leaveHint':
-    'Deine Zuweisungen werden entfernt, deine Kommentare bleiben. Bist du die einzige Person in der Organisation, wird sie geschlossen.',
+  'account.leaveHint': 'Deine Zuweisungen werden entfernt, deine Kommentare bleiben.',
+  'account.ownerCannotLeave':
+    'Wer die Organisation erstellt hat, verlässt sie nicht. Du kannst sie im Risikobereich löschen.',
+  'account.ownerOnly': 'Nur wer die Organisation erstellt hat, kann sie löschen.',
+  'account.deleteOrgTitle': 'Organisation löschen',
+  'account.deleteOrgSummary':
+    'Du hast diese Organisation erstellt, deshalb schließt du sie, statt sie zu verlassen.',
+  'account.deleteOrgWarning':
+    'Die Organisation verschwindet für alle Mitglieder, API-Schlüssel hören auf zu funktionieren, und Aufgaben und Verlauf sind nicht mehr erreichbar.',
+  'account.deleteOrgConfirm': 'Organisation löschen',
   'account.leave': 'Verlassen',
   'account.deleteTitle': 'Konto löschen',
   'account.deleteSummary': 'Schließt den Zugang zu nowtask endgültig.',

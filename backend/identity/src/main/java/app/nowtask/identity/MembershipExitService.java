@@ -77,6 +77,16 @@ class MembershipExitService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void close(UUID organizationId, String email) {
+        jdbc.sql("DELETE FROM api_key WHERE organization_id = ?").param(organizationId).update();
+        jdbc.sql("UPDATE organization SET state = 'deleted', deleted_at = now() WHERE id = ?")
+                .param(organizationId)
+                .update();
+
+        audit.record("organization.close", email, Map.of("organization", organizationId.toString()));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void anonymize(UUID userId) {
         jdbc.sql("DELETE FROM email_verification WHERE user_id = ?").param(userId).update();
         jdbc.sql("DELETE FROM password_reset WHERE user_id = ?").param(userId).update();

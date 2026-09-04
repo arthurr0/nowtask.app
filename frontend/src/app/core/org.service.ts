@@ -15,28 +15,34 @@ export class OrgService {
   readonly memberships = this.membershipsSignal.asReadonly();
   readonly loaded = this.loadedSignal.asReadonly();
   readonly hasOrganization = computed(() => this.membershipsSignal().length > 0);
+  readonly active = computed(() => {
+    const id = this.activeOrg.id();
+    return this.membershipsSignal().find((membership) => membership.organizationId === id) ?? null;
+  });
 
   async refresh(force = false): Promise<OrgMembershipDto[]> {
-    if (this.loadedSignal() && !force) {
-      return this.membershipsSignal();
+    if (!this.loadedSignal() || force) {
+      const memberships = await firstValueFrom(this.http.get<OrgMembershipDto[]>('/api/orgs'));
+      this.membershipsSignal.set(memberships);
+      this.loadedSignal.set(true);
     }
 
-    const memberships = await firstValueFrom(this.http.get<OrgMembershipDto[]>('/api/orgs'));
-    this.membershipsSignal.set(memberships);
-    this.loadedSignal.set(true);
+    this.reconcileActive();
+    return this.membershipsSignal();
+  }
 
+  private reconcileActive(): void {
+    const memberships = this.membershipsSignal();
     const active = this.activeOrg.id();
     const known = memberships.some((membership) => membership.organizationId === active);
 
-    if (!known) {
-      if (memberships.length) {
-        this.activeOrg.set(memberships[0].organizationId);
-      } else {
-        this.activeOrg.clear();
-      }
-    }
+    if (known) return;
 
-    return memberships;
+    if (memberships.length) {
+      this.activeOrg.set(memberships[0].organizationId);
+    } else {
+      this.activeOrg.clear();
+    }
   }
 
   async slugAvailable(slug: string): Promise<boolean> {
@@ -58,6 +64,18 @@ export class OrgService {
     await firstValueFrom(this.http.post(`/api/orgs/${organizationId}/switch`, {}));
     this.activeOrg.set(organizationId);
     await this.refresh(true);
+  }
+
+  async leaveActive(): Promise<OrgMembershipDto[]> {
+    await firstValueFrom(this.http.post('/api/account/leave', {}));
+    this.activeOrg.clear();
+    return this.refresh(true);
+  }
+
+  async deleteActive(password: string): Promise<OrgMembershipDto[]> {
+    await firstValueFrom(this.http.post('/api/orgs/current/delete', { password }));
+    this.activeOrg.clear();
+    return this.refresh(true);
   }
 
   clear(): void {

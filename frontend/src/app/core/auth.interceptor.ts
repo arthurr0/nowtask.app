@@ -7,6 +7,11 @@ import { AuthService } from './auth.service';
 import { I18nService } from './i18n/i18n.service';
 
 const PUBLIC_SUFFIXES = ['/api/auth/me', '/api/auth/login', '/api/auth/signup'];
+const ORG_INDEPENDENT = [
+  /^\/api\/orgs(\?.*)?$/,
+  /^\/api\/orgs\/slug-available/,
+  /^\/api\/orgs\/[^/]+\/switch$/,
+];
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
@@ -19,7 +24,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (request.url.startsWith('/api/')) {
     headers['Accept-Language'] = inject(I18nService).lang();
 
-    if (organizationId && !request.url.startsWith('/api/orgs/')) {
+    if (organizationId && !ORG_INDEPENDENT.some((pattern) => pattern.test(request.url))) {
       headers['X-Org-Id'] = organizationId;
     }
   }
@@ -49,7 +54,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
       if (error.status === 403 && (code === 'ORG_FORBIDDEN' || code === 'ORG_ACCESS_REVOKED')) {
         activeOrg.clear();
-        void router.navigate(['/app']);
+        window.location.assign('/app');
       }
 
       return throwError(() => error);

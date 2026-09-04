@@ -148,7 +148,32 @@ public class AccountService {
     public void leaveOrganization() {
         UUID organizationId = OrganizationContextHolder.currentOrganizationId();
         UserView me = directory.currentUser();
+
+        if (ownsOrganization(me.id(), organizationId)) {
+            throw new RuleViolationException(
+                    "The creator cannot leave the organization, only close it", "OWNER_CANNOT_LEAVE");
+        }
+
         exits.leave(me.id(), organizationId, me.email());
+    }
+
+    public void deleteOrganization(String password) {
+        UUID organizationId = OrganizationContextHolder.currentOrganizationId();
+        AppUser user = currentAccount();
+
+        if (!ownsOrganization(user.getId(), organizationId)) {
+            throw new RuleViolationException("Only the creator can close the organization", "OWNER_ONLY");
+        }
+
+        requirePassword(user, password);
+        exits.close(organizationId, user.getEmail());
+    }
+
+    private boolean ownsOrganization(UUID userId, UUID organizationId) {
+        if (organizationId == null) {
+            return false;
+        }
+        return organizations.membership(userId, organizationId).map(MembershipView::owner).orElse(false);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -165,8 +190,13 @@ public class AccountService {
                     user.getId(), membership.organizationId(), membership.roleId(), membership.roleCode(),
                     membership.permissions());
 
-            OrganizationContextHolder.runAs(scope,
-                    () -> exits.leave(user.getId(), membership.organizationId(), user.getEmail()));
+            OrganizationContextHolder.runAs(scope, () -> {
+                if (membership.owner()) {
+                    exits.close(membership.organizationId(), user.getEmail());
+                } else {
+                    exits.leave(user.getId(), membership.organizationId(), user.getEmail());
+                }
+            });
         }
 
         OrganizationContextHolder.runAs(

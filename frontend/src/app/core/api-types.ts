@@ -537,6 +537,7 @@ export interface OrgMembershipDto {
   roleCode: string;
   roleName: string;
   permissions: string[];
+  owner: boolean;
 }
 
 export interface OrgDto {

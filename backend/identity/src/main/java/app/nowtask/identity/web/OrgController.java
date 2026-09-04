@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import app.nowtask.identity.AccountService;
 import app.nowtask.identity.api.MembershipView;
 import app.nowtask.identity.api.OrganizationView;
 import app.nowtask.identity.api.Organizations;
@@ -28,10 +30,12 @@ class OrgController {
 
     private final Organizations organizations;
     private final UserDirectory directory;
+    private final AccountService account;
 
-    OrgController(Organizations organizations, UserDirectory directory) {
+    OrgController(Organizations organizations, UserDirectory directory, AccountService account) {
         this.organizations = organizations;
         this.directory = directory;
+        this.account = account;
     }
 
     @GetMapping
@@ -54,6 +58,15 @@ class OrgController {
         return organizations.update(new app.nowtask.shared.PatchBody(body));
     }
 
+    record DeleteOrg(String password) {
+    }
+
+    @PostMapping("/current/delete")
+    ResponseEntity<Void> deleteCurrent(@RequestBody DeleteOrg request) {
+        account.deleteOrganization(request.password());
+        return ResponseEntity.noContent().build();
+    }
+
     record NewOrg(String name, String slug, String presetCode) {
     }
 
@@ -74,10 +87,6 @@ class OrgController {
 
         MembershipView membership = organizations.membership(userId, id)
                 .orElseThrow(() -> new ForbiddenException("ORG_FORBIDDEN", id.toString()));
-
-        if (httpRequest.getSession(false) != null) {
-            httpRequest.changeSessionId();
-        }
 
         httpRequest.getSession(true).setAttribute(SESSION_KEY, id);
         organizations.markSeen(userId, id);

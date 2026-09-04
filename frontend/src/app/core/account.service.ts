@@ -73,10 +73,6 @@ export class AccountService {
     return result.closed;
   }
 
-  async leaveOrganization(): Promise<void> {
-    await firstValueFrom(this.http.post('/api/account/leave', {}));
-  }
-
   async deleteAccount(password: string): Promise<void> {
     await firstValueFrom(this.http.post('/api/account/delete', { password }));
   }

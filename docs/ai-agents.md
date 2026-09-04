@@ -88,6 +88,62 @@ history.
 The **AI agents** screen in the application generates this command and this JSON with the instance
 address and a freshly created key filled in, so in practice copying the snippet is enough.
 
+#### Per-client entries
+
+Every client below talks to the same `/mcp` endpoint with the same header. Only the place where the
+entry lives differs.
+
+**Codex CLI** reads the bearer token from an environment variable at connection time, so export it
+in your shell profile and register the server once:
+
+```bash
+export NOWTASK_API_KEY=nt_fbe17d9e_arUXp7uv...
+codex mcp add nowtask --url https://your-instance/mcp --bearer-token-env-var NOWTASK_API_KEY
+```
+
+The same entry in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.nowtask]
+url = "https://your-instance/mcp"
+bearer_token_env_var = "NOWTASK_API_KEY"
+```
+
+**Gemini CLI** takes the header on the command line; add `--scope user` to make the server
+available in every project:
+
+```bash
+gemini mcp add --transport http --header "Authorization: Bearer nt_fbe17d9e_arUXp7uv..." \
+  nowtask https://your-instance/mcp
+```
+
+**VS Code** (Copilot in agent mode) uses a `servers` root instead of `mcpServers`, in
+`.vscode/mcp.json` or in the user configuration:
+
+```json
+{
+  "servers": {
+    "nowtask": {
+      "type": "http",
+      "url": "https://your-instance/mcp",
+      "headers": { "Authorization": "Bearer nt_fbe17d9e_arUXp7uv..." }
+    }
+  }
+}
+```
+
+**Cursor** and **Claude Desktop** take the generic `mcpServers` JSON above, in `~/.cursor/mcp.json`
+or `claude_desktop_config.json` respectively.
+
+**ChatGPT** is the exception. Its connectors reach only remote HTTPS servers and cannot attach a
+custom header: the choices are OAuth or no authentication. The nowtask server does not speak OAuth,
+so the key has to sit in the server environment as the fallback key, which means running your own
+HTTP instance (see "Your own HTTP server" below) with `NOWTASK_API_KEY` set and its host in
+`NOWTASK_MCP_ALLOWED_HOSTS`, exposed under HTTPS. Then in ChatGPT: Settings, Apps & Connectors,
+Advanced, Developer mode (Business, Enterprise and Edu plans), Create, the address ending in `/mcp`,
+authentication none. Everyone who can reach that address acts with the permissions of that key, so
+grant it read scopes only unless the address is private.
+
 ### stdio (server on your own machine)
 
 ```json
