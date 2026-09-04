@@ -143,6 +143,22 @@ export class LandingDemo {
     { id: 'timeline', label: 'Timeline', icon: 'timeline' },
   ];
 
+  protected readonly rail: ReadonlyArray<{
+    id: string;
+    label: string;
+    icon: string;
+    view: DemoView | null;
+    count?: number;
+  }> = [
+    { id: 'overview', label: 'Overview', icon: 'home', view: null },
+    { id: 'board', label: 'Board', icon: 'board', view: 'board' },
+    { id: 'list', label: 'List', icon: 'list', view: 'list' },
+    { id: 'timeline', label: 'Timeline', icon: 'timeline', view: 'timeline' },
+    { id: 'calendar', label: 'Calendar', icon: 'calendar', view: null },
+    { id: 'automations', label: 'Automations', icon: 'bolt', view: null, count: 1 },
+    { id: 'agents', label: 'AI agents', icon: 'agent', view: null },
+  ];
+
   protected readonly tasks = signal<DemoTask[]>(SEED.map((task) => ({ ...task })));
   protected readonly log = signal<LogEntry[]>([...SEED_LOG]);
   protected readonly view = signal<DemoView>('board');

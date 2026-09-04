@@ -28,6 +28,8 @@ export const LANDING_COPY = {
     ],
     signIn: 'Sign in',
     start: 'Start for free',
+    menu: 'Menu',
+    close: 'Close menu',
   },
 
   hero: {
@@ -37,13 +39,35 @@ export const LANDING_COPY = {
     ctaPrimary: 'Start for free',
     ctaSecondary: 'See the code on GitHub',
     note: 'Free for individuals and teams of up to 25 people. No card required.',
+    feedTitle: 'Happening now',
+    feed: [
+      {
+        icon: 'bolt',
+        text: 'Rule assigned NT-142 to Marta R. for review',
+        time: 'now',
+        rule: true,
+      },
+      {
+        icon: 'board',
+        text: 'NT-131 moved from In progress to Review',
+        time: '2 min',
+        rule: false,
+      },
+      {
+        icon: 'agent',
+        text: 'agent:Team assistant commented on NT-138',
+        time: '9 min',
+        rule: false,
+      },
+      { icon: 'calendar', text: 'NT-147 due date moved to Friday', time: '14 min', rule: false },
+    ],
   },
 
   strip: [
-    { icon: 'layers', label: 'Four views over the same data' },
-    { icon: 'agent', label: 'MCP server with 31 tools for AI agents' },
-    { icon: 'globe', label: 'Interface in Polish, English and German' },
-    { icon: 'shield', label: 'Self-hosted with a single command' },
+    { icon: 'layers', value: '4 views', label: 'over the same set of tasks' },
+    { icon: 'agent', value: '31 tools', label: 'in the MCP server for AI agents' },
+    { icon: 'globe', value: '3 languages', label: 'Polish, English and German' },
+    { icon: 'shield', value: '1 command', label: 'to run it on your own server' },
   ],
 
   compare: {
@@ -107,31 +131,37 @@ export const LANDING_COPY = {
     items: [
       {
         icon: 'board',
+        art: 'views',
         title: 'Four views, one set of data',
         body: 'Board, list, timeline and calendar show the same tasks. A change in one place shows up everywhere, with no syncing and no copying.',
       },
       {
         icon: 'sliders',
+        art: 'fields',
         title: 'Statuses and fields that match your process',
         body: 'Add your own columns, fields and labels. WIP limits, status categories and grouping are yours to set, no ticket to IT required.',
       },
       {
         icon: 'bolt',
+        art: 'rules',
         title: 'Automations with real conditions',
         body: 'Rules with nested conditions move tasks, assign people and set due dates. Every run lands in the log, so you can see what happened and why.',
       },
       {
         icon: 'lock',
+        art: 'permissions',
         title: 'Permissions down to a single field',
         body: 'Roles, project access and hiding selected fields from guests. Sensitive data stays where it belongs.',
       },
       {
         icon: 'sun',
+        art: 'theme',
         title: 'An interface you can tune',
         body: 'Light and dark theme, five accents, three densities and a radius setting. It has to feel right for eight hours a day, not just in a screenshot.',
       },
       {
         icon: 'archive',
+        art: 'data',
         title: 'Your data stays yours',
         body: 'Export any time, a public API and the full source code. If you ever want to leave, the file format will not hold you back.',
       },
@@ -159,14 +189,15 @@ export const LANDING_COPY = {
     when: 'When',
     whenValue: 'status changes to Review',
     if: 'If',
-    ifValue: 'priority is High or the due date is within 2 days',
+    ifValues: ['priority is High', 'due date is within 2 days'],
+    ifJoin: 'or',
     then: 'Then',
-    thenValue: 'assign a reviewer and set the due date to tomorrow',
+    thenValues: ['assign Marta R. as reviewer', 'set the due date to tomorrow'],
     logTitle: 'Recent runs',
     log: [
-      { time: '09:12', label: 'NT-142 assigned to Marta' },
-      { time: '11:04', label: 'NT-138 moved to review' },
-      { time: '14:38', label: 'NT-131 marked as urgent' },
+      { time: '14:38', label: 'NT-131 assigned to Marta R.', reason: 'priority is High' },
+      { time: '11:04', label: 'NT-138 due date set to tomorrow', reason: 'due in 2 days' },
+      { time: '09:12', label: 'NT-142 skipped', reason: 'no condition matched' },
     ],
   },
 
@@ -184,6 +215,7 @@ export const LANDING_COPY = {
     clientsTitle: 'Tested with',
     clients: ['Claude Desktop', 'Claude Code', 'Cursor'],
     configTitle: 'Client configuration',
+    configFile: 'claude_desktop_config.json',
     config: `"nowtask": {
   "command": "node",
   "args": ["mcp/dist/index.js"],
@@ -259,6 +291,11 @@ export const LANDING_COPY = {
     selfBody:
       'Postgres, backend and frontend start with one command. No seat limit, no licence key, you upgrade when you want to.',
     command: 'docker compose up --build',
+    commandOutput: [
+      'postgres    ready to accept connections',
+      'backend     started on port 8080',
+      'frontend    serving on http://localhost',
+    ],
     docs: 'Deployment guide',
     cloudTitle: 'On the official instance',
     cloudBody:
@@ -350,6 +387,8 @@ export const LANDING_COPY = {
 
   faq: {
     title: 'Questions that come up most often',
+    lead: 'Short answers to what people ask before they sign up or run their own instance.',
+    more: 'Something else? Write to us',
     items: [
       {
         q: 'Are the free tiers really free?',

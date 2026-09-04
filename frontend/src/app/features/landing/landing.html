@@ -1,18 +1,31 @@
 <div lang="en" class="theme-dark flex min-h-dvh flex-col bg-bg text-ink">
-  <header class="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-    <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-8 px-5 lg:px-8">
-      <a routerLink="/" class="flex items-center gap-2.5 text-ink hover:text-ink">
+  <header class="sticky top-0 z-30 border-b border-line/70 bg-bg/80 backdrop-blur-md">
+    <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-6 px-5 lg:px-8">
+      <a
+        routerLink="/"
+        class="flex items-center gap-2.5 text-ink hover:text-ink"
+        (click)="closeMenu()"
+      >
         <ui-logo [size]="28" [tile]="false" />
         <span class="text-[17px] font-semibold lowercase tracking-[-0.02em]">{{ copy.brand }}</span>
       </a>
 
-      <nav class="hidden flex-1 items-center gap-7 md:flex">
-        @for (link of copy.nav.links; track link.href) {
-          <a [href]="link.href" class="text-[13px] text-ink-2 hover:text-ink">{{ link.label }}</a>
-        }
+      <nav
+        class="hidden flex-1 items-center justify-center lg:flex"
+        [attr.aria-label]="copy.nav.menu"
+      >
+        <div class="flex items-center gap-0.5 rounded-full border border-line bg-surface/70 p-1">
+          @for (link of copy.nav.links; track link.href) {
+            <a
+              [href]="link.href"
+              class="hoverable flex h-8 items-center rounded-full px-3.5 text-[13px] text-ink-2 hover:text-ink"
+              >{{ link.label }}</a
+            >
+          }
+        </div>
       </nav>
 
-      <div class="flex flex-1 items-center justify-end gap-3 md:flex-none">
+      <div class="flex flex-1 items-center justify-end gap-2 lg:flex-none">
         <a
           routerLink="/login"
           class="hidden h-9 items-center rounded-card px-3 text-[13px] text-ink-2 hover:text-ink sm:inline-flex"
@@ -20,51 +33,91 @@
         >
         <a
           routerLink="/signup"
-          class="ink-crisp inline-flex h-9 items-center rounded-card bg-inv px-4 text-[13px] font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
-          >{{ copy.nav.start }}</a
+          class="ink-crisp inline-flex h-9 items-center gap-2 rounded-card bg-inv px-4 text-[13px] font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
         >
+          {{ copy.nav.start }}
+          <ui-icon name="arrow-right" [size]="14" class="hidden sm:block" />
+        </a>
+        <button
+          type="button"
+          class="hoverable flex h-9 w-9 items-center justify-center rounded-card border border-line text-ink-2 lg:hidden"
+          [attr.aria-label]="menuOpen() ? copy.nav.close : copy.nav.menu"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu()"
+        >
+          <ui-icon [name]="menuOpen() ? 'x' : 'list'" [size]="17" />
+        </button>
       </div>
     </div>
+
+    @if (menuOpen()) {
+      <nav
+        class="ui-rise border-t border-line bg-surface lg:hidden"
+        [attr.aria-label]="copy.nav.menu"
+      >
+        <div class="mx-auto flex max-w-[1180px] flex-col gap-1 px-3 py-3">
+          @for (link of copy.nav.links; track link.href) {
+            <a
+              [href]="link.href"
+              class="hoverable flex h-10 items-center rounded-card px-3 text-[14px] text-ink-2 hover:text-ink"
+              (click)="closeMenu()"
+              >{{ link.label }}</a
+            >
+          }
+          <a
+            routerLink="/login"
+            class="hoverable mt-1 flex h-10 items-center rounded-card border border-line px-3 text-[14px] text-ink hover:text-ink sm:hidden"
+            (click)="closeMenu()"
+            >{{ copy.nav.signIn }}</a
+          >
+        </div>
+      </nav>
+    }
   </header>
 
   <main class="flex-1">
-    <section class="relative overflow-hidden border-b border-line">
-      <div
+    <section class="relative overflow-hidden">
+      <app-landing-dots
         aria-hidden="true"
-        class="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
-        style="
-          background-image:
-            linear-gradient(to right, var(--c-line) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--c-line) 1px, transparent 1px);
-          background-size: 56px 56px;
-          opacity: 0.55;
-          mask-image: radial-gradient(ellipse 70% 70% at 50% 0%, #000 25%, transparent 78%);
-        "
-      ></div>
+        class="pointer-events-none absolute inset-x-0 top-0 h-[640px]"
+      />
 
-      <div class="relative mx-auto max-w-[1180px] px-5 pt-16 pb-12 lg:px-8 lg:pt-24">
-        <div class="flex max-w-[760px] flex-col gap-6">
-          <span
-            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 font-mono text-[11px] text-ink-2"
+      <div
+        class="relative mx-auto grid max-w-[1180px] gap-12 px-5 pt-16 pb-14 lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.85fr)] lg:items-center lg:gap-16 lg:px-8 lg:pt-24"
+      >
+        <div class="flex flex-col gap-6">
+          <a
+            [href]="links.github"
+            target="_blank"
+            rel="noreferrer"
+            class="ld-rise inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface/80 py-1.5 pr-3 pl-1.5 text-[12px] text-ink-2 hover:text-ink"
           >
-            <span class="h-1.5 w-1.5 rounded-full bg-signal"></span>
+            <span
+              class="flex h-5 items-center rounded-full bg-signal px-1.5 font-mono text-[10px] font-medium text-bg"
+              >new</span
+            >
             {{ copy.hero.badge }}
-          </span>
+            <ui-icon name="chevron-right" [size]="13" class="text-ink-3" />
+          </a>
 
           <h1
-            class="text-[34px] leading-[1.1] font-semibold tracking-[-0.03em] text-pretty sm:text-[46px] lg:text-[58px]"
+            class="ld-rise text-[38px] leading-[1.04] font-semibold tracking-[-0.035em] text-balance sm:text-[50px] lg:text-[62px]"
+            style="--ld-delay: 60ms"
           >
             {{ copy.hero.title }}
           </h1>
 
-          <p class="max-w-[620px] text-[15px] leading-[1.75] text-ink-2 text-pretty lg:text-base">
+          <p
+            class="ld-rise max-w-[600px] text-[15px] leading-[1.75] text-ink-2 text-pretty lg:text-[16px]"
+            style="--ld-delay: 120ms"
+          >
             {{ copy.hero.body }}
           </p>
 
-          <div class="flex flex-wrap items-center gap-3 pt-1">
+          <div class="ld-rise flex flex-wrap items-center gap-3 pt-1" style="--ld-delay: 180ms">
             <a
               routerLink="/signup"
-              class="ink-crisp inline-flex h-12 items-center gap-2 rounded-card bg-inv px-6 text-sm font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
+              class="ink-crisp inline-flex h-12 items-center gap-2 rounded-card bg-inv px-6 text-sm font-semibold text-inv-ink shadow-lift hover:text-inv-ink hover:brightness-90"
             >
               {{ copy.hero.ctaPrimary }}
               <ui-icon name="arrow-right" [size]="16" />
@@ -73,48 +126,179 @@
               [href]="links.github"
               target="_blank"
               rel="noreferrer"
-              class="inline-flex h-12 items-center gap-2 rounded-card border border-line-strong bg-surface px-6 text-sm font-medium text-ink hover:bg-surface-2 hover:text-ink"
+              class="inline-flex h-12 items-center gap-2 rounded-card border border-line-strong bg-surface/70 px-6 text-sm font-medium text-ink hover:bg-surface-2 hover:text-ink"
             >
-              <ui-icon name="link" [size]="16" />
+              <ui-icon name="git-branch" [size]="16" class="text-ink-2" />
               {{ copy.hero.ctaSecondary }}
             </a>
           </div>
 
-          <p class="font-mono text-[11px] text-ink-3">{{ copy.hero.note }}</p>
+          <p class="ld-rise text-[12px] text-ink-3" style="--ld-delay: 240ms">
+            {{ copy.hero.note }}
+          </p>
+        </div>
+
+        <div class="ld-rise relative hidden lg:block" style="--ld-delay: 200ms" aria-hidden="true">
+          <div class="flex items-center gap-2 pb-3 pl-1">
+            <span class="relative flex h-2 w-2">
+              <span
+                class="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-60"
+              ></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-signal"></span>
+            </span>
+            <span class="text-[12px] font-medium text-ink-2">{{ copy.hero.feedTitle }}</span>
+          </div>
+          <ul class="flex flex-col gap-2.5">
+            @for (entry of copy.hero.feed; track entry.text; let i = $index) {
+              <li
+                class="flex items-start gap-3 rounded-card border bg-surface px-4 py-3 shadow-card"
+                [class.border-line-strong]="entry.rule"
+                [class.border-line]="!entry.rule"
+                [style.marginLeft.px]="i * 14"
+                [style.opacity]="1 - i * 0.16"
+              >
+                <span
+                  class="flex h-7 w-7 flex-none items-center justify-center rounded-[7px] border border-line bg-bg"
+                  [class.text-signal-ink]="entry.rule"
+                  [class.text-ink-2]="!entry.rule"
+                >
+                  <ui-icon [name]="entry.icon" [size]="14" />
+                </span>
+                <span class="min-w-0 flex-1 text-[13px] leading-[1.5]">{{ entry.text }}</span>
+                <span class="flex-none pt-0.5 font-mono text-[10px] text-ink-3">{{
+                  entry.time
+                }}</span>
+              </li>
+            }
+          </ul>
         </div>
       </div>
 
-      <div class="relative mx-auto max-w-[1180px] px-5 pb-16 lg:px-8 lg:pb-20">
-        <app-landing-demo />
+      <div class="relative mx-auto max-w-[1180px] px-5 pb-20 lg:px-8 lg:pb-24">
+        <div
+          class="ld-rise relative rounded-[14px] border border-line bg-surface-2 p-1.5 shadow-lift"
+          style="--ld-delay: 320ms"
+        >
+          <app-landing-demo />
+        </div>
       </div>
     </section>
 
-    <section class="border-b border-line bg-surface">
+    <section class="border-y border-line bg-surface">
       <div
-        class="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:grid-cols-2 lg:grid-cols-4 lg:px-8"
+        class="mx-auto grid max-w-[1180px] gap-x-8 gap-y-6 px-5 py-7 sm:grid-cols-2 lg:grid-cols-4 lg:px-8"
       >
-        @for (item of copy.strip; track item.label) {
-          <div class="flex items-center gap-3">
-            <ui-icon [name]="item.icon" [size]="17" class="text-ink-3" />
-            <span class="text-[13px] text-ink-2">{{ item.label }}</span>
+        @for (item of copy.strip; track item.value) {
+          <div class="flex items-center gap-3.5">
+            <span
+              class="flex h-10 w-10 flex-none items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+            >
+              <ui-icon [name]="item.icon" [size]="17" />
+            </span>
+            <span class="flex flex-col">
+              <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ item.value }}</span>
+              <span class="text-[12px] text-ink-3">{{ item.label }}</span>
+            </span>
           </div>
         }
       </div>
     </section>
 
-    <section id="compare" class="scroll-mt-20 border-b border-line">
+    <section id="features" class="scroll-mt-20">
       <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
-        <div class="flex max-w-[760px] flex-col gap-4">
-          <span class="kap">{{ copy.compare.eyebrow }}</span>
+        <div class="flex max-w-[680px] flex-col gap-4">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="layers" [size]="13" class="text-ink-3" />
+            {{ copy.features.eyebrow }}
+          </span>
           <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
+          >
+            {{ copy.features.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.features.body }}</p>
+        </div>
+
+        <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          @for (feature of copy.features.items; track feature.title; let i = $index) {
+            <article
+              class="flex flex-col overflow-hidden rounded-panel border border-line bg-surface"
+              [class]="artSpan(i)"
+            >
+              <div class="relative h-[196px] overflow-hidden border-b border-line bg-bg">
+                <app-landing-art [kind]="feature.art" class="h-full" />
+                <span
+                  aria-hidden="true"
+                  class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-line"
+                ></span>
+              </div>
+              <div class="flex flex-1 flex-col gap-2 p-5">
+                <h3 class="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]">
+                  <ui-icon [name]="feature.icon" [size]="15" class="text-ink-3" />
+                  {{ feature.title }}
+                </h3>
+                <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ feature.body }}</p>
+              </div>
+            </article>
+          }
+
+          <a
+            href="#ai-agents"
+            class="group relative flex flex-col justify-between gap-6 overflow-hidden rounded-panel border border-line-strong bg-surface-2 p-5 text-ink hover:text-ink sm:col-span-2 lg:col-span-3"
+          >
+            <span class="relative flex items-center gap-3">
+              <span
+                class="flex h-10 w-10 flex-none items-center justify-center rounded-card bg-inv text-inv-ink"
+              >
+                <ui-icon [name]="copy.features.agents.icon" [size]="18" />
+              </span>
+              <span
+                class="rounded-full border border-line-strong px-2 py-0.5 font-mono text-[10px] text-ink-2"
+                >{{ copy.features.agents.badge }}</span
+              >
+            </span>
+            <span class="relative flex flex-col gap-2">
+              <span
+                class="text-[19px] leading-[1.25] font-semibold tracking-[-0.02em] text-balance"
+                >{{ copy.features.agents.title }}</span
+              >
+              <span class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{
+                copy.features.agents.body
+              }}</span>
+            </span>
+            <span class="relative flex items-center gap-2 text-[13px] font-medium">
+              {{ copy.features.agents.cta }}
+              <ui-icon
+                name="arrow-right"
+                [size]="15"
+                class="transition-transform group-hover:translate-x-0.5"
+              />
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare" class="scroll-mt-20 border-t border-line bg-surface">
+      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
+        <div class="flex max-w-[720px] flex-col gap-4">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="columns" [size]="13" class="text-ink-3" />
+            {{ copy.compare.eyebrow }}
+          </span>
+          <h2
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
           >
             {{ copy.compare.title }}
           </h2>
           <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.compare.body }}</p>
         </div>
 
-        <div class="mt-12 overflow-hidden rounded-panel border border-line">
+        <div class="mt-12 overflow-hidden rounded-panel border border-line bg-surface shadow-card">
           <div class="overflow-x-auto">
             <table class="w-full min-w-[760px] border-separate border-spacing-0 text-left">
               <caption class="sr-only">
@@ -126,18 +310,18 @@
                 <tr>
                   <th
                     scope="col"
-                    class="kap sticky left-0 z-10 min-w-[280px] border-r border-line bg-surface px-5 py-4 text-left"
+                    class="sticky left-0 z-10 min-w-[280px] border-r border-b border-line bg-surface px-5 py-4 text-left text-[12px] font-medium text-ink-3"
                   >
                     {{ copy.compare.featureHeading }}
                   </th>
                   @for (column of copy.compare.columns; track column; let first = $first) {
                     <th
                       scope="col"
-                      class="min-w-[112px] px-4 py-4 text-center text-[13px]"
+                      class="min-w-[112px] border-b px-4 py-4 text-center text-[13px]"
                       [class]="
                         first
-                          ? 'bg-surface-2 font-semibold text-ink'
-                          : 'bg-surface font-medium text-ink-2'
+                          ? 'border-t-2 border-t-ink border-b-line bg-surface-2 font-semibold text-ink'
+                          : 'border-b-line font-medium text-ink-2'
                       "
                     >
                       @if (first) {
@@ -154,29 +338,36 @@
               </thead>
 
               <tbody>
-                @for (row of copy.compare.rows; track row.label) {
+                @for (row of copy.compare.rows; track row.label; let last = $last) {
                   <tr>
                     <th
                       scope="row"
-                      class="sticky left-0 z-10 border-t border-r border-line bg-bg px-5 py-4 text-[13px] leading-[1.6] font-normal text-ink-2"
+                      class="sticky left-0 z-10 border-r border-line bg-surface px-5 py-3.5 text-[13px] leading-[1.6] font-normal text-ink-2"
+                      [class.border-b]="!last"
                     >
                       {{ row.label }}
                     </th>
                     @for (value of row.values; track $index; let first = $first) {
                       <td
-                        class="border-t border-line px-4 py-4 text-center"
-                        [class.bg-surface]="first"
+                        class="border-line px-4 py-3.5 text-center"
+                        [class.border-b]="!last"
+                        [class.bg-surface-2]="first"
                       >
                         <span class="inline-flex items-center justify-center">
                           @switch (value) {
                             @case ('yes') {
-                              <ui-icon name="check" [size]="18" class="text-done-ink" />
+                              <span
+                                class="flex h-6 w-6 items-center justify-center rounded-full text-done-ink"
+                                [class]="first ? 'bg-done/15' : ''"
+                              >
+                                <ui-icon name="check" [size]="16" />
+                              </span>
                             }
                             @case ('partial') {
-                              <span class="block h-px w-3.5 rounded-full bg-ink-3"></span>
+                              <span class="block h-[3px] w-4 rounded-full bg-ink-3/70"></span>
                             }
                             @default {
-                              <ui-icon name="x" [size]="16" class="text-ink-3 opacity-55" />
+                              <ui-icon name="x" [size]="15" class="text-ink-3 opacity-70" />
                             }
                           }
                           <span class="sr-only">{{ stateLabel(value) }}</span>
@@ -199,10 +390,10 @@
                     <ui-icon name="check" [size]="15" class="text-done-ink" />
                   }
                   @case ('partial') {
-                    <span class="block h-px w-3 rounded-full bg-ink-3"></span>
+                    <span class="block h-[3px] w-3.5 rounded-full bg-ink-3/70"></span>
                   }
                   @default {
-                    <ui-icon name="x" [size]="14" class="opacity-55" />
+                    <ui-icon name="x" [size]="14" class="opacity-70" />
                   }
                 }
                 {{ item.label }}
@@ -219,87 +410,37 @@
           </a>
         </div>
 
-        <p class="mt-4 max-w-[760px] font-mono text-[11px] leading-[1.7] text-ink-3">
+        <p class="mt-4 max-w-[760px] text-[11px] leading-[1.7] text-ink-3">
           {{ copy.compare.footnote }}
         </p>
       </div>
     </section>
 
-    <section id="features" class="scroll-mt-20 border-b border-line">
-      <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
-        <div class="flex max-w-[720px] flex-col gap-4">
-          <span class="kap">{{ copy.features.eyebrow }}</span>
-          <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
-          >
-            {{ copy.features.title }}
-          </h2>
-          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.features.body }}</p>
-        </div>
-
-        <div
-          class="mt-12 grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-2 lg:grid-cols-3"
-        >
-          @for (feature of copy.features.items; track feature.title) {
-            <div class="flex flex-col gap-3 bg-surface p-6 lg:p-7">
-              <span
-                class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-surface-2 text-ink-2"
-              >
-                <ui-icon [name]="feature.icon" [size]="17" />
-              </span>
-              <h3 class="text-[15px] font-semibold tracking-[-0.01em]">{{ feature.title }}</h3>
-              <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ feature.body }}</p>
-            </div>
-          }
-        </div>
-
-        <a
-          href="#ai-agents"
-          class="mt-5 flex flex-col gap-4 rounded-panel border border-line-strong bg-surface p-6 text-ink hover:bg-surface-2 hover:text-ink lg:flex-row lg:items-center lg:gap-7 lg:p-7"
-        >
-          <span
-            class="flex h-11 w-11 flex-none items-center justify-center rounded-card border border-line bg-bg text-ink"
-          >
-            <ui-icon [name]="copy.features.agents.icon" [size]="20" />
-          </span>
-          <span class="flex min-w-0 flex-1 flex-col gap-2">
-            <span class="flex flex-wrap items-center gap-2.5">
-              <span class="text-[15px] font-semibold tracking-[-0.01em]">{{
-                copy.features.agents.title
-              }}</span>
-              <span
-                class="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-3"
-                >{{ copy.features.agents.badge }}</span
-              >
-            </span>
-            <span class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{
-              copy.features.agents.body
-            }}</span>
-          </span>
-          <span class="flex flex-none items-center gap-2 text-[13px] font-medium">
-            {{ copy.features.agents.cta }}
-            <ui-icon name="arrow-right" [size]="15" />
-          </span>
-        </a>
-      </div>
-    </section>
-
-    <section id="automations" class="scroll-mt-20 border-b border-line bg-surface">
+    <section id="automations" class="scroll-mt-20 border-t border-line">
       <div
-        class="mx-auto grid max-w-[1180px] gap-12 px-5 py-20 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-8 lg:py-28"
+        class="mx-auto grid max-w-[1180px] gap-12 px-5 py-20 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:gap-20 lg:px-8 lg:py-28"
       >
         <div class="flex flex-col gap-5">
-          <span class="kap">{{ copy.rules.eyebrow }}</span>
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="bolt" [size]="13" class="text-signal-ink" />
+            {{ copy.rules.eyebrow }}
+          </span>
           <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
           >
             {{ copy.rules.title }}
           </h2>
           <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.rules.body }}</p>
-          <ul class="flex flex-col gap-3 pt-1">
-            @for (point of copy.rules.points; track point) {
-              <li class="flex items-start gap-3 text-[13px] text-ink-2">
-                <ui-icon name="check" [size]="16" class="mt-0.5 text-done-ink" />
+          <ul class="flex flex-col gap-3 pt-2">
+            @for (point of copy.rules.points; track point; let i = $index) {
+              <li class="flex items-start gap-3 text-[13px] leading-[1.6] text-ink-2">
+                <span
+                  class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-done/15 text-done-ink"
+                >
+                  <ui-icon name="check" [size]="12" />
+                </span>
                 <span>{{ point }}</span>
               </li>
             }
@@ -307,41 +448,101 @@
         </div>
 
         <div class="flex flex-col gap-4">
-          <div class="rounded-panel border border-line bg-bg p-5 shadow-card">
-            <div class="flex items-center gap-2.5 pb-4">
-              <ui-icon name="bolt" [size]="16" class="text-signal-ink" />
+          <div class="rounded-panel border border-line bg-surface shadow-lift">
+            <div class="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+              <span
+                class="flex h-7 w-7 items-center justify-center rounded-[7px] bg-inv text-inv-ink"
+              >
+                <ui-icon name="bolt" [size]="14" />
+              </span>
               <span class="text-[13px] font-medium">{{ copy.rules.name }}</span>
               <span
-                class="ml-auto rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-3"
-                >{{ copy.rules.active }}</span
+                class="ml-auto flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-2"
               >
+                <span class="h-1.5 w-1.5 rounded-full bg-done"></span>
+                {{ copy.rules.active }}
+              </span>
             </div>
 
-            <div class="flex flex-col gap-2.5">
-              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
-                <span class="kap">{{ copy.rules.when }}</span>
-                <span class="text-[13px]">{{ copy.rules.whenValue }}</span>
+            <div class="relative flex flex-col gap-3 p-5">
+              <span
+                aria-hidden="true"
+                class="absolute top-9 bottom-9 left-[38px] w-px border-l border-dashed border-line-strong"
+              ></span>
+
+              <div class="relative flex items-start gap-3.5">
+                <span
+                  class="flex h-8 w-8 flex-none items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+                >
+                  <ui-icon name="play" [size]="14" />
+                </span>
+                <div
+                  class="flex min-w-0 flex-1 flex-col gap-1 rounded-card border border-line bg-bg px-3.5 py-2.5"
+                >
+                  <span class="text-[11px] text-ink-3">{{ copy.rules.when }}</span>
+                  <span class="text-[13px]">{{ copy.rules.whenValue }}</span>
+                </div>
               </div>
-              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
-                <span class="kap">{{ copy.rules.if }}</span>
-                <span class="text-[13px]">{{ copy.rules.ifValue }}</span>
+
+              <div class="relative flex items-start gap-3.5">
+                <span
+                  class="flex h-8 w-8 flex-none items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+                >
+                  <ui-icon name="filter" [size]="14" />
+                </span>
+                <div
+                  class="flex min-w-0 flex-1 flex-col gap-1.5 rounded-card border border-line bg-bg px-3.5 py-2.5"
+                >
+                  <span class="text-[11px] text-ink-3">{{ copy.rules.if }}</span>
+                  @for (condition of copy.rules.ifValues; track condition; let first = $first) {
+                    <span class="flex items-center gap-2 text-[13px]">
+                      @if (!first) {
+                        <span
+                          class="rounded-full bg-surface-3 px-1.5 py-px font-mono text-[10px] text-ink-2"
+                          >{{ copy.rules.ifJoin }}</span
+                        >
+                      }
+                      {{ condition }}
+                    </span>
+                  }
+                </div>
               </div>
-              <div class="flex flex-col gap-1.5 rounded-card border border-line bg-surface p-3">
-                <span class="kap">{{ copy.rules.then }}</span>
-                <span class="text-[13px]">{{ copy.rules.thenValue }}</span>
+
+              <div class="relative flex items-start gap-3.5">
+                <span
+                  class="flex h-8 w-8 flex-none items-center justify-center rounded-card bg-inv text-inv-ink"
+                >
+                  <ui-icon name="bolt" [size]="14" />
+                </span>
+                <div
+                  class="flex min-w-0 flex-1 flex-col gap-1.5 rounded-card border border-line-strong bg-bg px-3.5 py-2.5"
+                >
+                  <span class="text-[11px] text-ink-3">{{ copy.rules.then }}</span>
+                  @for (action of copy.rules.thenValues; track action) {
+                    <span class="flex items-center gap-2 text-[13px]">
+                      <ui-icon name="chevron-right" [size]="12" class="text-ink-3" />
+                      {{ action }}
+                    </span>
+                  }
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="rounded-panel border border-line bg-bg p-5">
-            <span class="kap">{{ copy.rules.logTitle }}</span>
-            <ul class="flex flex-col pt-3">
+          <div class="rounded-panel border border-line bg-surface">
+            <div class="flex items-center gap-2 border-b border-line px-5 py-3">
+              <ui-icon name="log" [size]="14" class="text-ink-3" />
+              <span class="text-[12px] font-medium text-ink-2">{{ copy.rules.logTitle }}</span>
+            </div>
+            <ul class="flex flex-col px-5">
               @for (entry of copy.rules.log; track entry.label) {
-                <li
-                  class="flex items-center gap-3 border-t border-line py-2.5 first:border-t-0 first:pt-0"
-                >
+                <li class="flex items-center gap-3 border-t border-line py-2.5 first:border-t-0">
                   <span class="font-mono text-[11px] text-ink-3">{{ entry.time }}</span>
-                  <span class="text-[13px] text-ink-2">{{ entry.label }}</span>
+                  <span class="min-w-0 flex-1 truncate text-[13px]">{{ entry.label }}</span>
+                  <span
+                    class="hidden flex-none rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-3 sm:block"
+                    >{{ entry.reason }}</span
+                  >
                 </li>
               }
             </ul>
@@ -350,30 +551,39 @@
       </div>
     </section>
 
-    <section id="ai-agents" class="scroll-mt-20 border-b border-line">
+    <section id="ai-agents" class="scroll-mt-20 border-t border-line bg-surface">
       <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
-        <div class="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
+        <div class="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-20">
           <div class="flex flex-col gap-5">
-            <span class="kap">{{ copy.agents.eyebrow }}</span>
+            <span
+              class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+            >
+              <ui-icon name="agent" [size]="13" class="text-ink-3" />
+              {{ copy.agents.eyebrow }}
+            </span>
             <h2
-              class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+              class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
             >
               {{ copy.agents.title }}
             </h2>
             <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.agents.body }}</p>
 
-            <ul class="flex flex-col gap-3 pt-1">
+            <ul class="flex flex-col gap-3 pt-2">
               @for (point of copy.agents.points; track point) {
-                <li class="flex items-start gap-3 text-[13px] text-ink-2">
-                  <ui-icon name="check" [size]="16" class="mt-0.5 text-done-ink" />
+                <li class="flex items-start gap-3 text-[13px] leading-[1.6] text-ink-2">
+                  <span
+                    class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-done/15 text-done-ink"
+                  >
+                    <ui-icon name="check" [size]="12" />
+                  </span>
                   <span>{{ point }}</span>
                 </li>
               }
             </ul>
 
-            <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-8">
+            <div class="grid gap-4 pt-2 sm:grid-cols-2">
               <div class="flex flex-col gap-2">
-                <span class="kap">{{ copy.agents.transportTitle }}</span>
+                <span class="text-[12px] text-ink-3">{{ copy.agents.transportTitle }}</span>
                 <div class="flex flex-wrap gap-2">
                   @for (transport of copy.agents.transports; track transport) {
                     <span
@@ -384,7 +594,7 @@
                 </div>
               </div>
               <div class="flex flex-col gap-2">
-                <span class="kap">{{ copy.agents.clientsTitle }}</span>
+                <span class="text-[12px] text-ink-3">{{ copy.agents.clientsTitle }}</span>
                 <div class="flex flex-wrap gap-2">
                   @for (client of copy.agents.clients; track client) {
                     <span
@@ -396,10 +606,14 @@
               </div>
             </div>
 
-            <div class="flex flex-col gap-2 pt-1">
-              <span class="kap">{{ copy.agents.configTitle }}</span>
+            <div class="overflow-hidden rounded-panel border border-line bg-surface">
+              <div class="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5">
+                <ui-icon name="clip" [size]="13" class="text-ink-3" />
+                <span class="font-mono text-[11px] text-ink-2">{{ copy.agents.configFile }}</span>
+                <span class="ml-auto text-[11px] text-ink-3">{{ copy.agents.configTitle }}</span>
+              </div>
               <pre
-                class="overflow-x-auto rounded-panel border border-line bg-surface px-4 py-3.5 font-mono text-[12px] leading-[1.7] text-ink-2"
+                class="overflow-x-auto px-4 py-3.5 font-mono text-[12px] leading-[1.7] text-ink-2"
                 >{{ copy.agents.config }}</pre>
             </div>
 
@@ -419,16 +633,16 @@
                 rel="noreferrer"
                 class="inline-flex items-center gap-2 text-[13px] text-ink-2 hover:text-ink"
               >
-                <ui-icon name="link" [size]="14" />
+                <ui-icon name="git-branch" [size]="14" />
                 {{ copy.agents.repo }}
               </a>
             </div>
           </div>
 
-          <div class="flex flex-col gap-4">
-            <div class="rounded-panel border border-line bg-surface p-5 shadow-card">
-              <div class="flex items-center gap-2.5 border-b border-line pb-4">
-                <ui-icon name="agent" [size]="17" class="text-ink-2" />
+          <div class="flex flex-col gap-4 lg:sticky lg:top-24">
+            <div class="rounded-panel border border-line bg-surface shadow-lift">
+              <div class="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+                <ui-icon name="agent" [size]="16" class="text-ink-2" />
                 <span class="text-[13px] font-medium">{{ copy.agents.demo.client }}</span>
                 <span class="ml-auto flex items-center gap-2 font-mono text-[11px] text-ink-3">
                   <span class="h-1.5 w-1.5 rounded-full bg-done"></span>
@@ -436,40 +650,53 @@
                 </span>
               </div>
 
-              <p
-                class="mt-4 rounded-card border border-line bg-bg px-3.5 py-3 text-[13px] leading-[1.6] text-pretty"
-              >
-                {{ copy.agents.demo.prompt }}
-              </p>
-
-              <span class="kap mt-5 block">{{ copy.agents.demo.callsTitle }}</span>
-              <ul class="mt-2.5 flex flex-col gap-2">
-                @for (call of copy.agents.demo.calls; track call.tool) {
-                  <li
-                    class="flex flex-col gap-1 rounded-card border border-line bg-bg px-3.5 py-2.5"
+              <div class="flex flex-col gap-4 p-5">
+                <div class="flex items-start gap-3">
+                  <span
+                    class="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-surface-3 text-ink-2"
                   >
-                    <span class="flex items-center gap-2">
-                      <ui-icon name="play" [size]="13" class="text-signal-ink" />
-                      <span class="min-w-0 flex-1 truncate font-mono text-[11px]">{{
-                        call.tool
-                      }}</span>
-                      <span class="flex-none font-mono text-[10px] text-ink-3">{{
-                        call.result
-                      }}</span>
-                    </span>
-                    <span class="truncate pl-[21px] font-mono text-[10px] text-ink-3">{{
-                      call.args
-                    }}</span>
-                  </li>
-                }
-              </ul>
+                    <ui-icon name="user" [size]="14" />
+                  </span>
+                  <p
+                    class="rounded-card rounded-tl-[3px] border border-line bg-bg px-3.5 py-2.5 text-[13px] leading-[1.6] text-pretty"
+                  >
+                    {{ copy.agents.demo.prompt }}
+                  </p>
+                </div>
 
-              <p class="mt-4 text-[13px] leading-[1.7] text-ink-2 text-pretty">
-                {{ copy.agents.demo.answer }}
-              </p>
+                <div class="flex items-start gap-3">
+                  <ui-logo [size]="28" [radius]="14" />
+                  <div class="flex min-w-0 flex-1 flex-col gap-2">
+                    <span class="text-[11px] text-ink-3">{{ copy.agents.demo.callsTitle }}</span>
+                    <ul class="flex flex-col gap-1.5">
+                      @for (call of copy.agents.demo.calls; track call.tool) {
+                        <li
+                          class="flex flex-col gap-0.5 rounded-card border border-line bg-bg px-3 py-2"
+                        >
+                          <span class="flex items-center gap-2">
+                            <ui-icon name="play" [size]="12" class="text-signal-ink" />
+                            <span class="min-w-0 flex-1 truncate font-mono text-[11px]">{{
+                              call.tool
+                            }}</span>
+                            <span class="flex-none font-mono text-[10px] text-done-ink">{{
+                              call.result
+                            }}</span>
+                          </span>
+                          <span class="truncate pl-5 font-mono text-[10px] text-ink-3">{{
+                            call.args
+                          }}</span>
+                        </li>
+                      }
+                    </ul>
+                    <p class="pt-1 text-[13px] leading-[1.7] text-ink-2 text-pretty">
+                      {{ copy.agents.demo.answer }}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
-                <span class="kap">{{ copy.agents.demo.scopesTitle }}</span>
+              <div class="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
+                <span class="text-[11px] text-ink-3">{{ copy.agents.demo.scopesTitle }}</span>
                 @for (scope of copy.agents.demo.scopes; track scope) {
                   <span
                     class="rounded-full border border-line bg-bg px-2 py-0.5 font-mono text-[10px] text-ink-2"
@@ -479,30 +706,30 @@
               </div>
             </div>
 
-            <div class="rounded-panel border border-line bg-surface p-5">
-              <span class="kap">{{ copy.agents.demo.trailTitle }}</span>
-              <p class="flex items-start gap-2.5 pt-3">
-                <ui-icon name="log" [size]="15" class="mt-px flex-none text-ink-3" />
-                <span class="min-w-0 font-mono text-[11px] leading-[1.7] text-ink-2 break-words">{{
+            <div
+              class="flex items-start gap-3 rounded-panel border border-line bg-surface px-5 py-4"
+            >
+              <ui-icon name="log" [size]="15" class="mt-0.5 flex-none text-ink-3" />
+              <span class="flex min-w-0 flex-col gap-1">
+                <span class="text-[11px] text-ink-3">{{ copy.agents.demo.trailTitle }}</span>
+                <span class="font-mono text-[11px] leading-[1.7] text-ink-2 break-words">{{
                   copy.agents.demo.trail
                 }}</span>
-              </p>
+              </span>
             </div>
           </div>
         </div>
 
-        <div class="mt-16 flex flex-col gap-3 border-t border-line pt-12">
-          <h3 class="text-[19px] font-semibold tracking-[-0.02em]">{{ copy.agents.toolsTitle }}</h3>
-          <p class="max-w-[720px] text-[13px] leading-[1.7] text-ink-2 text-pretty">
+        <div class="mt-20 flex flex-col gap-3 border-t border-line pt-12">
+          <h3 class="text-[22px] font-semibold tracking-[-0.02em]">{{ copy.agents.toolsTitle }}</h3>
+          <p class="max-w-[680px] text-[13px] leading-[1.7] text-ink-2 text-pretty">
             {{ copy.agents.toolsBody }}
           </p>
         </div>
 
-        <div
-          class="mt-8 grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
-        >
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           @for (group of copy.agents.toolGroups; track group.title) {
-            <div class="flex flex-col gap-3 bg-surface p-6">
+            <div class="flex flex-col gap-3 rounded-panel border border-line bg-surface p-5">
               <span
                 class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-bg text-ink-2"
               >
@@ -511,52 +738,82 @@
               <h4 class="text-[14px] font-semibold tracking-[-0.01em]">{{ group.title }}</h4>
               <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ group.body }}</p>
               <span
-                class="mt-auto w-fit rounded-full border border-line bg-bg px-2 py-0.5 font-mono text-[10px] text-ink-3"
-                >{{ group.scope }}</span
+                class="mt-auto flex w-fit items-center gap-1.5 rounded-full border border-line bg-bg px-2 py-0.5 font-mono text-[10px] text-ink-3"
               >
+                <ui-icon name="key" [size]="10" />
+                {{ group.scope }}
+              </span>
             </div>
           }
         </div>
       </div>
     </section>
 
-    <section id="open-source" class="scroll-mt-20 border-b border-line">
+    <section id="open-source" class="scroll-mt-20 border-t border-line">
       <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
-        <div class="flex max-w-[720px] flex-col gap-4">
-          <span class="kap">{{ copy.oss.eyebrow }}</span>
+        <div class="flex max-w-[680px] flex-col gap-4">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="git-branch" [size]="13" class="text-ink-3" />
+            {{ copy.oss.eyebrow }}
+          </span>
           <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
           >
             {{ copy.oss.title }}
           </h2>
           <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.body }}</p>
         </div>
 
-        <div class="mt-12 grid gap-5 md:grid-cols-2">
-          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-7">
+        <div class="mt-12 grid gap-4 md:grid-cols-2">
+          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-6 lg:p-7">
             <div class="flex items-center gap-3">
-              <ui-icon name="layers" [size]="18" class="text-ink-2" />
-              <h3 class="text-[15px] font-semibold">{{ copy.oss.selfTitle }}</h3>
+              <span
+                class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+              >
+                <ui-icon name="layers" [size]="17" />
+              </span>
+              <h3 class="text-[16px] font-semibold tracking-[-0.01em]">{{ copy.oss.selfTitle }}</h3>
             </div>
             <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.selfBody }}</p>
-            <pre
-              class="overflow-x-auto rounded-card border border-line bg-bg px-3.5 py-3 font-mono text-[12px] text-ink-2"
-              >{{ copy.oss.command }}</pre>
+            <div
+              class="overflow-hidden rounded-card border border-line bg-bg font-mono text-[12px]"
+            >
+              <div class="flex items-center gap-2 border-b border-line px-3.5 py-2.5">
+                <span class="text-ink-3">$</span>
+                <span class="text-ink">{{ copy.oss.command }}</span>
+              </div>
+              <div class="flex flex-col gap-1 px-3.5 py-2.5 text-[11px] leading-[1.6] text-ink-3">
+                @for (line of copy.oss.commandOutput; track line) {
+                  <span class="flex items-center gap-2">
+                    <span class="h-1 w-1 flex-none rounded-full bg-done"></span>
+                    <span class="truncate">{{ line }}</span>
+                  </span>
+                }
+              </div>
+            </div>
             <a
               [href]="links.deployGuide"
               target="_blank"
               rel="noreferrer"
-              class="mt-auto inline-flex items-center gap-2 text-[13px] text-ink hover:text-ink"
+              class="mt-auto inline-flex items-center gap-2 text-[13px] font-medium text-ink hover:text-ink"
             >
               {{ copy.oss.docs }}
               <ui-icon name="arrow-right" [size]="14" />
             </a>
           </div>
 
-          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-7">
+          <div class="flex flex-col gap-4 rounded-panel border border-line bg-surface p-6 lg:p-7">
             <div class="flex items-center gap-3">
-              <ui-icon name="globe" [size]="18" class="text-ink-2" />
-              <h3 class="text-[15px] font-semibold">{{ copy.oss.cloudTitle }}</h3>
+              <span
+                class="flex h-9 w-9 items-center justify-center rounded-card border border-line bg-bg text-ink-2"
+              >
+                <ui-icon name="globe" [size]="17" />
+              </span>
+              <h3 class="text-[16px] font-semibold tracking-[-0.01em]">
+                {{ copy.oss.cloudTitle }}
+              </h3>
             </div>
             <p class="text-[13px] leading-[1.7] text-ink-2 text-pretty">{{ copy.oss.cloudBody }}</p>
             <div class="flex flex-wrap gap-2">
@@ -569,7 +826,7 @@
             </div>
             <a
               routerLink="/signup"
-              class="mt-auto inline-flex items-center gap-2 text-[13px] text-ink hover:text-ink"
+              class="mt-auto inline-flex items-center gap-2 text-[13px] font-medium text-ink hover:text-ink"
             >
               {{ copy.nav.start }}
               <ui-icon name="arrow-right" [size]="14" />
@@ -581,63 +838,93 @@
           [href]="links.github"
           target="_blank"
           rel="noreferrer"
-          class="mt-5 flex items-center gap-3 rounded-panel border border-line bg-surface px-5 py-4 text-ink hover:bg-surface-2 hover:text-ink"
+          class="mt-4 flex items-center gap-3 rounded-panel border border-line bg-surface px-5 py-4 text-ink hover:bg-surface-2 hover:text-ink"
         >
-          <ui-icon name="link" [size]="17" class="text-ink-2" />
+          <ui-icon name="git-branch" [size]="17" class="text-ink-2" />
           <span class="text-[13px] font-medium">{{ copy.oss.repo }}</span>
-          <span class="ml-auto font-mono text-[11px] text-ink-3">{{ links.repoLabel }}</span>
+          <span class="ml-auto hidden font-mono text-[11px] text-ink-3 sm:block">{{
+            links.repoLabel
+          }}</span>
+          <ui-icon name="arrow-right" [size]="14" class="text-ink-3" />
         </a>
       </div>
     </section>
 
-    <section id="pricing" class="scroll-mt-20 border-b border-line bg-surface">
+    <section id="pricing" class="scroll-mt-20 border-t border-line bg-surface">
       <div class="mx-auto max-w-[1180px] px-5 py-20 lg:px-8 lg:py-28">
-        <div class="flex max-w-[760px] flex-col gap-4">
-          <span class="kap">{{ copy.pricing.eyebrow }}</span>
+        <div class="flex max-w-[720px] flex-col gap-4">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="chart" [size]="13" class="text-ink-3" />
+            {{ copy.pricing.eyebrow }}
+          </span>
           <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
           >
             {{ copy.pricing.title }}
           </h2>
           <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.pricing.body }}</p>
         </div>
 
-        <div class="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           @for (tier of copy.pricing.tiers; track tier.name) {
             <div
-              class="flex flex-col gap-5 rounded-panel border bg-bg p-6"
-              [class.border-line]="!tier.highlight"
-              [class.border-ink]="tier.highlight"
-              [class.shadow-lift]="tier.highlight"
+              class="flex flex-col gap-5 rounded-panel border p-6"
+              [class]="
+                tier.highlight
+                  ? 'ink-crisp border-inv bg-inv text-inv-ink shadow-lift'
+                  : 'border-line bg-surface'
+              "
             >
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-2">
                   <h3 class="text-[15px] font-semibold">{{ tier.name }}</h3>
                   @if (tier.highlight) {
                     <span
-                      class="ink-crisp rounded-full bg-inv px-2 py-0.5 font-mono text-[10px] text-inv-ink"
+                      class="rounded-full bg-inv-ink/15 px-2 py-0.5 font-mono text-[10px] text-inv-ink"
                       >{{ copy.pricing.popular }}</span
                     >
                   }
                 </div>
-                <p class="text-[12px] leading-[1.6] text-ink-3">{{ tier.audience }}</p>
+                <p
+                  class="text-[12px] leading-[1.6]"
+                  [class]="tier.highlight ? 'text-inv-ink/70' : 'text-ink-3'"
+                >
+                  {{ tier.audience }}
+                </p>
               </div>
 
               <div class="flex flex-col gap-1">
                 <span
                   class="font-semibold tracking-[-0.02em]"
                   [class]="
-                    tier.compactPrice ? 'text-[19px] leading-tight' : 'text-[30px] leading-none'
+                    tier.compactPrice ? 'text-[20px] leading-tight' : 'text-[32px] leading-none'
                   "
                   >{{ tier.price }}</span
                 >
-                <span class="font-mono text-[11px] text-ink-3">{{ tier.priceNote }}</span>
+                <span
+                  class="font-mono text-[11px]"
+                  [class]="tier.highlight ? 'text-inv-ink/70' : 'text-ink-3'"
+                  >{{ tier.priceNote }}</span
+                >
               </div>
 
-              <ul class="flex flex-1 flex-col gap-2.5">
+              <ul
+                class="flex flex-1 flex-col gap-2.5 border-t pt-5"
+                [class]="tier.highlight ? 'border-inv-ink/15' : 'border-line'"
+              >
                 @for (item of tier.features; track item) {
-                  <li class="flex items-start gap-2.5 text-[13px] leading-[1.6] text-ink-2">
-                    <ui-icon name="check" [size]="15" class="mt-0.5 text-done-ink" />
+                  <li
+                    class="flex items-start gap-2.5 text-[13px] leading-[1.6]"
+                    [class]="tier.highlight ? 'text-inv-ink/85' : 'text-ink-2'"
+                  >
+                    <ui-icon
+                      name="check"
+                      [size]="15"
+                      class="mt-0.5 flex-none"
+                      [class]="tier.highlight ? 'text-inv-ink' : 'text-done-ink'"
+                    />
                     <span>{{ item }}</span>
                   </li>
                 }
@@ -648,19 +935,21 @@
                   [href]="tier.href"
                   target="_blank"
                   rel="noreferrer"
-                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-surface text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
+                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-bg text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
                   >{{ tier.cta }}</a
                 >
               } @else if (tier.highlight) {
                 <a
                   routerLink="/signup"
-                  class="ink-crisp inline-flex h-11 items-center justify-center rounded-card bg-inv text-[13px] font-semibold text-inv-ink hover:text-inv-ink hover:brightness-90"
-                  >{{ tier.cta }}</a
+                  class="inline-flex h-11 items-center justify-center gap-2 rounded-card bg-inv-ink text-[13px] font-semibold text-inv hover:text-inv hover:brightness-110"
                 >
+                  {{ tier.cta }}
+                  <ui-icon name="arrow-right" [size]="14" />
+                </a>
               } @else {
                 <a
                   routerLink="/signup"
-                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-surface text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
+                  class="inline-flex h-11 items-center justify-center rounded-card border border-line-strong bg-bg text-[13px] font-medium text-ink hover:bg-surface-2 hover:text-ink"
                   >{{ tier.cta }}</a
                 >
               }
@@ -670,33 +959,57 @@
       </div>
     </section>
 
-    <section id="faq" class="scroll-mt-20 border-b border-line">
-      <div class="mx-auto max-w-[820px] px-5 py-20 lg:px-8 lg:py-28">
-        <h2
-          class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
-        >
-          {{ copy.faq.title }}
-        </h2>
+    <section id="faq" class="scroll-mt-20 border-t border-line">
+      <div
+        class="mx-auto grid max-w-[1180px] gap-10 px-5 py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20 lg:px-8 lg:py-28"
+      >
+        <div class="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+          <span
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 text-[12px] text-ink-2"
+          >
+            <ui-icon name="message" [size]="13" class="text-ink-3" />
+            FAQ
+          </span>
+          <h2
+            class="text-[28px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance lg:text-[38px]"
+          >
+            {{ copy.faq.title }}
+          </h2>
+          <p class="text-[15px] leading-[1.7] text-ink-2 text-pretty">{{ copy.faq.lead }}</p>
+          <a
+            [href]="links.contact"
+            class="inline-flex items-center gap-2 pt-2 text-[13px] font-medium text-ink hover:text-ink"
+          >
+            {{ copy.faq.more }}
+            <ui-icon name="arrow-right" [size]="14" />
+          </a>
+        </div>
 
-        <div class="mt-10 flex flex-col">
+        <div class="flex flex-col gap-2">
           @for (item of copy.faq.items; track item.q; let i = $index) {
-            <div class="border-t border-line last:border-b">
+            <div
+              class="rounded-panel border bg-surface transition-colors"
+              [class.border-line-strong]="openFaq() === i"
+              [class.border-line]="openFaq() !== i"
+            >
               <button
                 type="button"
-                class="flex w-full items-center gap-4 py-5 text-left"
+                class="flex w-full items-center gap-4 px-5 py-4 text-left"
                 [attr.aria-expanded]="openFaq() === i"
                 (click)="toggleFaq(i)"
               >
                 <span class="flex-1 text-[15px] font-medium text-pretty">{{ item.q }}</span>
-                <ui-icon
-                  name="chevron-down"
-                  [size]="17"
-                  class="text-ink-3 transition-transform"
-                  [class.rotate-180]="openFaq() === i"
-                />
+                <span
+                  class="flex h-7 w-7 flex-none items-center justify-center rounded-full border border-line text-ink-3 transition-transform"
+                  [class.rotate-45]="openFaq() === i"
+                >
+                  <ui-icon name="plus" [size]="14" />
+                </span>
               </button>
               @if (openFaq() === i) {
-                <p class="pb-5 text-[14px] leading-[1.75] text-ink-2 text-pretty">{{ item.a }}</p>
+                <p class="ui-rise px-5 pb-5 text-[14px] leading-[1.75] text-ink-2 text-pretty">
+                  {{ item.a }}
+                </p>
               }
             </div>
           }
@@ -704,15 +1017,30 @@
       </div>
     </section>
 
-    <section class="ink-crisp bg-inv text-inv-ink">
-      <div class="mx-auto flex max-w-[1180px] flex-col gap-7 px-5 py-20 lg:px-8 lg:py-24">
+    <section class="ink-crisp relative overflow-hidden bg-inv text-inv-ink">
+      <svg
+        aria-hidden="true"
+        class="pointer-events-none absolute -right-6 -bottom-16 h-[320px] w-[320px] opacity-[0.08] lg:h-[440px] lg:w-[440px]"
+        viewBox="0 0 32 32"
+      >
+        <g fill="currentColor">
+          <rect x="6" y="16" width="5" height="10" rx="2.5" opacity="0.5" />
+          <rect x="13.5" y="13" width="5" height="13" rx="2.5" />
+          <rect x="21" y="6" width="5" height="20" rx="2.5" />
+        </g>
+        <circle cx="16" cy="7.6" r="3.1" fill="currentColor" opacity="0.6" />
+      </svg>
+
+      <div class="relative mx-auto flex max-w-[1180px] flex-col gap-8 px-5 py-20 lg:px-8 lg:py-28">
         <div class="flex max-w-[640px] flex-col gap-4">
           <h2
-            class="text-[26px] leading-[1.2] font-semibold tracking-[-0.025em] text-pretty lg:text-[34px]"
+            class="text-[30px] leading-[1.1] font-semibold tracking-[-0.03em] text-balance lg:text-[44px]"
           >
             {{ copy.cta.title }}
           </h2>
-          <p class="text-[15px] leading-[1.7] opacity-85 text-pretty">{{ copy.cta.body }}</p>
+          <p class="text-[15px] leading-[1.7] opacity-80 text-pretty lg:text-[16px]">
+            {{ copy.cta.body }}
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -725,7 +1053,7 @@
           </a>
           <a
             [href]="links.contact"
-            class="inline-flex h-12 items-center gap-2 rounded-card border border-inv-ink/40 px-6 text-sm font-semibold text-inv-ink hover:border-inv-ink/60 hover:text-inv-ink"
+            class="inline-flex h-12 items-center gap-2 rounded-card border border-inv-ink/30 px-6 text-sm font-semibold text-inv-ink hover:border-inv-ink/60 hover:text-inv-ink"
           >
             {{ copy.cta.secondary }}
           </a>
@@ -747,15 +1075,15 @@
           <p class="text-[13px] text-ink-2">{{ copy.footer.tagline }}</p>
         </div>
 
-        <div class="flex flex-col gap-3">
-          <span class="kap">{{ copy.footer.product }}</span>
+        <div class="flex flex-col gap-2.5">
+          <span class="text-[12px] font-medium text-ink-3">{{ copy.footer.product }}</span>
           @for (link of copy.nav.links; track link.href) {
             <a [href]="link.href" class="text-[13px] text-ink-2 hover:text-ink">{{ link.label }}</a>
           }
         </div>
 
-        <div class="flex flex-col gap-3">
-          <span class="kap">{{ copy.footer.community }}</span>
+        <div class="flex flex-col gap-2.5">
+          <span class="text-[12px] font-medium text-ink-3">{{ copy.footer.community }}</span>
           <a
             [href]="links.github"
             target="_blank"
@@ -779,8 +1107,8 @@
           >
         </div>
 
-        <div class="flex flex-col gap-3">
-          <span class="kap">{{ copy.footer.contact }}</span>
+        <div class="flex flex-col gap-2.5">
+          <span class="text-[12px] font-medium text-ink-3">{{ copy.footer.contact }}</span>
           <a [href]="links.contact" class="text-[13px] text-ink-2 hover:text-ink">{{
             links.contactLabel
           }}</a>

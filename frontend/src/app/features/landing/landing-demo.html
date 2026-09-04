@@ -1,4 +1,4 @@
-<div class="overflow-hidden rounded-panel border border-line bg-surface shadow-lift">
+<div class="overflow-hidden rounded-panel border border-line bg-surface">
   <div class="flex items-center gap-3 border-b border-line bg-surface-2 px-4 py-2.5">
     <ui-logo [size]="22" [radius]="5" />
     <span class="text-[13px] font-medium">nowtask</span>
@@ -36,6 +36,37 @@
   </div>
 
   <div class="flex flex-col lg:flex-row">
+    <nav
+      class="hidden w-[176px] flex-none flex-col gap-0.5 border-r border-line bg-surface px-2.5 py-3 xl:flex"
+      aria-label="Demo navigation"
+    >
+      <span class="px-2 pb-1.5 text-[10px] font-medium text-ink-3">Navigation</span>
+      @for (item of rail; track item.id) {
+        <button
+          type="button"
+          class="flex h-8 items-center gap-2.5 rounded-field px-2 text-[12px]"
+          [class.bg-surface-2]="item.view && view() === item.view"
+          [class.text-ink]="item.view && view() === item.view"
+          [class.font-medium]="item.view && view() === item.view"
+          [class.text-ink-2]="!(item.view && view() === item.view)"
+          [class.hoverable]="!!item.view"
+          [disabled]="!item.view"
+          [attr.aria-current]="item.view && view() === item.view ? 'page' : null"
+          (click)="item.view && view.set(item.view)"
+        >
+          <ui-icon [name]="item.icon" [size]="15" />
+          <span class="flex-1 text-left">{{ item.label }}</span>
+          @if (item.count) {
+            <span class="font-mono text-[10px] text-ink-3">{{ item.count }}</span>
+          }
+        </button>
+      }
+      <span class="mt-auto flex items-center gap-2 px-2 pt-3 font-mono text-[10px] text-ink-3">
+        <span class="h-1.5 w-1.5 rounded-full bg-done"></span>
+        rule active
+      </span>
+    </nav>
+
     <div class="min-w-0 flex-1 p-4 lg:p-5">
       @switch (view()) {
         @case ('board') {
@@ -44,7 +75,9 @@
               <section class="flex flex-col gap-2.5">
                 <header class="flex items-center gap-2 px-0.5">
                   <span class="h-2 w-2 flex-none rounded-full" [class]="column.dot"></span>
-                  <span class="text-[12px] font-medium">{{ column.label }}</span>
+                  <span class="truncate text-[12px] font-medium whitespace-nowrap">{{
+                    column.label
+                  }}</span>
                   <span class="font-mono text-[11px] text-ink-3">{{ column.tasks.length }}</span>
                   <span class="flex-1"></span>
                   <button
