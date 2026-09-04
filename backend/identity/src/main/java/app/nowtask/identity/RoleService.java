@@ -39,7 +39,9 @@ public class RoleService {
     public List<RoleView> list() {
         List<Def> defs = jdbc.sql("""
                         SELECT r.id, r.code, r.name, r.position, r.protected,
-                               (SELECT count(*) FROM organization_member m WHERE m.role_id = r.id) AS member_count
+                               (SELECT count(*) FROM organization_member m WHERE m.role_id = r.id)
+                               + (SELECT count(*) FROM organization_invite i WHERE i.role_id = r.id AND i.state = 'open')
+                               AS member_count
                         FROM organization_role r
                         WHERE r.organization_id = ?
                         ORDER BY r.position, r.name
@@ -130,19 +132,21 @@ public class RoleService {
         if (role.isProtected()) {
             throw new RuleViolationException("A protected role cannot be deleted");
         }
-        if (role.memberCount() > 0) {
+        if (references(id) > 0) {
             if (reassignTo == null) {
                 throw new RuleViolationException(
-                        "The role still has " + role.memberCount() + " members, pass reassignTo");
+                        "The role is still held by " + role.memberCount() + " people or invitations, pass reassignTo");
             }
             if (reassignTo.equals(id)) {
                 throw new IllegalArgumentException("Members cannot be moved to the role being deleted");
             }
 
             requireRole(reassignTo);
-            jdbc.sql("UPDATE organization_member SET role_id = ? WHERE role_id = ?")
-                    .params(reassignTo, id)
-                    .update();
+            for (String table : List.of("organization_member", "organization_invite", "api_key")) {
+                jdbc.sql("UPDATE " + table + " SET role_id = ? WHERE role_id = ?")
+                        .params(reassignTo, id)
+                        .update();
+            }
         }
 
         jdbc.sql("DELETE FROM organization_role WHERE id = ?").param(id).update();
@@ -167,6 +171,17 @@ public class RoleService {
             throw new RuleViolationException(
                     "The organization would be left with nobody able to manage members and roles");
         }
+    }
+
+    private int references(UUID roleId) {
+        return jdbc.sql("""
+                        SELECT (SELECT count(*) FROM organization_member WHERE role_id = ?)
+                             + (SELECT count(*) FROM organization_invite WHERE role_id = ?)
+                             + (SELECT count(*) FROM api_key WHERE role_id = ?)
+                        """)
+                .params(roleId, roleId, roleId)
+                .query(Integer.class)
+                .single();
     }
 
     RoleView requireRole(UUID id) {

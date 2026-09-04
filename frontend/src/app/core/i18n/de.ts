@@ -433,8 +433,24 @@ export const de: Dictionary = {
   'organization.rolePermissions': 'Rollenberechtigungen',
   'organization.customRole': 'Eigene Rolle',
   'organization.permission': 'Berechtigung',
-  'organization.padlockNote':
-    'Ein Schloss steht für eine bedingte Berechtigung: nur in eigenen Projekten.',
+  'organization.newRole': 'Neue Rolle',
+  'organization.roleName': 'Rollenname',
+  'organization.roleNamePlaceholder': 'z. B. Buchhaltung',
+  'organization.roleCode': 'Rollencode',
+  'organization.roleCodeHint':
+    'Kleinbuchstaben, Ziffern, - und _. Kann später nicht geändert werden.',
+  'organization.roleDialogLead':
+    'Wähle die Berechtigungen, die diese Rolle geben soll. Du kannst sie später in der Tabelle ändern.',
+  'organization.roleInvalid': 'Gib einen Namen und einen gültigen Rollencode an.',
+  'organization.renameRole': 'Rolle umbenennen',
+  'organization.deleteRole': 'Rolle löschen',
+  'organization.deleteRoleLead':
+    'Personen und Einladungen mit der Rolle „{name}“ ({count}) wechseln in die gewählte Rolle. Das lässt sich nicht rückgängig machen.',
+  'organization.reassignTo': 'Personen verschieben in Rolle',
+  'organization.protectedRole': 'Geschützte Rolle',
+  'organization.protectedRoleNote':
+    'Ein Schloss steht für eine geschützte Rolle: Sie kann weder gelöscht werden noch die Verwaltung von Personen und Rollen verlieren. Jemand in der Organisation muss immer beide Berechtigungen haben.',
+  'organization.roleMemberCount': 'Personen: {count}',
   'organization.keyUsed': 'genutzt {when}',
   'organization.editField': 'Eigenes Feld bearbeiten',
   'organization.fieldDialogLead': 'Das Feld erscheint bei jeder Aufgabe.',

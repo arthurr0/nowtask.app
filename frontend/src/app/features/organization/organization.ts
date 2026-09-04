@@ -41,7 +41,13 @@ import { ToastService } from '../../ui/toast.service';
 import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { PageState } from '../../ui/page-state';
-import { InviteDialog, type InviteDraft } from './organization-dialogs';
+import {
+  DeleteRoleDialog,
+  InviteDialog,
+  RoleDialog,
+  type InviteDraft,
+  type RoleDraft,
+} from './organization-dialogs';
 import { IntegrationDialog, type IntegrationDraft } from './integration-dialog';
 import {
   CustomFieldDialog,
@@ -116,6 +122,8 @@ const SECTION_GROUPS: readonly { label: string; items: readonly SectionItem[] }[
 
 const SECTIONS: readonly SectionItem[] = SECTION_GROUPS.flatMap((group) => [...group.items]);
 
+const PROTECTED_PERMISSIONS: readonly string[] = ['members.manage', 'roles.manage'];
+
 const DATE_FORMATS = ['dd.MM.yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'd MMMM yyyy'];
 const TIME_FORMATS = ['HH:mm', 'h:mm a'];
 const WEEK_DAYS = [1, 7];
@@ -134,6 +142,8 @@ const CURRENCIES = ['PLN', 'EUR', 'USD', 'GBP'];
     ViewControls,
     PageState,
     InviteDialog,
+    RoleDialog,
+    DeleteRoleDialog,
     ApiKeyDialog,
     IntegrationDialog,
     CustomFieldDialog,
@@ -159,6 +169,8 @@ export class Organization implements OnInit {
   protected readonly section = signal<Section>('people');
   protected readonly search = signal('');
   protected readonly inviteOpen = signal(false);
+  protected readonly roleOpen = signal(false);
+  protected readonly deletedRole = signal<RoleDto | null>(null);
   protected readonly keyOpen = signal(false);
   protected readonly integrationOpen = signal(false);
   protected readonly issuedKey = signal<string | null>(null);
@@ -189,6 +201,7 @@ export class Organization implements OnInit {
 
   protected readonly roles = computed<RoleDto[]>(() => this.organization.roles());
   protected readonly isAdmin = computed(() => this.store.currentUser()?.role?.code === 'admin');
+  protected readonly canManageRoles = computed(() => this.store.can('roles.manage'));
 
   protected readonly visibleMembers = computed(() => {
     const needle = this.search().trim().toLowerCase();
@@ -350,6 +363,72 @@ export class Organization implements OnInit {
 
   grants(role: RoleDto, permission: PermissionDto): boolean {
     return role.permissions.includes(permission.code);
+  }
+
+  lockedGrant(role: RoleDto, permission: PermissionDto): boolean {
+    return role.isProtected && PROTECTED_PERMISSIONS.includes(permission.code);
+  }
+
+  roleMenu(role: RoleDto): MenuItem[] {
+    return [
+      { id: 'rename', label: 'organization.renameRole', icon: 'pencil' },
+      {
+        id: 'delete',
+        label: 'organization.deleteRole',
+        icon: 'trash',
+        danger: true,
+        disabled: role.isProtected,
+        separatorBefore: true,
+      },
+    ];
+  }
+
+  async toggleGrant(role: RoleDto, permission: PermissionDto): Promise<void> {
+    if (this.lockedGrant(role, permission)) return;
+    const permissions = this.grants(role, permission)
+      ? role.permissions.filter((code) => code !== permission.code)
+      : [...role.permissions, permission.code];
+    try {
+      await this.organization.updateRole(role.id, { permissions });
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async createRole(draft: RoleDraft): Promise<void> {
+    try {
+      await this.organization.createRole(draft.code, draft.name, draft.permissions);
+      this.roleOpen.set(false);
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  async onRoleMenu(item: MenuItem, role: RoleDto): Promise<void> {
+    if (item.id === 'rename') {
+      const name = await this.prompt.ask({
+        title: 'organization.renameRole',
+        label: 'organization.roleName',
+        value: role.name,
+      });
+      if (!name || name === role.name) return;
+      await this.run(() => this.organization.updateRole(role.id, { name }));
+      return;
+    }
+    this.deletedRole.set(role);
+  }
+
+  async deleteRole(reassignTo: string): Promise<void> {
+    const role = this.deletedRole();
+    if (!role) return;
+    try {
+      await this.organization.deleteRole(role.id, reassignTo);
+      this.deletedRole.set(null);
+      this.toast.success(this.t('common.saved'));
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
   }
 
   protected readonly permissionGroups = computed<{ group: string; items: PermissionDto[] }[]>(

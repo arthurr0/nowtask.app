@@ -434,8 +434,23 @@ export const en: Dictionary = {
   'organization.rolePermissions': 'Role permissions',
   'organization.customRole': 'Custom role',
   'organization.permission': 'Permission',
-  'organization.padlockNote':
-    'A padlock marks a conditional permission: only in projects the person owns.',
+  'organization.newRole': 'New role',
+  'organization.roleName': 'Role name',
+  'organization.roleNamePlaceholder': 'e.g. Accounting',
+  'organization.roleCode': 'Role code',
+  'organization.roleCodeHint': 'Lowercase letters, digits, - and _. It cannot be changed later.',
+  'organization.roleDialogLead':
+    'Tick the permissions this role should grant. You can change them later in the table.',
+  'organization.roleInvalid': 'Enter a name and a valid role code.',
+  'organization.renameRole': 'Rename role',
+  'organization.deleteRole': 'Delete role',
+  'organization.deleteRoleLead':
+    'People and invitations with the role “{name}” ({count}) move to the role you pick. This cannot be undone.',
+  'organization.reassignTo': 'Move people to role',
+  'organization.protectedRole': 'Protected role',
+  'organization.protectedRoleNote':
+    'A padlock marks a protected role: it cannot be deleted or lose member and role management. Someone in the organisation must always hold both permissions.',
+  'organization.roleMemberCount': 'People: {count}',
   'organization.keyUsed': 'used {when}',
   'organization.editField': 'Edit custom field',
   'organization.fieldDialogLead': 'The field shows up on every task.',

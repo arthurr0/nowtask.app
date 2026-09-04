@@ -432,8 +432,23 @@ export const pl = {
   'organization.rolePermissions': 'Uprawnienia ról',
   'organization.customRole': 'Rola własna',
   'organization.permission': 'Uprawnienie',
-  'organization.padlockNote':
-    'Kłódka oznacza uprawnienie warunkowe: tylko w projektach, w których osoba jest właścicielem.',
+  'organization.newRole': 'Nowa rola',
+  'organization.roleName': 'Nazwa roli',
+  'organization.roleNamePlaceholder': 'np. Księgowość',
+  'organization.roleCode': 'Kod roli',
+  'organization.roleCodeHint': 'Małe litery, cyfry, - i _. Nie da się go później zmienić.',
+  'organization.roleDialogLead':
+    'Zaznacz uprawnienia, które ta rola ma dawać. Zmienisz je później w tabeli.',
+  'organization.roleInvalid': 'Podaj nazwę i poprawny kod roli.',
+  'organization.renameRole': 'Zmień nazwę roli',
+  'organization.deleteRole': 'Usuń rolę',
+  'organization.deleteRoleLead':
+    'Osoby i zaproszenia z rolą „{name}” ({count}) trafią do wybranej roli. Tej operacji nie da się cofnąć.',
+  'organization.reassignTo': 'Przenieś osoby do roli',
+  'organization.protectedRole': 'Rola chroniona',
+  'organization.protectedRoleNote':
+    'Kłódka oznacza rolę chronioną: nie da się jej usunąć ani odebrać jej zarządzania osobami i rolami. Ktoś w organizacji zawsze musi mieć oba te uprawnienia.',
+  'organization.roleMemberCount': 'Osoby: {count}',
   'organization.keyUsed': 'użyty {when}',
   'organization.editField': 'Edytuj pole własne',
   'organization.fieldDialogLead': 'Pole pojawi się w szczegółach każdego zadania.',

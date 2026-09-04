@@ -322,6 +322,27 @@ export class OrganizationStore extends LoadableStore {
     await this.load();
   }
 
+  async createRole(code: string, name: string, permissions: string[]): Promise<void> {
+    await firstValueFrom(
+      this.http.post<RoleDto>('/api/organization/roles', { code, name, permissions }),
+    );
+    await this.load();
+  }
+
+  async updateRole(id: string, body: Record<string, unknown>): Promise<void> {
+    await firstValueFrom(this.http.patch<RoleDto>(`/api/organization/roles/${id}`, body));
+    await this.load();
+  }
+
+  async deleteRole(id: string, reassignTo: string | null): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`/api/organization/roles/${id}`, {
+        body: reassignTo ? { reassignTo } : undefined,
+      }),
+    );
+    await this.load();
+  }
+
   async createTeam(name: string): Promise<void> {
     await firstValueFrom(this.http.post<TeamDto>('/api/organization/teams', { name }));
     await this.load();
@@ -390,6 +411,7 @@ export class OrganizationStore extends LoadableStore {
     this.membersSignal.set([]);
     this.teamsSignal.set([]);
     this.permissionsSignal.set([]);
+    this.rolesSignal.set([]);
     this.apiKeysSignal.set([]);
     this.auditSignal.set(null);
     this.auditPageSignal.set(0);

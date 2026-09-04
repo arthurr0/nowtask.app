@@ -151,7 +151,7 @@ export const LANDING_COPY = {
         icon: 'lock',
         art: 'permissions',
         title: 'Permissions down to a single field',
-        body: 'Roles, project access and hiding selected fields from guests. Sensitive data stays where it belongs.',
+        body: 'Custom roles with a permission matrix and hiding selected fields from guests. Sensitive data stays where it belongs.',
       },
       {
         icon: 'sun',
@@ -356,7 +356,7 @@ export const LANDING_COPY = {
         features: [
           'Everything in Hobby',
           'Organisation, invites and roles',
-          'Permissions for projects and fields',
+          'Custom roles and field-level permissions',
           'Automation log and reports',
           'Agent keys with scopes and an audit log',
           'Saved views shared across the team',
