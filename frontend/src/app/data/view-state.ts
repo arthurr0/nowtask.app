@@ -1,5 +1,26 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import type { ListColumn, TaskDto, TaskQueryDto } from '../core/api-types';
+import type {
+  FilterConditionDto,
+  FilterGroupDto,
+  ListColumn,
+  SavedViewDto,
+  TaskDto,
+  TaskQueryDto,
+  TaskViewCode,
+} from '../core/api-types';
+import {
+  condition,
+  countConditions,
+  emptyGroup,
+  firstValues,
+  isGroup,
+  matchesGroup,
+  normalizeQuery,
+  pruneGroup,
+  serializeGroup,
+  type FilterContext,
+} from '../core/task-filter';
+import { SettingsStore } from './feature.stores';
 import { WorkspaceStore } from './workspace.store';
 
 export type GroupBy = 'status' | 'assignee' | 'priority' | 'epic';
@@ -40,6 +61,9 @@ export const LIST_COLUMNS: readonly { code: ListColumn; label: string }[] = [
   { code: 'estimate', label: 'list.pts' },
 ];
 
+const GROUPS: readonly GroupBy[] = ['status', 'assignee', 'priority', 'epic'];
+const SORTS: readonly SortBy[] = ['manual', 'due', 'priority', 'title', 'key'];
+
 function defaultColumns(): ColumnPref[] {
   return LIST_COLUMNS.map((column) => ({ code: column.code, hidden: false }));
 }
@@ -60,20 +84,14 @@ const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2
 @Injectable({ providedIn: 'root' })
 export class ViewState {
   private readonly store = inject(WorkspaceStore);
+  private readonly settings = inject(SettingsStore);
 
   readonly search = signal('');
-  readonly assigneeId = signal<string | null>(null);
-  readonly label = signal<string | null>(null);
-  readonly priority = signal<string | null>(null);
-  readonly epicId = signal<string | null>(null);
-  readonly statusId = signal<string | null>(null);
   readonly projectId = signal<string | null>(null);
-  readonly sprint = signal<string | null>(null);
-  readonly unassigned = signal(false);
-  readonly automated = signal(false);
-  readonly overdueOnly = signal(false);
+  readonly filter = signal<FilterGroupDto>(emptyGroup());
   readonly groupBy = signal<GroupBy>('status');
   readonly sort = signal<SortBy>('manual');
+  readonly layout = signal<TaskViewCode>('board');
   readonly activeViewId = signal<string | null>(null);
   readonly columns = signal<ColumnPref[]>(defaultColumns());
 
@@ -93,6 +111,24 @@ export class ViewState {
       }
     });
   }
+
+  readonly activeView = computed<SavedViewDto | null>(() => {
+    const id = this.activeViewId();
+    if (!id) return null;
+    return this.store.savedViews().find((view) => view.id === id) ?? null;
+  });
+
+  readonly activeViewName = computed(() => {
+    const view = this.activeView();
+    if (!view) return '';
+    return view.name || (view.code ? view.code : '');
+  });
+
+  readonly dirty = computed(() => {
+    const view = this.activeView();
+    if (!view) return false;
+    return signature(this.toQuery()) !== signature(view.query);
+  });
 
   readonly availableColumns = computed(() =>
     LIST_COLUMNS.filter((column) =>
@@ -139,37 +175,154 @@ export class ViewState {
     this.columns.set(defaultColumns());
   }
 
+  readonly conditionCount = computed(() => countConditions(this.filter()));
+
   readonly activeCount = computed(() => {
-    let count = 0;
+    let count = this.conditionCount();
     if (this.search().trim()) count += 1;
-    if (this.assigneeId()) count += 1;
-    if (this.label()) count += 1;
-    if (this.priority()) count += 1;
-    if (this.epicId()) count += 1;
-    if (this.statusId()) count += 1;
     if (this.projectId()) count += 1;
-    if (this.sprint()) count += 1;
-    if (this.unassigned()) count += 1;
-    if (this.automated()) count += 1;
-    if (this.overdueOnly()) count += 1;
     return count;
   });
 
   readonly hasFilters = computed(() => this.activeCount() > 0);
 
-  reset(): void {
+  readonly assigneeId = computed<string | null>(() => {
+    const values = firstValues(this.filter(), 'assignee', 'in');
+    return values && values.length === 1 ? values[0] : null;
+  });
+
+  readonly unassigned = computed(() => firstValues(this.filter(), 'assignee', 'isEmpty') !== null);
+
+  readonly sprint = computed<string | null>(() => {
+    const values = firstValues(this.filter(), 'sprint', 'in');
+    if (!values || values.length !== 1) return null;
+    return values[0] === 'current' ? this.store.currentSprint() || null : values[0];
+  });
+
+  conditionFor(field: string): FilterConditionDto | null {
+    for (const node of this.filter().conditions) {
+      if (!isGroup(node) && node.field === field) return node;
+    }
+    return null;
+  }
+
+  valuesFor(field: string, op: string): string[] {
+    return firstValues(this.filter(), field, op) ?? [];
+  }
+
+  setCondition(field: string, op: string, values: string[]): void {
+    this.filter.update((group) => {
+      const conditions = [...group.conditions];
+      const index = conditions.findIndex((node) => !isGroup(node) && node.field === field);
+      const next = condition(field, op, values);
+      if (index >= 0) conditions[index] = next;
+      else conditions.push(next);
+      return { ...group, conditions };
+    });
+  }
+
+  removeCondition(field: string): void {
+    this.filter.update((group) => ({
+      ...group,
+      conditions: group.conditions.filter((node) => isGroup(node) || node.field !== field),
+    }));
+  }
+
+  removeAt(index: number): void {
+    this.filter.update((group) => ({
+      ...group,
+      conditions: group.conditions.filter((_, position) => position !== index),
+    }));
+  }
+
+  replaceAt(index: number, node: FilterConditionDto | FilterGroupDto): void {
+    this.filter.update((group) => ({
+      ...group,
+      conditions: group.conditions.map((current, position) =>
+        position === index ? node : current,
+      ),
+    }));
+  }
+
+  append(node: FilterConditionDto | FilterGroupDto): void {
+    this.filter.update((group) => ({ ...group, conditions: [...group.conditions, node] }));
+  }
+
+  toggleValue(field: string, value: string, op = 'in'): void {
+    const current = this.conditionFor(field);
+    if (!current || current.op !== op) {
+      this.setCondition(field, op, [value]);
+      return;
+    }
+    const values = current.values.includes(value)
+      ? current.values.filter((item) => item !== value)
+      : [...current.values, value];
+    if (values.length) this.setCondition(field, op, values);
+    else this.removeCondition(field);
+  }
+
+  setAssignee(userId: string | null): void {
+    if (!userId) {
+      this.removeCondition('assignee');
+      return;
+    }
+    const current = this.conditionFor('assignee');
+    if (current?.op === 'in' && current.values.length === 1 && current.values[0] === userId) {
+      this.removeCondition('assignee');
+      return;
+    }
+    this.setCondition('assignee', 'in', [userId]);
+  }
+
+  toggleUnassigned(): void {
+    if (this.unassigned()) this.removeCondition('assignee');
+    else this.setCondition('assignee', 'isEmpty', []);
+  }
+
+  setOverdue(): void {
+    this.setCondition('dueDate', 'before', ['today']);
+    this.setCondition('statusCategory', 'notIn', ['done']);
+  }
+
+  readonly overdueOnly = computed(
+    () =>
+      this.valuesFor('dueDate', 'before')[0] === 'today' &&
+      this.valuesFor('statusCategory', 'notIn').includes('done'),
+  );
+
+  clearFilters(): void {
     this.search.set('');
-    this.assigneeId.set(null);
-    this.label.set(null);
-    this.priority.set(null);
-    this.epicId.set(null);
-    this.statusId.set(null);
+    this.filter.set(emptyGroup());
     this.projectId.set(null);
-    this.sprint.set(null);
-    this.unassigned.set(false);
-    this.automated.set(false);
-    this.overdueOnly.set(false);
+  }
+
+  reset(): void {
+    this.clearFilters();
     this.activeViewId.set(null);
+  }
+
+  leaveView(): void {
+    if (!this.activeViewId()) return;
+    const project = this.projectId();
+    this.reset();
+    this.groupBy.set('status');
+    this.sort.set('manual');
+    this.resetColumns();
+    this.projectId.set(project);
+  }
+
+  private context(): FilterContext {
+    const today = this.store.today;
+    const me = this.store.currentUser()?.id ?? null;
+    const currentSprint = this.store.currentSprint();
+    return {
+      me,
+      currentSprint,
+      today,
+      statusCategory: (statusId) => this.store.status(statusId)?.category ?? null,
+      customType: (fieldKey) =>
+        this.settings.customFields().find((field) => field.fieldKey === fieldKey)?.type ?? null,
+    };
   }
 
   matches(task: TaskDto): boolean {
@@ -178,25 +331,25 @@ export class ViewState {
       const haystack = `${task.key} ${task.title} ${task.labels.join(' ')}`.toLowerCase();
       if (!haystack.includes(needle)) return false;
     }
-    if (this.assigneeId() && task.assigneeId !== this.assigneeId()) return false;
-    if (this.unassigned() && task.assigneeId !== null) return false;
-    if (this.label() && !task.labels.includes(this.label()!)) return false;
-    if (this.priority() && task.priority !== this.priority()) return false;
-    if (this.epicId() && task.epicId !== this.epicId()) return false;
-    if (this.statusId() && task.statusId !== this.statusId()) return false;
     if (this.projectId() && task.projectId !== this.projectId()) return false;
-    if (this.sprint() && task.sprintCode !== this.sprint()) return false;
-    if (this.automated() && !task.automated) return false;
-    if (this.overdueOnly()) {
-      if (!task.dueDate) return false;
-      if (task.dueDate >= this.store.today) return false;
-      if (task.statusCode === 'done') return false;
-    }
-    return true;
+    return matchesGroup(task, this.filter(), this.context());
   }
 
   apply(tasks: readonly TaskDto[]): TaskDto[] {
-    return this.sortTasks(tasks.filter((task) => this.matches(task)));
+    const ctx = this.context();
+    const needle = this.search().trim().toLowerCase();
+    const project = this.projectId();
+    const group = this.filter();
+    return this.sortTasks(
+      tasks.filter((task) => {
+        if (needle) {
+          const haystack = `${task.key} ${task.title} ${task.labels.join(' ')}`.toLowerCase();
+          if (!haystack.includes(needle)) return false;
+        }
+        if (project && task.projectId !== project) return false;
+        return matchesGroup(task, group, ctx);
+      }),
+    );
   }
 
   sortTasks(tasks: readonly TaskDto[]): TaskDto[] {
@@ -223,15 +376,9 @@ export class ViewState {
   toQuery(): TaskQueryDto {
     const query: TaskQueryDto = {};
     if (this.search().trim()) query.query = this.search().trim();
-    if (this.assigneeId()) query.assigneeId = this.assigneeId()!;
-    if (this.label()) query.label = this.label()!;
-    if (this.priority()) query.priority = this.priority()!;
-    if (this.epicId()) query.epicId = this.epicId()!;
-    if (this.statusId()) query.statusId = this.statusId()!;
     if (this.projectId()) query.projectId = this.projectId()!;
-    if (this.sprint()) query.sprint = this.sprint()!;
-    if (this.unassigned()) query.unassigned = true;
-    if (this.automated()) query.automated = true;
+    query.filter = pruneGroup(this.filter());
+    query.layout = this.layout();
     query.groupBy = this.groupBy();
     query.sort = this.sort();
     query.columns = this.visibleColumns();
@@ -244,18 +391,26 @@ export class ViewState {
     this.columns.set(columnsFromQuery(query?.columns));
     if (!query) return;
     this.search.set(query.query ?? '');
-    this.assigneeId.set(query.assigneeId ?? null);
-    this.label.set(query.label ?? null);
-    this.priority.set(query.priority ?? null);
-    this.epicId.set(query.epicId ?? null);
-    this.statusId.set(query.statusId ?? null);
     this.projectId.set(query.projectId ?? null);
-    this.sprint.set(query.sprint ?? null);
-    this.unassigned.set(query.unassigned === true);
-    this.automated.set(query.automated === true);
-    if (query.groupBy) this.groupBy.set(query.groupBy as GroupBy);
-    if (query.sort) this.sort.set(query.sort as SortBy);
+    this.filter.set(normalizeQuery(query));
+    if (query.layout) this.layout.set(query.layout);
+    this.groupBy.set(
+      GROUPS.includes(query.groupBy as GroupBy) ? (query.groupBy as GroupBy) : 'status',
+    );
+    this.sort.set(SORTS.includes(query.sort as SortBy) ? (query.sort as SortBy) : 'manual');
   }
+}
+
+function signature(query: TaskQueryDto): string {
+  return JSON.stringify({
+    query: query.query ?? '',
+    projectId: query.projectId ?? null,
+    filter: serializeGroup(normalizeQuery(query)),
+    layout: query.layout ?? null,
+    groupBy: query.groupBy ?? 'status',
+    sort: query.sort ?? 'manual',
+    columns: query.columns ?? null,
+  });
 }
 
 function compareNullable(a: string | null, b: string | null): number {

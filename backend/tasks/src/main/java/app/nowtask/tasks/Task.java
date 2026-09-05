@@ -88,6 +88,9 @@ public class Task {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private Instant createdAt;
+
     protected Task() {
     }
 
@@ -257,6 +260,14 @@ public class Task {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
     public void touch() {

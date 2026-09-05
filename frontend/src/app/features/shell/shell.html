@@ -190,32 +190,45 @@
       </div>
 
       <div class="flex flex-col gap-0.5 px-3 pt-3">
-        <span class="kap px-2 pt-2 pb-1.5">{{ t('nav.savedViews') }}</span>
+        <div class="flex items-center px-2 pt-2 pb-1.5">
+          <span class="kap flex-1">{{ t('nav.savedViews') }}</span>
+          <button
+            type="button"
+            class="hoverable flex h-5 w-5 items-center justify-center rounded-[5px] text-ink-3"
+            [attr.aria-label]="t('nav.newView')"
+            (click)="newView()"
+          >
+            <ui-icon name="plus" [size]="14" />
+          </button>
+        </div>
         @for (view of store.savedViews(); track view.id) {
           <div
             class="group flex h-8 items-center gap-1 rounded-field pr-1 pl-2"
-            [class.bg-surface-2]="state.activeViewId() === view.id"
+            [class.bg-surface-2]="viewLink.isActive"
           >
-            <button
-              type="button"
-              class="flex min-w-0 flex-1 items-center gap-2.5 text-left text-ink-2"
-              (click)="applyView(view)"
+            <a
+              [routerLink]="['/app/views', view.id]"
+              routerLinkActive="!text-ink font-medium"
+              #viewLink="routerLinkActive"
+              class="flex min-w-0 flex-1 items-center gap-2 text-left text-ink-2"
             >
-              <span class="flex-1 truncate">{{ view.name ?? t(view.code ?? '') }}</span>
+              <ui-icon [name]="viewIcon(view)" [size]="14" class="flex-none text-ink-3" />
+              <span class="flex-1 truncate">{{ viewName(view) }}</span>
+              @if (view.shared && !view.builtin) {
+                <ui-icon name="users" [size]="12" class="flex-none text-ink-3" />
+              }
               <span class="font-mono text-[11px] text-ink-3">{{ view.count }}</span>
-            </button>
-            @if (view.name) {
-              <ui-menu
-                [items]="viewMenu"
-                triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                triggerHeight="24px"
-                ariaLabel="common.more"
-                align="end"
-                (selected)="onViewMenu($event, view)"
-              >
-                <ui-icon name="dots" [size]="14" />
-              </ui-menu>
-            }
+            </a>
+            <ui-menu
+              [items]="viewMenu(view)"
+              triggerClass="hoverable flex h-6 w-6 flex-none items-center justify-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              triggerHeight="24px"
+              ariaLabel="common.more"
+              align="end"
+              (selected)="onViewMenu($event, view)"
+            >
+              <ui-icon name="dots" [size]="14" />
+            </ui-menu>
           </div>
         } @empty {
           <p class="px-2 py-1 text-[11px] text-ink-3">{{ t('nav.noSavedViews') }}</p>

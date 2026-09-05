@@ -15,22 +15,7 @@ import app.nowtask.workspace.api.WorkspaceViews.SavedViewView;
 class SavedViewQueries {
 
     private static final String SELECT = """
-            SELECT v.id, v.name, v.code, v.query, v.shared, v.owner_id, v.origin,
-                   CASE v.code
-                       WHEN 'view.atRisk' THEN (
-                           SELECT count(*) FROM task t
-                           JOIN status_def s ON s.id = t.status_id
-                           WHERE t.due_date IS NOT NULL
-                             AND t.due_date <= CURRENT_DATE + 2
-                             AND s.category <> 'done')
-                       WHEN 'view.unassigned' THEN (
-                           SELECT count(*) FROM task t
-                           JOIN status_def s ON s.id = t.status_id
-                           WHERE t.assignee_id IS NULL AND s.category <> 'done')
-                       WHEN 'view.automated' THEN (
-                           SELECT count(*) FROM task WHERE automated)
-                       ELSE -1
-                   END AS builtin_count
+            SELECT v.id, v.name, v.code, v.query, v.shared, v.owner_id, v.origin, v.project_id, v.position
             FROM saved_view v
             """;
 
@@ -61,22 +46,27 @@ class SavedViewQueries {
     }
 
     private Row toRow(ResultSet rs, int rowNum) throws SQLException {
+        String origin = rs.getString("origin");
         SavedViewView view = new SavedViewView(
                 rs.getObject("id", UUID.class),
                 rs.getString("name"),
                 rs.getString("code"),
-                mapper.readValue(rs.getString("query"), TaskQuery.class),
+                mapper.readValue(rs.getString("query"), TaskQuery.class).normalized(),
                 0,
                 rs.getBoolean("shared"),
-                rs.getObject("owner_id", UUID.class));
-        return new Row(view, rs.getInt("builtin_count"), rs.getString("origin"));
+                rs.getObject("owner_id", UUID.class),
+                rs.getObject("project_id", UUID.class),
+                "builtin".equals(origin),
+                rs.getInt("position"));
+        return new Row(view, origin);
     }
 
-    record Row(SavedViewView view, int builtinCount, String origin) {
+    record Row(SavedViewView view, String origin) {
 
         SavedViewView withCount(int count) {
             return new SavedViewView(
-                    view.id(), view.name(), view.code(), view.query(), count, view.shared(), view.ownerId());
+                    view.id(), view.name(), view.code(), view.query(), count, view.shared(), view.ownerId(),
+                    view.projectId(), view.builtin(), view.position());
         }
 
         boolean builtin() {

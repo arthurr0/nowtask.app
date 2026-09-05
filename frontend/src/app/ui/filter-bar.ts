@@ -1,9 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { I18nService } from '../core/i18n/i18n.service';
+import { condition, defaultOp } from '../core/task-filter';
 import type { GroupBy, SortBy } from '../data/view-state';
 import { GROUP_FIELDS, SORT_FIELDS, ViewState } from '../data/view-state';
+import { FilterFields } from '../data/filter-fields';
 import { WorkspaceStore } from '../data/workspace.store';
 import { ColumnPicker } from './column-picker';
+import { FilterChip } from './filter-chip';
+import { FilterDialog } from './filter-dialog';
 import { Icon } from './icon';
 import { Menu, type MenuItem } from './menu';
 import { PromptService } from './prompt.service';
@@ -11,21 +16,18 @@ import { ToastService } from './toast.service';
 
 const GROUPS: readonly GroupBy[] = ['status', 'assignee', 'priority', 'epic'];
 const SORTS: readonly SortBy[] = ['manual', 'due', 'priority', 'title', 'key'];
-const PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
 
-const CHIP =
-  'flex h-7 items-center gap-1.5 rounded-full border border-line px-2.5 text-xs text-ink-2 whitespace-nowrap';
-const CHIP_ACTIVE =
-  'flex h-7 items-center gap-1.5 rounded-full border border-ink bg-inv px-2.5 text-xs font-medium text-inv-ink whitespace-nowrap';
 const CHIP_DASHED =
   'flex h-7 items-center gap-1.5 rounded-full border border-dashed border-line-strong px-2.5 text-xs text-ink-3 whitespace-nowrap';
 const TOOL =
   'flex h-7 items-center gap-1.5 rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2 whitespace-nowrap';
+const TOOL_ACTIVE =
+  'flex h-7 items-center gap-1.5 rounded-field border border-ink bg-inv px-2.5 text-xs font-medium text-inv-ink whitespace-nowrap';
 
 @Component({
   selector: 'ui-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, Menu, ColumnPicker],
+  imports: [Icon, Menu, ColumnPicker, FilterChip, FilterDialog],
   template: `
     <div
       class="flex h-[50px] flex-none items-center gap-2.5 overflow-x-auto border-b border-line bg-surface px-5 scroll-thin"
@@ -56,95 +58,47 @@ const TOOL =
         }
       </span>
 
-      @if (fieldEnabled('assignee')) {
-        <ui-menu
-          [items]="assigneeItems()"
-          [triggerClass]="view.assigneeId() || view.unassigned() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="common.assignee"
-          (selected)="pickAssignee($event)"
-        >
-          <ui-icon name="user" [size]="13" />
-          <span>{{ assigneeLabel() }}</span>
-        </ui-menu>
-      }
-
-      @if (fieldEnabled('labels')) {
-        <ui-menu
-          [items]="labelItems()"
-          [triggerClass]="view.label() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="common.label"
-          (selected)="pickLabel($event)"
-        >
-          <span>{{ view.label() ?? t('common.label') }}</span>
-        </ui-menu>
-      }
-
-      @if (fieldEnabled('priority')) {
-        <ui-menu
-          [items]="priorityItems()"
-          [triggerClass]="view.priority() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="list.priority"
-          (selected)="pickPriority($event)"
-        >
-          <span>{{ view.priority() ? t('priority.' + view.priority()) : t('list.priority') }}</span>
-        </ui-menu>
-      }
-
-      @if (store.activeProjects().length > 1) {
-        <ui-menu
-          [items]="projectItems()"
-          [triggerClass]="view.projectId() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="filters.project"
-          (selected)="pickProject($event)"
-        >
-          <span>{{ store.project(view.projectId())?.name ?? t('filters.project') }}</span>
-        </ui-menu>
-      }
-
-      @if (store.sprints().length > 1 && fieldEnabled('sprint')) {
-        <ui-menu
-          [items]="sprintItems()"
-          [triggerClass]="view.sprint() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="filters.sprint"
-          (selected)="pickSprint($event)"
-        >
-          <span>{{ view.sprint() ?? t('filters.sprint') }}</span>
-        </ui-menu>
-      }
-
-      @if (store.epics().length && fieldEnabled('epic')) {
-        <ui-menu
-          [items]="epicItems()"
-          [triggerClass]="view.epicId() ? chipActive : chip"
-          triggerHeight="28px"
-          ariaLabel="task.epic"
-          (selected)="pickEpic($event)"
-        >
-          <span>{{ store.epic(view.epicId())?.name ?? t('task.epic') }}</span>
-        </ui-menu>
+      @for (node of view.filter().conditions; track $index; let index = $index) {
+        <ui-filter-chip
+          [node]="node"
+          [autoOpen]="pending() === index"
+          (opened)="pending.set(null)"
+          (changed)="view.replaceAt(index, $event)"
+          (removed)="view.removeAt(index)"
+          (openAdvanced)="advancedOpen.set(true)"
+        />
       }
 
       <ui-menu
-        [items]="extraItems()"
+        [items]="fieldItems()"
         [triggerClass]="chipDashed"
         triggerHeight="28px"
-        ariaLabel="common.filter"
-        (selected)="toggleExtra($event)"
+        ariaLabel="filters.addFilter"
+        [minWidth]="230"
+        (selected)="addField($event.id)"
       >
         <ui-icon name="plus" [size]="13" />
-        <span>{{ t('common.filter') }}</span>
+        <span>{{ t('filters.addFilter') }}</span>
       </ui-menu>
+
+      <button
+        type="button"
+        [class]="view.filter().join === 'or' || hasGroups() ? toolActive : chipDashed"
+        [attr.aria-label]="t('filters.advanced')"
+        (click)="advancedOpen.set(true)"
+      >
+        <ui-icon name="sliders" [size]="13" />
+        <span>{{ t('filters.advanced') }}</span>
+        @if (view.filter().join === 'or') {
+          <span class="font-mono text-[10px]">OR</span>
+        }
+      </button>
 
       @if (view.hasFilters()) {
         <button
           type="button"
           class="flex h-7 flex-none items-center gap-1.5 rounded-full px-2 text-xs text-ink-3 whitespace-nowrap"
-          (click)="view.reset()"
+          (click)="clear()"
         >
           <ui-icon name="x" [size]="13" />
           {{ t('filters.clear') }}
@@ -206,27 +160,32 @@ const TOOL =
         </button>
       }
 
-      @if (activeView(); as active) {
+      @if (view.activeView(); as active) {
         <ui-menu
-          [items]="saveItems"
-          [triggerClass]="tool"
+          [items]="saveItems()"
+          [triggerClass]="view.dirty() ? toolActive : tool"
           triggerHeight="28px"
           ariaLabel="common.saveView"
           align="end"
-          (selected)="onSaveMenu($event, active.id, active.name ?? '')"
+          (selected)="onSaveMenu($event, active.id)"
         >
           <ui-icon name="save" [size]="14" />
-          <span class="hidden 2xl:inline">{{ t('common.saveView') }}</span>
+          <span class="hidden 2xl:inline">{{
+            view.dirty() ? t('filters.unsavedChanges') : t('common.saveView')
+          }}</span>
+          @if (view.dirty()) {
+            <span class="h-1.5 w-1.5 rounded-full bg-accent 2xl:hidden"></span>
+          }
         </ui-menu>
       } @else {
         <button
           type="button"
           [class]="tool"
-          [attr.aria-label]="t('common.saveView')"
-          (click)="saveView()"
+          [attr.aria-label]="t('filters.saveAsView')"
+          (click)="saveAsNew()"
         >
           <ui-icon name="save" [size]="14" />
-          <span class="hidden 2xl:inline">{{ t('common.saveView') }}</span>
+          <span class="hidden 2xl:inline">{{ t('filters.saveAsView') }}</span>
         </button>
       }
     </div>
@@ -234,13 +193,16 @@ const TOOL =
     @if (showColumns()) {
       <ui-column-picker [(open)]="columnsOpen" />
     }
+    <ui-filter-dialog [(open)]="advancedOpen" />
   `,
 })
 export class FilterBar {
   protected readonly store = inject(WorkspaceStore);
   protected readonly view = inject(ViewState);
+  private readonly catalog = inject(FilterFields);
   private readonly toast = inject(ToastService);
   private readonly prompt = inject(PromptService);
+  private readonly router = inject(Router);
   private readonly i18n = inject(I18nService);
   protected readonly t = this.i18n.t;
 
@@ -249,148 +211,68 @@ export class FilterBar {
   readonly showColumns = input(false);
 
   protected readonly columnsOpen = signal(false);
+  protected readonly advancedOpen = signal(false);
+  protected readonly pending = signal<number | null>(null);
   protected readonly columnCount = computed(() => this.view.availableColumns().length);
+
+  protected readonly chipDashed = CHIP_DASHED;
+  protected readonly tool = TOOL;
+  protected readonly toolActive = TOOL_ACTIVE;
+
+  protected readonly hasGroups = computed(() =>
+    this.view.filter().conditions.some((node) => 'conditions' in node),
+  );
 
   protected fieldEnabled(fieldKey: string): boolean {
     return this.store.taskFieldEnabled(fieldKey, this.view.projectId());
   }
 
-  protected readonly activeView = computed(
-    () =>
-      this.store.savedViews().find((view) => view.id === this.view.activeViewId() && view.name) ??
-      null,
-  );
-
-  protected readonly saveItems: readonly MenuItem[] = [
-    { id: 'update', label: 'filters.updateView', icon: 'save' },
-    { id: 'new', label: 'filters.saveAsNew', icon: 'plus', separatorBefore: true },
-  ];
-
-  protected readonly chip = CHIP;
-  protected readonly chipActive = CHIP_ACTIVE;
-  protected readonly chipDashed = CHIP_DASHED;
-  protected readonly tool = TOOL;
-
-  protected readonly assigneeLabel = computed(() => {
-    if (this.view.unassigned()) return this.t('common.unassigned');
-    const user = this.store.user(this.view.assigneeId());
-    return user?.shortName ?? this.t('common.assignee');
-  });
-
-  protected readonly assigneeItems = computed<MenuItem[]>(() => {
-    const me = this.store.currentUser();
+  protected readonly fieldItems = computed<MenuItem[]>(() => {
     const items: MenuItem[] = [];
-    if (me) {
-      items.push({
-        id: me.id,
-        label: this.t('filters.assignedToMe'),
-        icon: 'user',
-        checked: this.view.assigneeId() === me.id,
-      });
+    for (const meta of this.catalog.quickFields()) {
+      items.push({ id: meta.key, label: meta.label, icon: meta.icon });
     }
-    items.push({
-      id: 'unassigned',
-      label: this.t('common.unassigned'),
-      checked: this.view.unassigned(),
+    const more = this.catalog
+      .systemFields()
+      .filter((meta) => !meta.quick || !this.catalog.quickFields().includes(meta));
+    more.forEach((meta, index) => {
+      items.push({
+        id: meta.key,
+        label: meta.label,
+        icon: meta.icon,
+        separatorBefore: index === 0,
+      });
     });
-    for (const user of this.store.activeMembers()) {
-      if (me && user.id === me.id) continue;
+    this.catalog.customFields().forEach((meta, index) => {
       items.push({
-        id: user.id,
-        label: user.name,
-        checked: this.view.assigneeId() === user.id,
-        separatorBefore: items.length === 2,
+        id: meta.key,
+        label: meta.label,
+        icon: meta.icon,
+        separatorBefore: index === 0,
       });
-    }
-    items.push({ id: 'clear', label: this.t('filters.any'), separatorBefore: true });
-    return items;
-  });
-
-  protected readonly labelItems = computed<MenuItem[]>(() => {
-    const items: MenuItem[] = this.store.allLabels().map((label) => ({
-      id: label,
-      label,
-      checked: this.view.label() === label,
-    }));
-    items.push({ id: 'clear', label: this.t('filters.any'), separatorBefore: items.length > 0 });
-    return items;
-  });
-
-  protected readonly priorityItems = computed<MenuItem[]>(() => {
-    const items: MenuItem[] = PRIORITIES.map((priority) => ({
-      id: priority,
-      label: this.t('priority.' + priority),
-      checked: this.view.priority() === priority,
-    }));
-    items.push({ id: 'clear', label: this.t('filters.any'), separatorBefore: true });
-    return items;
-  });
-
-  protected readonly epicItems = computed<MenuItem[]>(() => {
-    const items: MenuItem[] = this.store.epicsOfProject(this.view.projectId()).map((epic) => ({
-      id: epic.id,
-      label: epic.name,
-      checked: this.view.epicId() === epic.id,
-    }));
-    items.push({ id: 'clear', label: this.t('filters.any'), separatorBefore: items.length > 0 });
-    return items;
-  });
-
-  protected readonly projectItems = computed<MenuItem[]>(() => {
-    const items: MenuItem[] = this.store.activeProjects().map((project) => ({
-      id: project.id,
-      label: project.name,
-      hint: project.code,
-      checked: this.view.projectId() === project.id,
-    }));
-    items.push({
-      id: 'clear',
-      label: this.t('projects.showAll'),
-      separatorBefore: items.length > 0,
     });
     return items;
   });
 
-  protected readonly sprintItems = computed<MenuItem[]>(() => {
-    const current = this.store.currentSprint();
-    const items: MenuItem[] = this.store.sprints().map((sprint) => ({
-      id: sprint,
-      label: sprint === current ? this.t('filters.sprintCurrent', { sprint }) : sprint,
-      checked: this.view.sprint() === sprint,
-    }));
-    items.push({ id: 'clear', label: this.t('filters.any'), separatorBefore: items.length > 0 });
-    return items;
-  });
-
-  protected readonly extraItems = computed<MenuItem[]>(() => {
+  protected readonly saveItems = computed<MenuItem[]>(() => {
+    const active = this.view.activeView();
     const items: MenuItem[] = [];
-
-    if (this.fieldEnabled('dueDate')) {
+    if (active && !active.builtin) {
       items.push({
-        id: 'overdue',
-        label: this.t('filters.overdue'),
-        icon: 'clock',
-        checked: this.view.overdueOnly(),
-        keepOpen: true,
+        id: 'update',
+        label: 'filters.saveChanges',
+        icon: 'save',
+        disabled: !this.view.dirty(),
       });
     }
+    items.push({ id: 'new', label: 'filters.saveAsNew', icon: 'plus' });
     items.push({
-      id: 'automated',
-      label: this.t('filters.automated'),
-      icon: 'bolt',
-      checked: this.view.automated(),
-      keepOpen: true,
+      id: 'discard',
+      label: 'filters.discard',
+      icon: 'x',
+      disabled: !this.view.dirty(),
+      separatorBefore: true,
     });
-    if (this.fieldEnabled('assignee')) {
-      items.push({
-        id: 'unassigned',
-        label: this.t('common.unassigned'),
-        icon: 'user',
-        checked: this.view.unassigned(),
-        keepOpen: true,
-      });
-    }
-
     return items;
   });
 
@@ -415,84 +297,37 @@ export class FilterBar {
     })),
   );
 
-  protected pickAssignee(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.assigneeId.set(null);
-      this.view.unassigned.set(false);
-      return;
-    }
-    if (item.id === 'unassigned') {
-      this.view.assigneeId.set(null);
-      this.view.unassigned.update((value) => !value);
-      return;
-    }
-    this.view.unassigned.set(false);
-    this.view.assigneeId.update((value) => (value === item.id ? null : item.id));
+  protected addField(key: string): void {
+    const meta = this.catalog.meta(key);
+    if (!meta) return;
+    this.view.append(condition(key, defaultOp(meta), []));
+    this.pending.set(this.view.filter().conditions.length - 1);
   }
 
-  protected pickLabel(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.label.set(null);
-      return;
-    }
-    this.view.label.update((value) => (value === item.id ? null : item.id));
+  protected clear(): void {
+    this.view.clearFilters();
   }
 
-  protected pickPriority(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.priority.set(null);
-      return;
-    }
-    this.view.priority.update((value) => (value === item.id ? null : item.id));
-  }
-
-  protected pickEpic(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.epicId.set(null);
-      return;
-    }
-    this.view.epicId.update((value) => (value === item.id ? null : item.id));
-  }
-
-  protected pickProject(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.projectId.set(null);
-      return;
-    }
-    this.view.projectId.update((value) => (value === item.id ? null : item.id));
-  }
-
-  protected pickSprint(item: MenuItem): void {
-    if (item.id === 'clear') {
-      this.view.sprint.set(null);
-      return;
-    }
-    this.view.sprint.update((value) => (value === item.id ? null : item.id));
-  }
-
-  protected toggleExtra(item: MenuItem): void {
-    if (item.id === 'overdue') this.view.overdueOnly.update((value) => !value);
-    if (item.id === 'automated') this.view.automated.update((value) => !value);
-    if (item.id === 'unassigned') {
-      this.view.unassigned.update((value) => !value);
-      if (this.view.unassigned()) this.view.assigneeId.set(null);
-    }
-  }
-
-  protected async onSaveMenu(item: MenuItem, id: string, name: string): Promise<void> {
+  protected async onSaveMenu(item: MenuItem, id: string): Promise<void> {
     if (item.id === 'new') {
-      await this.saveView();
+      await this.saveAsNew();
+      return;
+    }
+    const active = this.view.activeView();
+    if (!active) return;
+    if (item.id === 'discard') {
+      this.view.applyQuery(active.query, active.id);
       return;
     }
     try {
-      await this.store.updateViewQuery(id, this.view.toQuery());
-      this.toast.success(this.t('filters.viewSaved', { name }));
+      await this.store.updateView(id, { query: this.view.toQuery() });
+      this.toast.success(this.t('filters.viewSaved', { name: active.name ?? '' }));
     } catch {
       this.toast.error(this.t('filters.viewFailed'));
     }
   }
 
-  protected async saveView(): Promise<void> {
+  protected async saveAsNew(): Promise<void> {
     const name = await this.prompt.ask({
       title: 'filters.saveViewTitle',
       message: 'filters.saveViewPrompt',
@@ -506,22 +341,24 @@ export class FilterBar {
       const created = await this.store.createView(name, this.view.toQuery());
       this.view.activeViewId.set(created.id);
       this.toast.success(this.t('filters.viewSaved', { name }));
+      void this.router.navigate(['/app/views', created.id]);
     } catch {
       this.toast.error(this.t('filters.viewFailed'));
     }
   }
 
   private suggestName(): string {
+    const active = this.view.activeView();
+    if (active?.name) return this.t('filters.copyOf', { name: active.name });
     const parts: string[] = [];
-    if (this.view.unassigned()) parts.push(this.t('common.unassigned'));
-    const user = this.store.user(this.view.assigneeId());
-    if (user) parts.push(user.shortName);
     const project = this.store.project(this.view.projectId());
     if (project) parts.push(project.name);
-    if (this.view.sprint()) parts.push(this.view.sprint()!);
-    if (this.view.label()) parts.push(this.view.label()!);
-    if (this.view.priority()) parts.push(this.t('priority.' + this.view.priority()));
-    if (this.view.overdueOnly()) parts.push(this.t('filters.overdue'));
+    for (const node of this.view.filter().conditions) {
+      if ('conditions' in node) continue;
+      if (!node.values.length) continue;
+      parts.push(this.catalog.summary(node));
+      if (parts.length >= 3) break;
+    }
     return parts.join(' · ') || this.t('filters.newView');
   }
 }

@@ -34,9 +34,9 @@ public class SavedViewService {
         return views.visibleTo(users.currentUser().id()).stream().map(this::withCount).toList();
     }
 
-    public SavedViewView create(String name, TaskQuery query) {
+    public SavedViewView create(String name, TaskQuery query, Boolean shared) {
         String trimmed = requireName(name);
-        TaskQuery checked = query == null ? null : query.withCheckedColumns();
+        TaskQuery checked = checked(query);
         UUID id = UUID.randomUUID();
         int position = jdbc.sql("SELECT COALESCE(MAX(position), 0) + 1 FROM saved_view")
                 .query(Integer.class)
@@ -44,20 +44,21 @@ public class SavedViewService {
 
         jdbc.sql("""
                         INSERT INTO saved_view (id, code, position, name, query, shared, owner_id)
-                        VALUES (?, NULL, ?, ?, ?::JSONB, FALSE, ?)
+                        VALUES (?, NULL, ?, ?, ?::JSONB, ?, ?)
                         """)
-                .params(id, position, trimmed, views.asJson(checked), users.currentUser().id())
+                .params(id, position, trimmed, views.asJson(checked), Boolean.TRUE.equals(shared),
+                        users.currentUser().id())
                 .update();
 
         return read(id);
     }
 
-    public SavedViewView update(UUID id, String name, TaskQuery query) {
+    public SavedViewView update(UUID id, String name, TaskQuery query, Boolean shared) {
         Row row = require(id);
-        TaskQuery checked = query == null ? null : query.withCheckedColumns();
         if (row.builtin() && query != null) {
             throw new RuleViolationException("The query of a built-in view cannot be changed");
         }
+        TaskQuery checked = query == null ? null : checked(query);
 
         if (name != null) {
             jdbc.sql("UPDATE saved_view SET name = ? WHERE id = ?").params(requireName(name), id).update();
@@ -65,8 +66,18 @@ public class SavedViewService {
         if (checked != null) {
             jdbc.sql("UPDATE saved_view SET query = ?::JSONB WHERE id = ?").params(views.asJson(checked), id).update();
         }
+        if (shared != null && !row.builtin()) {
+            jdbc.sql("UPDATE saved_view SET shared = ? WHERE id = ?").params(shared, id).update();
+        }
 
         return read(id);
+    }
+
+    public void reorder(List<UUID> ids) {
+        int position = 1;
+        for (UUID id : ids) {
+            jdbc.sql("UPDATE saved_view SET position = ? WHERE id = ?").params(position++, id).update();
+        }
     }
 
     public void delete(UUID id) {
@@ -75,6 +86,12 @@ public class SavedViewService {
             throw new RuleViolationException("The built-in view " + row.view().name() + " cannot be deleted");
         }
         jdbc.sql("DELETE FROM saved_view WHERE id = ?").param(id).update();
+    }
+
+    private TaskQuery checked(TaskQuery query) {
+        TaskQuery normalized = (query == null ? TaskQuery.empty() : query).withCheckedColumns().normalized();
+        counts.count(normalized);
+        return normalized;
     }
 
     private SavedViewView read(UUID id) {
@@ -86,7 +103,7 @@ public class SavedViewService {
     }
 
     private SavedViewView withCount(Row row) {
-        return row.withCount(row.builtinCount() >= 0 ? row.builtinCount() : counts.count(row.view().query()));
+        return row.withCount(counts.count(row.view().query()));
     }
 
     private String requireName(String name) {

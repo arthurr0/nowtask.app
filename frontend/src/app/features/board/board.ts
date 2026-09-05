@@ -140,6 +140,7 @@ export class Board {
   });
 
   protected readonly boardTitle = computed(() => {
+    if (this.view.activeViewName()) return this.view.activeViewName();
     if (this.view.sprint()) return this.view.sprint()!;
     const sprint = this.store.currentSprint();
     return sprint ? this.t('board.sprintTitle', { sprint }) : this.t('board.allTasks');
@@ -218,11 +219,10 @@ export class Board {
 
   filterByUser(userId: string): void {
     if (userId === 'clear') {
-      this.view.assigneeId.set(null);
+      this.view.removeCondition('assignee');
       return;
     }
-    this.view.unassigned.set(false);
-    this.view.assigneeId.update((value) => (value === userId ? null : userId));
+    this.view.setAssignee(userId);
   }
 
   isCollapsed(columnId: string): boolean {

@@ -33,7 +33,12 @@ public final class TaskViews {
             boolean automated,
             UUID epicId,
             UUID projectId,
-            String sprintCode) {
+            String sprintCode,
+            UUID reviewerId,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant completedAt,
+            Map<String, Object> custom) {
     }
 
     public record SubtaskView(UUID id, String title, boolean done, UUID assigneeId) {

@@ -52,7 +52,10 @@ public final class WorkspaceViews {
             TaskQuery query,
             int count,
             boolean shared,
-            UUID ownerId) {
+            UUID ownerId,
+            UUID projectId,
+            boolean builtin,
+            int position) {
     }
 
     public record MilestoneView(UUID id, String name, LocalDate dueDate) {

@@ -48,6 +48,11 @@ class TaskController {
         return queries.page(query);
     }
 
+    @PostMapping("/search")
+    TaskPage search(@RequestBody TaskQuery query) {
+        return queries.page(query);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     TaskSummary create(@RequestBody TaskService.NewTask request) {

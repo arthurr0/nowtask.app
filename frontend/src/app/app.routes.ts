@@ -2,7 +2,7 @@ import { isDevMode } from '@angular/core';
 import type { Route, Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { onboardingGuard, orgGuard } from './core/org.guard';
-import { defaultViewGuard, taskViewGuard } from './core/view.guard';
+import { defaultViewGuard, layoutGuard, taskViewGuard } from './core/view.guard';
 
 const devRoutes: Route[] = isDevMode()
   ? [
@@ -97,7 +97,12 @@ export const routes: Routes = [
       {
         path: 'my-tasks',
         data: { onlyMine: true },
+        canActivate: [layoutGuard('list')],
         loadComponent: () => import('./features/list/list').then((m) => m.TaskList),
+      },
+      {
+        path: 'views/:id',
+        loadComponent: () => import('./features/views/saved-view').then((m) => m.SavedViewPage),
       },
       {
         path: 'timeline',

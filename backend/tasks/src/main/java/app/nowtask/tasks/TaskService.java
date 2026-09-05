@@ -863,7 +863,12 @@ public class TaskService implements Tasks {
                 task.isAutomated(),
                 task.getEpicId(),
                 task.getProjectId(),
-                task.getSprintCode());
+                task.getSprintCode(),
+                task.getReviewerId(),
+                task.getCreatedAt(),
+                task.getUpdatedAt(),
+                task.getCompletedAt(),
+                Map.copyOf(task.getCustom()));
     }
 
     private static SubtaskView toView(Subtask subtask) {

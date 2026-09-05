@@ -2,7 +2,9 @@
   <div class="flex min-w-0 items-center gap-1.5">
     <span class="hidden text-xs text-ink-3 sm:inline">{{ projectLabel() }}</span>
     <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
-    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.timeline') }}</span>
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{
+      view.activeViewName() || t('nav.timeline')
+    }}</span>
   </div>
   <span class="hidden flex-1 lg:block"></span>
   <ui-view-controls />

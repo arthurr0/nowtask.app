@@ -32,18 +32,27 @@ class ViewController {
         return views.list();
     }
 
-    record ViewBody(String name, TaskQuery query) {
+    record ViewBody(String name, TaskQuery query, Boolean shared) {
+    }
+
+    record ReorderBody(List<UUID> ids) {
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     SavedViewView create(@RequestBody ViewBody request) {
-        return views.create(request.name(), request.query());
+        return views.create(request.name(), request.query(), request.shared());
     }
 
     @PatchMapping("/{id}")
     SavedViewView update(@PathVariable UUID id, @RequestBody ViewBody request) {
-        return views.update(id, request.name(), request.query());
+        return views.update(id, request.name(), request.query(), request.shared());
+    }
+
+    @PostMapping("/reorder")
+    List<SavedViewView> reorder(@RequestBody ReorderBody request) {
+        views.reorder(request.ids() == null ? List.of() : request.ids());
+        return views.list();
     }
 
     @DeleteMapping("/{id}")

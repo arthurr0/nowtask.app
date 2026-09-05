@@ -67,18 +67,60 @@ gone, we use an explicit `null` in JSON.
 ## To add: search, filters, views
 
 ```
-GET    /api/tasks?query=&statusId=&assigneeId=&label=&priority=&epicId=&dueBefore=&unassigned=
-                 &automated=&sprint=&groupBy=&sort=&page=&size=
+GET    /api/tasks?query=&projectId=&filter=&groupBy=&sort=&page=&size=
+POST   /api/tasks/search        TaskQuery -> TaskPage
 ```
 
 **Always** returns the envelope `{ items: TaskDto[], total, page, size, groups?: { key, label, count }[] }`,
-including when no parameters are given. No filters means the current sprint without paging.
-Filtering, sorting and grouping happen entirely in SQL.
+including when no parameters are given. Filtering, sorting and grouping happen entirely in SQL.
 
-`sort` accepts: `key`, `title`, `status`, `priority`, `dueDate`, `estimate`, `created`, `updated`.
-A `-` prefix reverses the order. An unknown value ends in a 400.
+`filter` is a JSON document (URL-encoded on `GET`, a plain object in the `POST` body and in saved
+views) describing a condition tree:
+
+```json
+{
+  "join": "and",
+  "conditions": [
+    { "field": "statusCategory", "op": "notIn", "values": ["done"] },
+    { "join": "or", "conditions": [
+      { "field": "assignee", "op": "in", "values": ["me"] },
+      { "field": "assignee", "op": "isEmpty", "values": [] }
+    ] }
+  ]
+}
+```
+
+A node is either a condition (`field`, `op`, `values`) or a group (`join` of `and` | `or`,
+`conditions`). Groups nest without limit, the UI edits one level. Conditions without the values
+they need are ignored, an unknown field or operator ends in a 400.
+
+Fields and their operators:
+
+| kind    | fields                                                                                   | operators                                                                       |
+| ------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| text    | `title`, `key`, `description`, custom `text`/`url`/`relation`                            | `contains`, `notContains`, `is`, `isNot`, `isEmpty`, `isNotEmpty`               |
+| ref     | `status`, `statusCategory`, `project`, `epic`, `sprint`, `assignee`, `reviewer`, `priority`, custom `select`/`person` | `in`, `notIn`, `isEmpty`, `isNotEmpty`                              |
+| labels  | `labels`                                                                                 | `in` (any of), `notIn` (none of), `all`, `isEmpty`, `isNotEmpty`                |
+| date    | `dueDate`, `startDate`, `endDate`, `createdAt`, `updatedAt`, `completedAt`, custom `date` | `on`, `before`, `after`, `onOrBefore`, `onOrAfter`, `between`, `isEmpty`, `isNotEmpty` |
+| number  | `estimate`, `progress`, custom `number`/`currency`/`formula`                             | `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`, `isEmpty`, `isNotEmpty`        |
+| boolean | `automated`, custom `toggle`                                                             | `is` with `true` or `false`                                                     |
+
+Custom fields are addressed as `custom:<fieldKey>`. Special values: `me` for `assignee`,
+`reviewer` and person fields, `current` for `sprint`. Date values are `YYYY-MM-DD` or relative:
+`today`, `+7d`, `-2w`, `+1m` (days, weeks, months from today).
+
+The legacy flat parameters (`statusId`, `assigneeId`, `label`, `priority`, `epicId`, `dueBefore`,
+`unassigned`, `automated`, `sprint`) still work and are folded into `filter` conditions joined with
+AND; `projectId` stays a separate scope parameter.
+
+`sort` accepts: `key`, `title`, `status`, `priority`, `due`, `dueDate`, `startDate`, `endDate`,
+`estimate`, `progress`, `created`, `updated`, `manual`. A `-` prefix reverses the order. An unknown
+value ends in a 400.
 
 `groupBy` accepts: `status`, `assignee`, `priority`, `epic`, `label`.
+
+`TaskDto` also carries `reviewerId`, `createdAt`, `updatedAt`, `completedAt` and `custom` (a map of
+custom field values by key) so clients can evaluate the same filters locally.
 
 Response codes across the API: 201 on resource creation, 204 on deletion, 200 on modification.
 Clearing a field is an explicit `null` in JSON. The conventional zero UUID is no longer used
@@ -86,19 +128,23 @@ anywhere.
 
 ```
 GET    /api/views                -> SavedViewDto[]
-POST   /api/views                {name, query} -> SavedViewDto
-PATCH  /api/views/{id}           {name?, query?} -> SavedViewDto
+POST   /api/views                {name, query, shared?} -> SavedViewDto
+PATCH  /api/views/{id}           {name?, query?, shared?} -> SavedViewDto
+POST   /api/views/reorder        {ids} -> SavedViewDto[]
 DELETE /api/views/{id}
 ```
 
-`SavedViewDto`: `{ id, code, name, query, shared, ownerId, count }`, where `code` and `name` are
-disjoint: built-in views have a `code` and an empty `name`, user views the other way round. `query`
-is an object with the same keys as the `GET /api/tasks` parameters, plus `columns`: an ordered list
-of visible task list columns (`status`, `labels`, `assignee`, `priority`, `due`, `estimate`). The
-order of the array is the order of the columns, an omitted code means a hidden column, a missing
-field means the default layout. ID and title are always visible and do not appear in this list.
-Saving a view validates the codes: an unknown one ends in a 400, a repeated one is skipped.
-`columns` does not affect `GET /api/tasks`. Trying to delete a built-in view ends in a 422.
+`SavedViewDto`: `{ id, code, name, query, shared, ownerId, projectId, builtin, position, count }`,
+where `code` and `name` are disjoint: built-in and preset views have a `code` and an empty `name`,
+user views the other way round. `builtin` views cannot be edited or deleted (422). `query` is a
+`TaskQuery`: `filter` (see above), `projectId`, `query` (free text), `layout` (`board`, `list`,
+`timeline`, `calendar`), `groupBy`, `sort` and `columns`: an ordered list of visible task list
+columns (`status`, `labels`, `assignee`, `priority`, `due`, `estimate`). The order of the array is
+the order of the columns, an omitted code means a hidden column, a missing field means the default
+layout. ID and title are always visible and do not appear in this list. Saving a view validates the
+filter, the columns and the layout: an unknown value ends in a 400, a repeated column is skipped.
+Queries stored in the legacy flat form come back normalized to `filter`. Each saved view is opened
+under `/app/views/{id}` in the frontend and renders its own `layout`.
 
 `TransitionDto` carries `id`, needed for deleting a transition.
 

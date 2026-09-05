@@ -3,15 +3,20 @@ package app.nowtask.tasks;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
 import app.nowtask.shared.Priority;
@@ -20,6 +25,8 @@ import app.nowtask.shared.TaskQuery;
 import app.nowtask.tasks.api.TaskViews.TaskGroup;
 import app.nowtask.tasks.api.TaskViews.TaskPage;
 import app.nowtask.tasks.api.TaskViews.TaskSummary;
+import app.nowtask.workspace.api.Workspace;
+import app.nowtask.workspace.api.WorkspaceViews.CustomFieldView;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,7 +35,8 @@ public class TaskQueryService implements TaskCounts {
     private static final String SELECT_SUMMARY = """
             SELECT t.id, t.task_key, t.title, t.status_id, s.code AS status_code, t.priority, t.assignee_id,
                    t.due_date, t.start_date, t.end_date, t.estimate, t.progress, t.automated, t.epic_id,
-                   t.project_id, t.sprint_code,
+                   t.project_id, t.sprint_code, t.reviewer_id, t.created_at, t.updated_at, t.completed_at,
+                   t.custom::TEXT AS custom,
                    labels.names AS labels,
                    COALESCE(sub.total, 0) AS subtasks_total,
                    COALESCE(sub.done, 0) AS subtasks_done,
@@ -55,17 +63,25 @@ public class TaskQueryService implements TaskCounts {
             "high", "High",
             "critical", "Critical");
 
+    private static final String COUNT_FROM = "SELECT count(*) FROM task t JOIN status_def s ON s.id = t.status_id";
+    private static final TypeReference<Map<String, Object>> CUSTOM = new TypeReference<>() {
+    };
+
     private final JdbcClient jdbc;
     private final UserDirectory users;
+    private final Workspace workspace;
+    private final ObjectMapper mapper;
 
-    TaskQueryService(JdbcClient jdbc, UserDirectory users) {
+    TaskQueryService(JdbcClient jdbc, UserDirectory users, @Lazy Workspace workspace, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.users = users;
+        this.workspace = workspace;
+        this.mapper = mapper;
     }
 
     public TaskPage page(TaskQuery source) {
         TaskQuery query = source == null ? TaskQuery.empty() : source;
-        TaskFilter filter = TaskFilter.of(query);
+        TaskFilter filter = TaskFilter.of(query, context());
         int total = count(filter);
 
         List<Object> params = new ArrayList<>(filter.params());
@@ -79,7 +95,7 @@ public class TaskQueryService implements TaskCounts {
         List<TaskSummary> items = jdbc
                 .sql(SELECT_SUMMARY + filter.where() + TaskFilter.orderBy(query.sort()) + limit)
                 .params(params)
-                .query(TaskQueryService::toSummary)
+                .query(this::toSummary)
                 .list();
 
         return new TaskPage(
@@ -96,14 +112,25 @@ public class TaskQueryService implements TaskCounts {
 
     @Override
     public int count(TaskQuery query) {
-        return count(TaskFilter.of(query));
+        return count(TaskFilter.of(query, context()));
     }
 
     private int count(TaskFilter filter) {
-        return jdbc.sql("SELECT count(*) FROM task t" + filter.where())
+        return jdbc.sql(COUNT_FROM + filter.where())
                 .params(filter.params())
                 .query(Integer.class)
                 .single();
+    }
+
+    private TaskFilter.Context context() {
+        UUID me = null;
+        try {
+            me = users.currentUser().id();
+        } catch (RuntimeException ignored) {
+        }
+        Map<String, String> customTypes = workspace.customFields().stream()
+                .collect(Collectors.toMap(CustomFieldView::fieldKey, CustomFieldView::type, (a, b) -> a));
+        return new TaskFilter.Context(me, workspace.settings().currentSprint(), LocalDate.now(), customTypes);
     }
 
     private List<TaskGroup> groups(TaskQuery query, TaskFilter filter) {
@@ -139,6 +166,7 @@ public class TaskQueryService implements TaskCounts {
         return jdbc.sql("""
                         SELECT COALESCE(t.assignee_id::TEXT, '') AS group_key, '' AS group_label, count(*) AS total
                         FROM task t
+                        JOIN status_def s ON s.id = t.status_id
                         """ + filter.where() + " GROUP BY t.assignee_id ORDER BY count(*) DESC")
                 .params(filter.params())
                 .query(TaskQueryService::toGroup)
@@ -151,6 +179,7 @@ public class TaskQueryService implements TaskCounts {
         return jdbc.sql("""
                         SELECT t.priority AS group_key, t.priority AS group_label, count(*) AS total
                         FROM task t
+                        JOIN status_def s ON s.id = t.status_id
                         """ + filter.where() + """
                          GROUP BY t.priority
                          ORDER BY CASE t.priority
@@ -170,6 +199,7 @@ public class TaskQueryService implements TaskCounts {
                                COALESCE(e.name, 'Bez epiku') AS group_label,
                                count(*) AS total
                         FROM task t
+                        JOIN status_def s ON s.id = t.status_id
                         LEFT JOIN epic e ON e.id = t.epic_id
                         """ + filter.where() + " GROUP BY e.id, e.name ORDER BY e.name NULLS LAST")
                 .params(filter.params())
@@ -181,6 +211,7 @@ public class TaskQueryService implements TaskCounts {
         return jdbc.sql("""
                         SELECT l.label AS group_key, l.label AS group_label, count(*) AS total
                         FROM task t
+                        JOIN status_def s ON s.id = t.status_id
                         JOIN task_label l ON l.task_id = t.id
                         """ + filter.where() + " GROUP BY l.label ORDER BY count(*) DESC, l.label")
                 .params(filter.params())
@@ -200,7 +231,7 @@ public class TaskQueryService implements TaskCounts {
         return new TaskGroup(rs.getString("group_key"), rs.getString("group_label"), rs.getInt("total"));
     }
 
-    private static TaskSummary toSummary(ResultSet rs, int rowNum) throws SQLException {
+    private TaskSummary toSummary(ResultSet rs, int rowNum) throws SQLException {
         return new TaskSummary(
                 rs.getObject("id", UUID.class),
                 rs.getString("task_key"),
@@ -221,7 +252,24 @@ public class TaskQueryService implements TaskCounts {
                 rs.getBoolean("automated"),
                 rs.getObject("epic_id", UUID.class),
                 rs.getObject("project_id", UUID.class),
-                rs.getString("sprint_code"));
+                rs.getString("sprint_code"),
+                rs.getObject("reviewer_id", UUID.class),
+                instant(rs, "created_at"),
+                instant(rs, "updated_at"),
+                instant(rs, "completed_at"),
+                custom(rs.getString("custom")));
+    }
+
+    private static Instant instant(ResultSet rs, String column) throws SQLException {
+        Timestamp value = rs.getTimestamp(column);
+        return value == null ? null : value.toInstant();
+    }
+
+    private Map<String, Object> custom(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        return mapper.readValue(json, CUSTOM);
     }
 
     private static List<String> labels(ResultSet rs) throws SQLException {

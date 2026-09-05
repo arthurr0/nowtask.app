@@ -145,11 +145,7 @@ public class ExportService {
     }
 
     private TaskQuery capped(TaskQuery query) {
-        TaskQuery checked = query.withCheckedColumns();
-        return new TaskQuery(
-                checked.query(), checked.statusId(), checked.assigneeId(), checked.label(), checked.priority(),
-                checked.epicId(), checked.projectId(), checked.dueBefore(), checked.unassigned(),
-                checked.automated(), checked.sprint(), null, checked.sort(), checked.columns(), 0, MAX_ROWS);
+        return query.withCheckedColumns().withPaging(0, MAX_ROWS);
     }
 
     private ExportFile csv(String name, List<String> header, List<List<String>> rows) {

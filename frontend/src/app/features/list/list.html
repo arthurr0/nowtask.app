@@ -3,7 +3,7 @@
     <span class="text-xs text-ink-3">{{ projectLabel() }}</span>
     <ui-icon name="chevron-right" [size]="14" class="text-ink-3" />
     <span class="text-[15px] font-semibold tracking-[-0.01em]">
-      {{ onlyMine() ? t('nav.myTasks') : t('board.allTasks') }}
+      {{ onlyMine() ? t('nav.myTasks') : view.activeViewName() || t('board.allTasks') }}
     </span>
     <span class="ml-1.5 font-mono text-[11px] text-ink-3">{{ visibleTasks().length }}</span>
   </div>
@@ -169,7 +169,7 @@
                     <button
                       type="button"
                       class="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink-2"
-                      (click)="$event.stopPropagation(); view.label.set(label)"
+                      (click)="$event.stopPropagation(); view.toggleValue('labels', label)"
                     >
                       {{ label }}
                     </button>
@@ -243,7 +243,7 @@
         <button
           type="button"
           class="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-xs text-ink-2"
-          (click)="view.reset()"
+          (click)="view.clearFilters()"
         >
           <ui-icon name="x" [size]="14" />
           {{ t('filters.clear') }}

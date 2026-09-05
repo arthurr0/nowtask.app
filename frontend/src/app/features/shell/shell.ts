@@ -12,11 +12,11 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { I18nService } from '../../core/i18n/i18n.service';
 import type { NavItemCode, NavItemDto, ProjectDto, SavedViewDto } from '../../core/api-types';
 import { ViewState } from '../../data/view-state';
-import { RulesStore } from '../../data/feature.stores';
+import { RulesStore, SettingsStore } from '../../data/feature.stores';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { AuthService } from '../../core/auth.service';
 import { ActiveOrgService } from '../../core/active-org';
-import { TASK_VIEWS } from '../../core/task-views';
+import { TASK_VIEWS, taskViewMeta } from '../../core/task-views';
 import { OrgService } from '../../core/org.service';
 import { OnboardingService } from '../../core/onboarding.service';
 import { RealtimeService } from '../../core/realtime.service';
@@ -98,6 +98,7 @@ function defaultNavigation(): NavItemDto[] {
 export class Shell implements OnInit, OnDestroy {
   protected readonly store = inject(WorkspaceStore);
   protected readonly rules = inject(RulesStore);
+  private readonly settings = inject(SettingsStore);
   protected readonly state = inject(ViewState);
   protected readonly palette = inject(CommandPalette);
   protected readonly auth = inject(AuthService);
@@ -204,14 +205,73 @@ export class Shell implements OnInit, OnDestroy {
     this.store.projects().filter((project) => project.archived),
   );
 
-  protected readonly viewMenu: readonly MenuItem[] = [
-    { id: 'apply', label: 'nav.applyView', icon: 'filter' },
-    { id: 'rename', label: 'nav.renameView', icon: 'pencil' },
-    { id: 'delete', label: 'common.delete', icon: 'trash', danger: true, separatorBefore: true },
-  ];
+  viewMenu(view: SavedViewDto): MenuItem[] {
+    const views = this.store.savedViews();
+    const position = views.findIndex((item) => item.id === view.id);
+    const items: MenuItem[] = [{ id: 'open', label: 'nav.openView', icon: 'arrow-right' }];
+    if (!view.builtin) {
+      items.push({ id: 'rename', label: 'nav.renameView', icon: 'pencil' });
+    }
+    items.push({ id: 'duplicate', label: 'filters.duplicateView', icon: 'copy' });
+    if (!view.builtin) {
+      items.push({
+        id: 'share',
+        label: view.shared ? 'filters.unshareView' : 'filters.shareView',
+        icon: view.shared ? 'lock' : 'users',
+      });
+    }
+    items.push(
+      {
+        id: 'up',
+        label: 'common.moveUp',
+        icon: 'up',
+        disabled: position <= 0,
+        separatorBefore: true,
+      },
+      {
+        id: 'down',
+        label: 'common.moveDown',
+        icon: 'down',
+        disabled: position >= views.length - 1,
+      },
+    );
+    if (!view.builtin) {
+      items.push({
+        id: 'delete',
+        label: 'common.delete',
+        icon: 'trash',
+        danger: true,
+        separatorBefore: true,
+      });
+    }
+    return items;
+  }
+
+  private async moveView(view: SavedViewDto, step: -1 | 1): Promise<void> {
+    const ids = this.store.savedViews().map((item) => item.id);
+    const index = ids.indexOf(view.id);
+    const target = index + step;
+    if (index < 0 || target < 0 || target >= ids.length) return;
+    const [moved] = ids.splice(index, 1);
+    ids.splice(target, 0, moved);
+    try {
+      await this.store.reorderViews(ids);
+    } catch (error) {
+      this.toast.error(this.errorText(error));
+    }
+  }
+
+  viewName(view: SavedViewDto): string {
+    return view.name || this.t(view.code ?? '');
+  }
+
+  viewIcon(view: SavedViewDto): string {
+    return taskViewMeta(view.query.layout ?? 'list').icon;
+  }
 
   ngOnInit(): void {
     void this.store.load();
+    void this.settings.load();
     void this.onboarding.refresh(true);
     this.realtime.start();
   }
@@ -299,39 +359,90 @@ export class Shell implements OnInit, OnDestroy {
     }
   }
 
-  applyView(view: SavedViewDto): void {
-    this.state.applyQuery(view.query, view.id);
-    void this.router.navigate(['/app/list']);
+  async newView(): Promise<void> {
+    const name = await this.prompt.ask({
+      title: 'nav.newView',
+      label: 'filters.viewName',
+      placeholder: 'filters.viewNamePlaceholder',
+      value: this.t('filters.newView'),
+    });
+    if (!name) return;
+    try {
+      const created = await this.store.createView(name, {
+        layout: this.state.layout(),
+        filter: { join: 'and', conditions: [] },
+        groupBy: 'status',
+        sort: 'manual',
+      });
+      this.toast.success(this.t('filters.viewSaved', { name }));
+      void this.router.navigate(['/app/views', created.id]);
+    } catch {
+      this.toast.error(this.t('filters.viewFailed'));
+    }
   }
 
   async onViewMenu(item: MenuItem, view: SavedViewDto): Promise<void> {
-    if (item.id === 'apply') {
-      this.applyView(view);
-      return;
-    }
-    if (item.id === 'rename') {
-      const name = await this.prompt.ask({
-        title: 'nav.renameView',
-        label: 'filters.viewName',
-        value: view.name ?? '',
-      });
-      if (!name) return;
-      try {
-        await this.store.renameView(view.id, name, view.query);
-        this.toast.success(this.t('filters.viewSaved', { name }));
-      } catch {
-        this.toast.error(this.t('filters.viewFailed'));
+    switch (item.id) {
+      case 'open':
+        void this.router.navigate(['/app/views', view.id]);
+        break;
+      case 'rename': {
+        const name = await this.prompt.ask({
+          title: 'nav.renameView',
+          label: 'filters.viewName',
+          value: view.name ?? '',
+        });
+        if (!name) return;
+        try {
+          await this.store.updateView(view.id, { name });
+          this.toast.success(this.t('filters.viewSaved', { name }));
+        } catch {
+          this.toast.error(this.t('filters.viewFailed'));
+        }
+        break;
       }
-      return;
-    }
-    const confirmed = await this.confirm.askDelete(view.name ?? '');
-    if (!confirmed) return;
-    try {
-      await this.store.deleteView(view.id);
-      if (this.state.activeViewId() === view.id) this.state.reset();
-      this.toast.success(this.t('filters.viewDeleted'));
-    } catch {
-      this.toast.error(this.t('common.actionFailed'));
+      case 'duplicate': {
+        const name = await this.prompt.ask({
+          title: 'filters.duplicateView',
+          label: 'filters.viewName',
+          value: this.t('filters.copyOf', { name: this.viewName(view) }),
+        });
+        if (!name) return;
+        try {
+          const created = await this.store.createView(name, view.query);
+          this.toast.success(this.t('filters.viewSaved', { name }));
+          void this.router.navigate(['/app/views', created.id]);
+        } catch {
+          this.toast.error(this.t('filters.viewFailed'));
+        }
+        break;
+      }
+      case 'share':
+        await this.run(() => this.store.updateView(view.id, { shared: !view.shared }));
+        break;
+      case 'up':
+        await this.moveView(view, -1);
+        break;
+      case 'down':
+        await this.moveView(view, 1);
+        break;
+      case 'delete': {
+        const confirmed = await this.confirm.askDelete(this.viewName(view));
+        if (!confirmed) return;
+        try {
+          await this.store.deleteView(view.id);
+          if (this.state.activeViewId() === view.id) {
+            this.state.reset();
+            void this.router.navigate(['/app/board']);
+          }
+          this.toast.success(this.t('filters.viewDeleted'));
+        } catch {
+          this.toast.error(this.t('common.actionFailed'));
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 

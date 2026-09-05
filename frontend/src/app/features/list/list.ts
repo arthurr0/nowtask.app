@@ -69,6 +69,8 @@ export class TaskList {
       if (value === null || value === undefined) continue;
       if (Array.isArray(value)) {
         for (const entry of value) params.append(key, String(entry));
+      } else if (typeof value === 'object') {
+        params.set(key, JSON.stringify(value));
       } else {
         params.set(key, String(value));
       }

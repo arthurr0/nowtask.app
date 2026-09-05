@@ -4,7 +4,9 @@
       store.project(view.projectId())?.name ?? t('projects.showAll')
     }}</span>
     <ui-icon name="chevron-right" [size]="14" class="hidden text-ink-3 sm:inline-flex" />
-    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{ t('nav.calendar') }}</span>
+    <span class="text-[15px] font-semibold tracking-[-0.01em]">{{
+      view.activeViewName() || t('nav.calendar')
+    }}</span>
     <span class="kap ml-1.5 rounded-full border border-line px-2 py-0.5">{{
       monthTaskCount()
     }}</span>

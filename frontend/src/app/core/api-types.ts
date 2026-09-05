@@ -88,10 +88,28 @@ export interface SavedViewDto {
   query: TaskQueryDto;
   shared: boolean;
   ownerId: string | null;
+  projectId: string | null;
+  builtin: boolean;
+  position: number;
   count: number;
 }
 
 export type ListColumn = 'status' | 'labels' | 'assignee' | 'priority' | 'due' | 'estimate';
+
+export type FilterJoin = 'and' | 'or';
+
+export interface FilterConditionDto {
+  field: string;
+  op: string;
+  values: string[];
+}
+
+export interface FilterGroupDto {
+  join: FilterJoin;
+  conditions: FilterNodeDto[];
+}
+
+export type FilterNodeDto = FilterConditionDto | FilterGroupDto;
 
 export interface TaskQueryDto {
   query?: string;
@@ -105,6 +123,8 @@ export interface TaskQueryDto {
   unassigned?: boolean;
   automated?: boolean;
   sprint?: string;
+  filter?: FilterGroupDto;
+  layout?: TaskViewCode;
   groupBy?: string;
   sort?: string;
   columns?: ListColumn[];
@@ -209,6 +229,11 @@ export interface TaskDto {
   epicId: string | null;
   projectId: string | null;
   sprintCode: string | null;
+  reviewerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  custom: Record<string, string | number | boolean>;
 }
 
 export interface SubtaskDto {

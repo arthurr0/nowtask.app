@@ -164,8 +164,8 @@ export class CommandPaletteDialog {
           hint: person.role?.name ?? '',
           icon: 'user',
           run: () => {
-            this.view.reset();
-            this.view.assigneeId.set(person.id);
+            this.view.leaveView();
+            this.view.setAssignee(person.id);
             void this.router.navigate(['/app/list']);
           },
         });
@@ -188,10 +188,7 @@ export class CommandPaletteDialog {
           label: saved.name ?? this.t(saved.code ?? ''),
           hint: String(saved.count),
           icon: 'save',
-          run: () => {
-            this.view.applyQuery(saved.query, saved.id);
-            void this.router.navigate(['/app/list']);
-          },
+          run: () => void this.router.navigate(['/app/views', saved.id]),
         });
       }
     }
@@ -274,8 +271,8 @@ export class CommandPaletteDialog {
         run: () => {
           const me = this.store.currentUser();
           if (!me) return;
-          this.view.reset();
-          this.view.assigneeId.set(me.id);
+          this.view.leaveView();
+          this.view.setAssignee(me.id);
           void this.router.navigate(['/app/list']);
         },
       },
@@ -286,8 +283,8 @@ export class CommandPaletteDialog {
         hint: '',
         icon: 'clock',
         run: () => {
-          this.view.reset();
-          this.view.overdueOnly.set(true);
+          this.view.leaveView();
+          this.view.setOverdue();
           void this.router.navigate(['/app/list']);
         },
       },

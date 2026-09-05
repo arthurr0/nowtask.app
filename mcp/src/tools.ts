@@ -78,6 +78,36 @@ const taskKey = z
   .describe('Task key exactly as shown in nowtask, for example "NOW-172". Not a UUID.');
 
 const uuid = (what: string) => z.string().uuid().describe(what);
+
+const filterCondition = z.object({
+  field: z.string().describe(
+    'Field key: title, key, description, status, statusCategory (notStarted/inFlight/done), project, epic, sprint, ' +
+      'assignee, reviewer, priority, labels, dueDate, startDate, endDate, createdAt, updatedAt, completedAt, ' +
+      'estimate, progress, automated, or custom:<fieldKey> for a custom field.'
+  ),
+  op: z.string().describe(
+    'Operator. Text: contains, notContains, is, isNot. References and labels: in, notIn (labels also all). ' +
+      'Dates: on, before, after, onOrBefore, onOrAfter, between. Numbers: eq, ne, gt, gte, lt, lte, between. ' +
+      'Booleans: is. Every nullable field also accepts isEmpty and isNotEmpty.'
+  ),
+  values: z.array(z.string()).describe(
+    'Values for the operator. Use "me" for the current person, "current" for the current sprint, ' +
+      'dates as YYYY-MM-DD or relative like today, +7d, -2w, +1m.'
+  )
+});
+
+const filterGroup = z.object({
+  join: z.enum(['and', 'or']).describe('How the conditions in this group combine.'),
+  conditions: z.array(
+    z.union([
+      filterCondition,
+      z.object({
+        join: z.enum(['and', 'or']),
+        conditions: z.array(filterCondition)
+      })
+    ])
+  )
+});
 const isoDate = (what: string) =>
   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the calendar format YYYY-MM-DD.').describe(what);
 
@@ -143,12 +173,25 @@ export function registerAllTools(server: McpServer, client: NowtaskClient): void
       unassigned: z.boolean().optional().describe('true returns only tasks with nobody assigned.'),
       automated: z.boolean().optional().describe('true returns only tasks touched by an automation rule.'),
       sprint: z.string().optional().describe('Sprint code, for example "S-24". Omit for the current sprint.'),
+      projectId: uuid('Only tasks in this project.').optional(),
+      filter: filterGroup
+        .optional()
+        .describe(
+          'Structured filter tree with operators and AND/OR groups, the same model the saved views use. ' +
+            'Combine freely with the flat arguments above, everything is joined with AND.'
+        ),
       groupBy: z.enum(['status', 'assignee', 'priority', 'epic']).optional().describe('Adds a groups summary to the answer.'),
       sort: z.string().optional().describe('Sort expression, for example "dueDate" or "-priority" for descending.'),
       page: z.number().int().min(0).optional().describe('Zero-based page number. Requires size.'),
       size: z.number().int().min(1).max(200).optional().describe('Page size, 1-200. Use 20-50 for a readable answer.')
     },
-    run: async args => client.request('/api/tasks', { query: args as Record<string, string | number | boolean | undefined> })
+    run: async ({ filter, ...args }) =>
+      client.request('/api/tasks', {
+        query: {
+          ...(args as Record<string, string | number | boolean | undefined>),
+          filter: filter === undefined ? undefined : JSON.stringify(filter)
+        }
+      })
   });
 
   define(server, client, {

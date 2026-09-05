@@ -77,7 +77,14 @@ export class WorkspaceStore {
   }
   readonly statuses = computed<StatusDto[]>(() => this.bootstrapSignal()?.statuses ?? []);
   readonly transitions = computed<TransitionDto[]>(() => this.bootstrapSignal()?.transitions ?? []);
-  readonly savedViews = computed<SavedViewDto[]>(() => this.bootstrapSignal()?.savedViews ?? []);
+  readonly savedViews = computed<SavedViewDto[]>(() =>
+    [...(this.bootstrapSignal()?.savedViews ?? [])].sort((a, b) => a.position - b.position),
+  );
+
+  savedView(id: string | null): SavedViewDto | null {
+    if (!id) return null;
+    return this.savedViews().find((view) => view.id === id) ?? null;
+  }
   readonly sprints = computed<string[]>(() => this.bootstrapSignal()?.sprints ?? []);
   readonly settings = computed<WorkspaceSettingsDto | null>(
     () => this.bootstrapSignal()?.settings ?? null,
@@ -290,6 +297,7 @@ export class WorkspaceStore {
   async reloadTasks(): Promise<void> {
     const page = await firstValueFrom(this.http.get<TaskPageDto>('/api/tasks'));
     this.tasksSignal.set(page.items);
+    void this.refreshViewCounts().catch(() => undefined);
   }
 
   async reloadBootstrap(): Promise<void> {
@@ -461,27 +469,38 @@ export class WorkspaceStore {
     return firstValueFrom(this.http.get<SearchResultDto>('/api/search', { params: { q: query } }));
   }
 
-  async createView(name: string, query: TaskQueryDto): Promise<SavedViewDto> {
+  async createView(name: string, query: TaskQueryDto, shared = false): Promise<SavedViewDto> {
     const created = await firstValueFrom(
-      this.http.post<SavedViewDto>('/api/views', { name, query }),
+      this.http.post<SavedViewDto>('/api/views', { name, query, shared }),
     );
     await this.reloadBootstrap();
     return created;
   }
 
-  async renameView(id: string, name: string, query: TaskQueryDto): Promise<void> {
-    await firstValueFrom(this.http.patch<SavedViewDto>(`/api/views/${id}`, { name, query }));
+  async updateView(
+    id: string,
+    body: { name?: string; query?: TaskQueryDto; shared?: boolean },
+  ): Promise<SavedViewDto> {
+    const updated = await firstValueFrom(this.http.patch<SavedViewDto>(`/api/views/${id}`, body));
     await this.reloadBootstrap();
+    return updated;
   }
 
-  async updateViewQuery(id: string, query: TaskQueryDto): Promise<void> {
-    await firstValueFrom(this.http.patch<SavedViewDto>(`/api/views/${id}`, { query }));
+  async reorderViews(ids: readonly string[]): Promise<void> {
+    await firstValueFrom(this.http.post<SavedViewDto[]>('/api/views/reorder', { ids: [...ids] }));
     await this.reloadBootstrap();
   }
 
   async deleteView(id: string): Promise<void> {
     await firstValueFrom(this.http.delete(`/api/views/${id}`));
     await this.reloadBootstrap();
+  }
+
+  async refreshViewCounts(): Promise<void> {
+    const savedViews = await firstValueFrom(this.http.get<SavedViewDto[]>('/api/views'));
+    this.bootstrapSignal.update((bootstrap) =>
+      bootstrap ? { ...bootstrap, savedViews } : bootstrap,
+    );
   }
 
   async createStatus(body: {
