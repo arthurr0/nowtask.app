@@ -157,7 +157,7 @@ record TaskFilter(String where, List<Object> params) {
             String fieldKey = TaskField.customFieldKey(key);
             String type = context.customTypes().get(fieldKey);
             if (type == null) {
-                throw new IllegalArgumentException("Nieznane pole własne: " + fieldKey);
+                throw new IllegalArgumentException("Unknown custom field: " + fieldKey);
             }
             String raw = "NULLIF(t.custom ->> '" + fieldKey.replace("'", "''") + "', '')";
             return switch (type) {

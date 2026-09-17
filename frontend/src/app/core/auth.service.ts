@@ -56,7 +56,7 @@ export class AuthService {
       return true;
     } catch (error) {
       if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
-        console.error('Nie udało się odczytać sesji', error);
+        console.error('Could not read the session', error);
       }
       this.userSignal.set(null);
       return false;

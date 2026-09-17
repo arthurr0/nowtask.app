@@ -10,7 +10,7 @@
   },
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Interfejs nowtask: Angular 22, sygnaly, zoneless",
+  "description": "nowtask web interface: Angular 22, signals, zoneless",
   "packageManager": "pnpm@11.3.0",
   "dependencies": {
     "@angular/cdk": "^22.1.2",

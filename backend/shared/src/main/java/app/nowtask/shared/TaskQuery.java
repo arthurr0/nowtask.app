@@ -56,7 +56,7 @@ public record TaskQuery(
             checked = List.copyOf(checked);
         }
         if (layout != null && !layout.isBlank() && !LAYOUT_CODES.contains(layout)) {
-            throw new IllegalArgumentException("Nieznany układ widoku: " + layout);
+            throw new IllegalArgumentException("Unknown view layout: " + layout);
         }
         return new TaskQuery(query, statusId, assigneeId, label, priority, epicId, projectId, dueBefore,
                 unassigned, automated, sprint, filter, blankToNull(layout), groupBy, sort, checked, page, size);

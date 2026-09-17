@@ -155,7 +155,7 @@ const REPO = 'https://github.com/arthurr0/nowtask.app.git';
 const DOCS = 'https://github.com/arthurr0/nowtask.app/blob/master/docs/ai-agents.md';
 const SERVER_DOCS = 'https://github.com/arthurr0/nowtask.app/tree/master/mcp';
 const DEFAULT_PATH = '~/nowtask.app/mcp';
-const KEY_PLACEHOLDER = 'nt_twoj_klucz';
+const KEY_PLACEHOLDER = 'nt_your_key';
 
 @Component({
   selector: 'app-agents',

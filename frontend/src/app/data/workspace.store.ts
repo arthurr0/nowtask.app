@@ -603,10 +603,10 @@ export function describe(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'status' in error) {
     const status = (error as { status: number }).status;
     if (status === 0) {
-      return 'Brak połączenia z serwerem.';
+      return 'No connection to the server.';
     }
     const message = (error as { error?: { message?: string } }).error?.message;
-    return message ?? `Serwer odpowiedział błędem ${status}.`;
+    return message ?? `The server answered with error ${status}.`;
   }
-  return 'Nieznany błąd połączenia.';
+  return 'Unknown connection error.';
 }

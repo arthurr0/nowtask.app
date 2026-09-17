@@ -12,7 +12,7 @@ RUN pnpm exec ng build --configuration production
 
 FROM nginx:1.29-alpine AS runtime
 RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/kadra.conf
+COPY nginx.conf /etc/nginx/conf.d/nowtask.conf
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
 
 EXPOSE 8080

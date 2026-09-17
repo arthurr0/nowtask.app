@@ -1,6 +1,6 @@
 <!doctype html>
 <html
-  lang="pl"
+  lang="en"
   data-theme="light"
   data-accent="graphite"
   data-density="roomy"
@@ -16,7 +16,7 @@
     <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
-      content="nowtask to tablica zadań dla zespołów. Kolumny, karty, terminy i automatyzacje w jednym miejscu, a na wierzchu zawsze to, co dzieje się teraz."
+      content="nowtask is a task board for teams. Columns, cards, deadlines and automations in one place, with what is happening now always on top."
     />
     <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
@@ -29,7 +29,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="nowtask" />
     <meta property="og:title" content="nowtask" />
-    <meta property="og:description" content="Tablica zadań, która zaczyna się od teraz." />
+    <meta property="og:description" content="Now, not someday." />
     <meta property="og:url" content="https://nowtask.app/" />
     <meta property="og:image" content="https://nowtask.app/brand/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -56,9 +56,7 @@
           if (p.density) root.setAttribute('data-density', p.density);
           if (p.radius) root.setAttribute('data-radius', String(p.radius));
           if (p.lang) root.setAttribute('lang', p.lang);
-        } catch (e) {
-          /* pierwszy start bez zapisanych preferencji */
-        }
+        } catch (e) {}
       })();
     </script>
   </head>

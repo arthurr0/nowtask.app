@@ -6,7 +6,6 @@ services:
       POSTGRES_USER: nowtask
       POSTGRES_PASSWORD: nowtask
     volumes:
-      # Postgres 18 expects the whole directory to be mounted, not the data subdirectory
       - db-data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U nowtask -d nowtask']
@@ -14,7 +13,6 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      # 5433 on the host so it does not clash with a locally installed Postgres
       - '5433:5432'
 
   mail:
@@ -41,10 +39,6 @@ services:
     ports:
       - '8081:8081'
 
-  # The MCP server: exposes nowtask to AI agents over the Streamable HTTP transport.
-  # Every client brings its own key in the Authorization header, so NOWTASK_API_KEY is
-  # optional and serves only as a fallback key for clients that do not send the header.
-  # The frontend nginx exposes this server under /mcp, so an agent connects to the application address.
   mcp:
     build: ./mcp
     environment:

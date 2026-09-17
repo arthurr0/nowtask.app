@@ -45,9 +45,6 @@ export function loadConfig(): ServerConfig {
     );
   }
 
-  // On stdio the server serves one agent and the key has to be in the environment. Over HTTP the
-  // server serves many clients at once, so each brings its own key in the Authorization header,
-  // and the key from the environment is only an optional fallback.
   const apiKey =
     transportRaw === 'stdio'
       ? requiredEnv(
