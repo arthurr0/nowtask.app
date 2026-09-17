@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${NOWTASK_DB_NAME:-nowtask}
       POSTGRES_USER: ${NOWTASK_DB_USER:-nowtask}
-      POSTGRES_PASSWORD: ${NOWTASK_DB_PASSWORD:?ustaw NOWTASK_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${NOWTASK_DB_PASSWORD:?set NOWTASK_DB_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql
     healthcheck:
@@ -15,13 +15,13 @@ services:
     restart: unless-stopped
 
   backend:
-    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/arthurr0/nowtask-backend:${IMAGE_TAG:-latest}
     environment:
       NOWTASK_DB_URL: jdbc:postgresql://db:5432/${NOWTASK_DB_NAME:-nowtask}
       NOWTASK_DB_USER: ${NOWTASK_DB_USER:-nowtask}
-      NOWTASK_DB_PASSWORD: ${NOWTASK_DB_PASSWORD:?ustaw NOWTASK_DB_PASSWORD}
+      NOWTASK_DB_PASSWORD: ${NOWTASK_DB_PASSWORD:?set NOWTASK_DB_PASSWORD}
       NOWTASK_APP_DB_USER: ${NOWTASK_APP_DB_USER:-nowtask_app}
-      NOWTASK_APP_DB_PASSWORD: ${NOWTASK_APP_DB_PASSWORD:?ustaw NOWTASK_APP_DB_PASSWORD}
+      NOWTASK_APP_DB_PASSWORD: ${NOWTASK_APP_DB_PASSWORD:?set NOWTASK_APP_DB_PASSWORD}
       NOWTASK_APP_URL: ${NOWTASK_APP_URL:-http://localhost:8080}
       NOWTASK_SIGNUP_MODE: ${NOWTASK_SIGNUP_MODE:-open}
       NOWTASK_MAIL_HOST: ${NOWTASK_MAIL_HOST:-}
@@ -47,10 +47,9 @@ services:
     restart: unless-stopped
 
   mcp:
-    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-mcp:${IMAGE_TAG:-latest}
+    image: ghcr.io/arthurr0/nowtask-mcp:${IMAGE_TAG:-latest}
     environment:
       NOWTASK_API_URL: http://backend:8081
-      # An optional fallback key. MCP clients bring their own in the Authorization header.
       NOWTASK_API_KEY: ${NOWTASK_API_KEY:-}
       NOWTASK_MCP_TRANSPORT: http
       NOWTASK_MCP_HTTP_HOST: 0.0.0.0
@@ -63,7 +62,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: europe-central2-docker.pkg.dev/minecodes/minecodes/nowtask-app-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/arthurr0/nowtask-frontend:${IMAGE_TAG:-latest}
     depends_on:
       - backend
       - mcp

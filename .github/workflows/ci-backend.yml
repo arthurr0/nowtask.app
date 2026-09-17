@@ -3,16 +3,11 @@ name: CI backend
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - development
+    branches: [master]
     paths:
       - 'backend/**'
       - '.github/workflows/ci-backend.yml'
   pull_request:
-    branches:
-      - master
-      - development
     paths:
       - 'backend/**'
       - '.github/workflows/ci-backend.yml'
@@ -20,38 +15,31 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Gradle build & test
+    name: Gradle build and test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: temurin
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v5
         with:
           build-root-directory: backend
           cache-read-only: ${{ github.event_name == 'pull_request' }}
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Build
+      - name: Build and test
         run: ./gradlew build --parallel
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
+      - if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: backend-test-results
           path: backend/**/build/test-results/test/*.xml

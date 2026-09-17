@@ -3,16 +3,11 @@ name: CI frontend
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - development
+    branches: [master]
     paths:
       - 'frontend/**'
       - '.github/workflows/ci-frontend.yml'
   pull_request:
-    branches:
-      - master
-      - development
     paths:
       - 'frontend/**'
       - '.github/workflows/ci-frontend.yml'
@@ -20,9 +15,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Format check & Angular build
+    name: Format check and Angular build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,26 +29,18 @@ jobs:
     env:
       PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS: 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
         with:
           package_json_file: frontend/package.json
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Check formatting
         run: pnpm exec prettier --check .
-
       - name: Build
         run: pnpm exec ng build --configuration production

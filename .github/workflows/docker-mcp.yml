@@ -3,17 +3,12 @@ name: Docker mcp
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - development
+    branches: [master]
     paths:
       - 'mcp/**'
       - '.github/workflows/docker-mcp.yml'
       - '.github/workflows/docker-publish.yml'
   pull_request:
-    branches:
-      - master
-      - development
     paths:
       - 'mcp/**'
       - '.github/workflows/docker-mcp.yml'
@@ -22,10 +17,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docker-mcp-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     uses: ./.github/workflows/docker-publish.yml
+    permissions:
+      contents: read
+      packages: write
     with:
-      image: nowtask-app-mcp
+      image: nowtask-mcp
       context: ./mcp
-    secrets: inherit

@@ -3,17 +3,12 @@ name: Docker backend
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - development
+    branches: [master]
     paths:
       - 'backend/**'
       - '.github/workflows/docker-backend.yml'
       - '.github/workflows/docker-publish.yml'
   pull_request:
-    branches:
-      - master
-      - development
     paths:
       - 'backend/**'
       - '.github/workflows/docker-backend.yml'
@@ -22,10 +17,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docker-backend-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     uses: ./.github/workflows/docker-publish.yml
+    permissions:
+      contents: read
+      packages: write
     with:
-      image: nowtask-app-backend
+      image: nowtask-backend
       context: ./backend
-    secrets: inherit
