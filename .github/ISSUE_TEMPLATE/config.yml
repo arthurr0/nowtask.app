@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/arthurr0/nowtask.app/tree/master/docs
+    about: Install, configuration, integrations, AI agents, the API contract and the architecture.
+  - name: Questions and ideas
+    url: https://github.com/arthurr0/nowtask.app/discussions
+    about: Ask how to do something, or float an idea before it becomes a feature request.
+  - name: Report a vulnerability
+    url: https://github.com/arthurr0/nowtask.app/security/advisories/new
+    about: Security problems are reported privately, never as an issue.

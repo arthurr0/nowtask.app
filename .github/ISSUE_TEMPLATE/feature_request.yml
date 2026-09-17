@@ -1,0 +1,59 @@
+name: Feature request
+description: Suggest a capability nowtask does not have yet
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        nowtask keeps a deliberately narrow scope: one board for a team, rules that keep it
+        moving, and the same API for people and agents. Requests that fit that scope move much
+        faster than requests that widen it.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do today, and where does nowtask get in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+      description: Describe the behaviour, not the implementation, unless the implementation is the point.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Board, list, timeline, calendar
+        - Task detail, comments, subtasks
+        - Saved views, filters, search
+        - Automation rules
+        - Dashboard and reports
+        - Organization, roles, invitations
+        - Account, sign in, email
+        - Notifications, webhooks, mail
+        - GitHub integration
+        - AI agents and the MCP server
+        - Export
+        - Interface, theme, languages
+        - Deployment, images, compose
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do instead today
+      description: A workaround, another tool, or a script. This helps judge how much the feature is worth.
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this

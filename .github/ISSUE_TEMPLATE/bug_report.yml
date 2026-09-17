@@ -1,0 +1,86 @@
+name: Bug report
+description: Something in nowtask does not work the way it is documented
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [the documentation](https://github.com/arthurr0/nowtask.app/tree/master/docs)
+        and the open issues first. Do not report a security problem here, follow
+        [SECURITY.md](https://github.com/arthurr0/nowtask.app/blob/master/SECURITY.md) instead.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: What you expected, what happened instead, and how often.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact clicks, requests or tool calls needed to see it.
+      placeholder: |
+        1. Open a task in the board view
+        2. Change the status to Done
+        3. The rule "Notify channel" runs twice
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The `version` field of `GET /api/meta`, or the image tag you are running.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - docker compose with the published images
+        - docker compose built from source
+        - Backend and frontend run from source
+        - The hosted instance at nowtask.app
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Board, list, timeline, calendar
+        - Task detail, comments, subtasks
+        - Saved views, filters, search
+        - Automation rules
+        - Dashboard and reports
+        - Organization, roles, invitations
+        - Account, sign in, email
+        - Notifications, webhooks, mail
+        - GitHub integration
+        - AI agents and the MCP server
+        - Export
+        - Interface, theme, languages
+        - Deployment, images, compose
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Browser and platform
+      description: Browser and version for interface problems, operating system and architecture for deployment problems.
+      placeholder: Firefox 143 on Linux, or Debian 12 arm64
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        The relevant lines from the backend log, the browser console or the MCP server. Redact
+        hostnames, addresses, API keys and passwords.
+      render: text
