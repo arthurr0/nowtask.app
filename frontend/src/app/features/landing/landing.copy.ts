@@ -1,5 +1,5 @@
 const GITHUB = 'https://github.com/arthurr0/nowtask.app';
-const CONTACT = 'mailto:biuro@minecodes.pl';
+const CONTACT = 'mailto:kontakt@nowtask.app';
 
 export const LANDING_LINKS = {
   github: GITHUB,
@@ -10,7 +10,7 @@ export const LANDING_LINKS = {
   mcpServer: `${GITHUB}/tree/master/mcp`,
   contact: CONTACT,
   repoLabel: 'github.com/arthurr0/nowtask.app',
-  contactLabel: 'biuro@minecodes.pl',
+  contactLabel: 'kontakt@nowtask.app',
 } as const;
 
 export const LANDING_COPY = {
@@ -319,7 +319,7 @@ export const LANDING_COPY = {
         highlight: false,
         features: [
           'Full source code',
-          'No limit on people or projects',
+          'Free up to 25 people',
           'Docker compose with database and backend',
           'Upgrade whenever you decide to',
           'MCP server for AI agents included',
