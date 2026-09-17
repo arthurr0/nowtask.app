@@ -63,7 +63,7 @@ management:
         enabled: true
 
 nowtask:
-  version: 0.1.0-SNAPSHOT
+  version: 0.1.0
   app:
     url: ${NOWTASK_APP_URL:http://localhost:8080}
   signup:

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 class MetaController {
     private final String version;
 
-    MetaController(@Value("${nowtask.version:0.1.0-SNAPSHOT}") String version) {
+    MetaController(@Value("${nowtask.version:0.1.0}") String version) {
         this.version = version;
     }
 
