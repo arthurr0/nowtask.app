@@ -658,7 +658,8 @@ revoked by the variable) and by other administrators in the panel.
 - Invariants: at least one active instance administrator remains (`409 LAST_INSTANCE_ADMIN`, also
   when the last one tries to delete the account), and an administrator cannot disable their own
   account or revoke their own flag (`409 SELF_ACTION`).
-- Every mutating call writes one row to the instance audit log.
+- Every mutating call that changes something writes one row to the instance audit log. Repeating a call that is already in effect (disabling a disabled user, suspending a suspended organization) answers the same status and writes no row.
+- The `X-Org-Id` header and the active organization are ignored under `/api/instance/**`, so suspending the administrator's own organization does not break the panel.
 - Lists take `page` (0 based) and `size` (default 50, at most 200) and answer
   `{ items, total, page, size }`.
 
@@ -693,15 +694,16 @@ GET    /api/instance/audit?page=&size=
 
 `InstanceOrganizationDto`: `{ id, name, slug, state, ssoDomain, memberCount, taskCount, createdAt,
 suspendedAt }`. `state` is `active` or `suspended`. Suspending sets `suspended_at` and blocks the
-members and the API keys of the organization the same way as a removed membership, restoring
-undoes it. Deleting reuses the existing closing path: the organization gets the state `deleted`,
+members and the API keys of the organization the same way as a removed membership and closes the
+open realtime streams of the organization, restoring undoes it. Deleting reuses the existing closing path: the organization gets the state `deleted`,
 its API keys are removed, and the address stays taken. A `confirmSlug` that differs from the slug
 is `422 SLUG_MISMATCH`.
 
 `InstanceUserDto`: `{ id, name, email, initials, state, instanceAdmin, emailVerified,
 organizationCount, lastSeenAt }`. `state` is `active` or `disabled`. Disabling also closes every
-session of the account (the `user_session` rows and the Spring Session rows), and the account can
-not sign in until it is enabled. Accounts in the state `deleted` are not listed and answer `404`.
+session of the account (the `user_session` rows and the Spring Session rows) and its open
+realtime streams, rejects its API keys, and the account can not sign in until it is enabled.
+`counts.instanceAdmins` counts active administrators only. Accounts in the state `deleted` are not listed and answer `404`.
 
 `GET /api/instance/settings` and the response of `PATCH`:
 
