@@ -13,6 +13,7 @@ import {
   TaskDetailStore,
   TimelineStore,
 } from '../data/feature.stores';
+import { InstanceStore } from '../data/instance.store';
 import { WorkspaceStore } from '../data/workspace.store';
 import { AccountService } from './account.service';
 import { OnboardingService } from './onboarding.service';
@@ -36,6 +37,7 @@ export class AuthService {
     inject(TaskDetailStore),
     inject(NotificationsStore),
     inject(AccountService),
+    inject(InstanceStore),
   ];
 
   private readonly userSignal = signal<UserDto | null>(null);

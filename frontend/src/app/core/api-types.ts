@@ -17,6 +17,7 @@ export interface UserDto {
   pending: boolean;
   invitedOn: string | null;
   emailVerified: boolean;
+  instanceAdmin?: boolean;
 }
 
 export interface SessionDto {
@@ -206,6 +207,7 @@ export interface BootstrapDto {
   sprints: string[];
   activeRuleCount: number;
   onboarding: OnboardingDto | null;
+  announcement?: AnnouncementDto | null;
 }
 
 export interface TaskDto {
@@ -681,4 +683,110 @@ export interface RealtimeMessageDto {
   change: string;
   actorId: string | null;
   at: string;
+}
+
+export type AnnouncementLevel = 'info' | 'warning' | 'critical';
+
+export interface AnnouncementDto {
+  text: string;
+  level: AnnouncementLevel;
+  until: string | null;
+}
+
+export type InstanceSignupMode = 'open' | 'invite-only' | 'sso-only';
+
+export interface InstancePageDto<T> {
+  items: T[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface InstanceOverviewDto {
+  version: string;
+  schemaVersion: string;
+  counts: {
+    organizations: number;
+    organizationsSuspended: number;
+    users: number;
+    usersDisabled: number;
+    instanceAdmins: number;
+    tasks: number;
+    activeSessions: number;
+  };
+  signupsLast30Days: number;
+  signupMode: { effective: InstanceSignupMode; source: 'settings' | 'env' };
+  health: {
+    database: 'up' | 'down';
+    mail: 'configured' | 'not_configured';
+    github: 'configured' | 'not_configured';
+  };
+}
+
+export type InstanceOrganizationState = 'active' | 'suspended';
+
+export interface InstanceOrganizationDto {
+  id: string;
+  name: string;
+  slug: string;
+  state: InstanceOrganizationState;
+  ssoDomain: string | null;
+  memberCount: number;
+  taskCount: number;
+  createdAt: string;
+  suspendedAt: string | null;
+}
+
+export type InstanceUserState = 'active' | 'disabled';
+
+export interface InstanceUserDto {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+  state: InstanceUserState;
+  instanceAdmin: boolean;
+  emailVerified: boolean;
+  organizationCount: number;
+  lastSeenAt: string | null;
+}
+
+export interface InstanceSettingsDto {
+  signupMode: InstanceSignupMode | null;
+  effectiveSignupMode: InstanceSignupMode;
+  envSignupMode: InstanceSignupMode;
+  announcement: AnnouncementDto | null;
+  updatedAt: string | null;
+  updatedBy: { id: string; name: string } | null;
+}
+
+export interface InstanceSettingsPatch {
+  signupMode?: InstanceSignupMode | null;
+  announcement?: AnnouncementDto | null;
+}
+
+export interface InstanceAuditDto {
+  id: string;
+  actor: { id: string; name: string } | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  targetLabel: string | null;
+  detail: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface InstanceOrganizationQuery {
+  q: string;
+  state: InstanceOrganizationState | '';
+  page: number;
+  size: number;
+}
+
+export interface InstanceUserQuery {
+  q: string;
+  state: InstanceUserState | '';
+  admin: 'true' | 'false' | '';
+  page: number;
+  size: number;
 }

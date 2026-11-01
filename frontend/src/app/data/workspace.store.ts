@@ -5,6 +5,7 @@ import { TASK_VIEWS } from '../core/task-views';
 import { OnboardingService } from '../core/onboarding.service';
 import { firstValueFrom } from 'rxjs';
 import type {
+  AnnouncementDto,
   BootstrapDto,
   CustomFieldDto,
   EpicDto,
@@ -239,6 +240,16 @@ export class WorkspaceStore {
   readonly currentUser = computed<UserDto | null>(
     () => this.bootstrapSignal()?.currentUser ?? null,
   );
+  readonly announcement = computed<AnnouncementDto | null>(
+    () => this.bootstrapSignal()?.announcement ?? null,
+  );
+
+  setAnnouncement(announcement: AnnouncementDto | null): void {
+    this.bootstrapSignal.update((bootstrap) =>
+      bootstrap ? { ...bootstrap, announcement } : bootstrap,
+    );
+  }
+
   readonly activeMembers = computed(() => this.users().filter((user) => !user.pending));
 
   readonly boardStatuses = computed(() =>

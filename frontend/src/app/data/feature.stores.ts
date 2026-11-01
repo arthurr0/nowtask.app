@@ -41,7 +41,7 @@ export interface RunReportDto {
   taskKeys: string[];
 }
 
-abstract class LoadableStore {
+export abstract class LoadableStore {
   protected readonly http = inject(HttpClient);
 
   protected readonly loadingSignal = signal(false);
