@@ -6,18 +6,43 @@ All notable changes to nowtask are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-01
+
 ### Added
 
-- Instance administration: a global role above organizations, kept as a flag on the account
-  and granted from `NOWTASK_INSTANCE_ADMINS` or in the panel. The new `/api/instance` API
-  gives an overview, a list of organizations (suspend, restore, delete) and users (disable,
-  enable, close sessions, grant or revoke the role), runtime settings, a test mail and an
-  audit log of every change. It works without any organization and is closed to API keys.
+- Instance administration: a global role above organizations, kept as a flag on the account.
+  `NOWTASK_INSTANCE_ADMINS` (a comma separated list of e-mails) grants it at startup and at
+  registration, but only to a verified address when mail is configured. Administrators can
+  grant and revoke it in the panel. The instance always keeps at least one active
+  administrator, and nobody can disable or demote themselves.
+- Instance panel in account settings, visible to instance administrators only, backed by the
+  new `/api/instance` API. It shows an overview of the installation, lists organizations
+  (suspend, restore, delete) and users (disable, enable, close sessions, grant or revoke the
+  role), edits runtime settings, sends a test mail and keeps an audit log of every change.
+  The API works without any organization and is closed to API keys.
 - Runtime signup mode: an instance administrator can override `NOWTASK_SIGNUP_MODE` from the
   database. Clearing the override returns to the variable.
-- Instance announcement: a message with a level and an optional end, returned as
-  `announcement` in `GET /api/bootstrap`.
+- Instance announcement: a message with a level and an optional end date, shown to every
+  signed in user as a banner that can be dismissed. It is returned as `announcement` in
+  `GET /api/bootstrap`.
 - `instanceAdmin` on the current user payload.
+
+### Changed
+
+- Suspending or deleting an organization, and disabling a user, now closes their open live
+  update streams at once instead of letting them run out.
+
+### Security
+
+- API keys owned by a disabled account are rejected.
+
+### Upgrading
+
+- Migrations `V80` and `V81` run on start. They add the instance admin flag, the instance
+  settings and the instance audit log, and change no existing data.
+- Set `NOWTASK_INSTANCE_ADMINS` to give at least one account access to the panel. With mail
+  turned off, consider `NOWTASK_SIGNUP_MODE=invite-only` so nobody can register a listed
+  address before its owner.
 
 ## [0.1.0] - 2026-09-17
 

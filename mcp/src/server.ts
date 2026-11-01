@@ -5,7 +5,7 @@ import { registerAllTools } from './tools.js';
 
 export function createServer(client: NowtaskClient): McpServer {
   const server = new McpServer(
-    { name: 'nowtask', version: '0.1.0' },
+    { name: 'nowtask', version: '0.2.0' },
     {
       instructions: [
         'nowtask is a task board: tasks live in a workflow of statuses, carry labels, subtasks, comments and automation rules.',

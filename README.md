@@ -65,7 +65,7 @@ audit log under the key's name.
 
 ## Status
 
-nowtask is at 0.1.0, the first public release. The code is complete against the design
+nowtask is at 0.2.0. The code is complete against the design
 records in [docs/](docs/README.md) and the documentation describes what is actually
 implemented, but the project is young and has not been through a long production life yet.
 

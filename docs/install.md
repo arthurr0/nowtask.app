@@ -15,7 +15,7 @@ Every release publishes three images to the GitHub Container Registry:
 | `ghcr.io/arthurr0/nowtask-frontend` | nginx with the interface and the reverse proxy rules |
 | `ghcr.io/arthurr0/nowtask-mcp` | the MCP server in Streamable HTTP mode |
 
-Each image is tagged with the version (`0.1.0`), the minor line (`0.1`) and `latest`. Images
+Each image is tagged with the version (`0.2.0`), the minor line (`0.2`) and `latest`. Images
 are built for `linux/amd64` and `linux/arm64`.
 
 ```bash
@@ -39,7 +39,7 @@ firewall. Only 8080 has to be reachable, because nginx inside the frontend conta
 To run a specific version instead of `latest`:
 
 ```bash
-IMAGE_TAG=0.1.0 docker compose -f docker-compose.prod.yml up -d
+IMAGE_TAG=0.2.0 docker compose -f docker-compose.prod.yml up -d
 ```
 
 Upgrading is `docker compose -f docker-compose.prod.yml pull` followed by `up -d`. Flyway

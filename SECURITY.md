@@ -4,11 +4,11 @@
 
 | Version | Supported |
 |---|---|
-| 0.1.x | yes |
-| older | no releases exist |
+| 0.2.x | yes |
+| 0.1.x | no |
 
-nowtask is at 0.1.x. Fixes go into the next patch release on that line, and there is no
-backporting to earlier tags. Run the latest 0.1.x release before reporting a problem.
+nowtask is at 0.2.x. Fixes go into the next patch release on that line, and there is no
+backporting to earlier tags. Run the latest 0.2.x release before reporting a problem.
 
 ## Reporting a vulnerability
 
