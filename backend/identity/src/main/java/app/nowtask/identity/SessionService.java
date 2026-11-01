@@ -192,7 +192,7 @@ public class SessionService implements SessionTracking {
         return keys.size();
     }
 
-    public void dropAll(UUID userId) {
+    public int dropAll(UUID userId) {
         List<String> keys = jdbc.sql("SELECT session_key FROM user_session WHERE user_id = ? AND revoked_at IS NULL")
                 .param(userId)
                 .query(String.class)
@@ -206,6 +206,8 @@ public class SessionService implements SessionTracking {
             revoked.add(key);
             touched.remove(key);
         });
+
+        return keys.size();
     }
 
     @Scheduled(initialDelayString = "PT5M", fixedDelayString = "PT1H")

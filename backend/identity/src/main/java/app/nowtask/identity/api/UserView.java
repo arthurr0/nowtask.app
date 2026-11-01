@@ -13,5 +13,25 @@ public record UserView(
         int capacity,
         boolean pending,
         LocalDate invitedOn,
-        boolean emailVerified) {
+        boolean emailVerified,
+        boolean instanceAdmin) {
+
+    public UserView(
+            UUID id,
+            String name,
+            String shortName,
+            String initials,
+            String email,
+            RoleRefView role,
+            int capacity,
+            boolean pending,
+            LocalDate invitedOn,
+            boolean emailVerified) {
+        this(id, name, shortName, initials, email, role, capacity, pending, invitedOn, emailVerified, false);
+    }
+
+    public UserView withInstanceAdmin(boolean value) {
+        return new UserView(id, name, shortName, initials, email, role, capacity, pending, invitedOn,
+                emailVerified, value);
+    }
 }

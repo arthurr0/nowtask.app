@@ -26,9 +26,11 @@ class OrganizationContextFilter extends OncePerRequestFilter {
 
     static final String HEADER = "X-Org-Id";
     static final String SESSION_KEY = "activeOrganizationId";
+    static final String INSTANCE_ADMIN = "INSTANCE_ADMIN";
 
     private static final List<String> WITHOUT_ORGANIZATION =
-            List.of("/api/auth/", "/api/account/", "/api/meta", "/api/orgs", "/api/invites/", "/actuator/");
+            List.of("/api/auth/", "/api/account/", "/api/meta", "/api/orgs", "/api/invites/", "/api/instance/",
+                    "/actuator/");
 
     private final Organizations organizations;
     private final UserDirectory directory;
@@ -59,8 +61,11 @@ class OrganizationContextFilter extends OncePerRequestFilter {
         }
 
         UUID userId;
+        boolean instanceAdmin;
         try {
-            userId = directory.currentUser().id();
+            app.nowtask.identity.api.UserView me = directory.currentUser();
+            userId = me.id();
+            instanceAdmin = me.instanceAdmin();
         } catch (RuntimeException e) {
             chain.doFilter(request, response);
             return;
@@ -84,8 +89,11 @@ class OrganizationContextFilter extends OncePerRequestFilter {
                         active.roleId(),
                         active.roleCode(),
                         active.permissions()));
-                grantAuthorities(authentication, active);
             });
+
+            if (membership.isPresent() || instanceAdmin) {
+                grantAuthorities(authentication, membership.orElse(null), instanceAdmin);
+            }
 
             chain.doFilter(request, response);
         } catch (ForbiddenException e) {
@@ -128,7 +136,7 @@ class OrganizationContextFilter extends OncePerRequestFilter {
                 active.permissions()));
 
         try {
-            grantAuthorities(authentication, active);
+            grantAuthorities(authentication, active, false);
             chain.doFilter(request, response);
         } finally {
             OrganizationContextHolder.clear();
@@ -175,11 +183,18 @@ class OrganizationContextFilter extends OncePerRequestFilter {
         return preferred;
     }
 
-    private void grantAuthorities(Authentication authentication, MembershipView membership) {
-        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>(
-                membership.permissions().stream()
-                        .map(permission -> new SimpleGrantedAuthority(permission.authority()))
-                        .toList());
+    private void grantAuthorities(
+            Authentication authentication, MembershipView membership, boolean instanceAdmin) {
+        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+
+        if (membership != null) {
+            membership.permissions().stream()
+                    .map(permission -> new SimpleGrantedAuthority(permission.authority()))
+                    .forEach(authorities::add);
+        }
+        if (instanceAdmin) {
+            authorities.add(new SimpleGrantedAuthority(INSTANCE_ADMIN));
+        }
 
         authentication.getAuthorities().stream()
                 .filter(granted -> granted.getAuthority().startsWith("SCOPE_"))

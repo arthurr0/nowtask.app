@@ -11,6 +11,8 @@ import app.nowtask.automation.api.Automations;
 import app.nowtask.shared.TaskOpenMode;
 import app.nowtask.shared.TaskView;
 import app.nowtask.identity.OnboardingService;
+import app.nowtask.identity.api.Announcements;
+import app.nowtask.identity.api.InstanceViews.AnnouncementView;
 import app.nowtask.identity.api.NavItemView;
 import app.nowtask.identity.api.NavPreferences;
 import app.nowtask.identity.api.OnboardingView;
@@ -37,6 +39,7 @@ class BootstrapController {
     private final Automations automations;
     private final Tasks tasks;
     private final OnboardingService onboarding;
+    private final Announcements announcements;
 
     BootstrapController(
             UserDirectory users,
@@ -45,7 +48,8 @@ class BootstrapController {
             Workspace workspace,
             Automations automations,
             Tasks tasks,
-            OnboardingService onboarding) {
+            OnboardingService onboarding,
+            Announcements announcements) {
         this.users = users;
         this.navPreferences = navPreferences;
         this.viewPreferences = viewPreferences;
@@ -53,6 +57,7 @@ class BootstrapController {
         this.automations = automations;
         this.tasks = tasks;
         this.onboarding = onboarding;
+        this.announcements = announcements;
     }
 
     record Bootstrap(
@@ -73,7 +78,8 @@ class BootstrapController {
             List<String> permissions,
             List<String> sprints,
             int activeRuleCount,
-            OnboardingView onboarding) {
+            OnboardingView onboarding,
+            AnnouncementView announcement) {
     }
 
     @GetMapping
@@ -99,6 +105,7 @@ class BootstrapController {
                         .toList(),
                 tasks.sprints(),
                 automations.activeRuleCount(),
-                onboarding.current().orElse(null));
+                onboarding.current().orElse(null),
+                announcements.active());
     }
 }

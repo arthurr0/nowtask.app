@@ -28,13 +28,19 @@ public class EmailVerificationService {
     private final AppUserRepository users;
     private final AuditLog audit;
     private final ApplicationEventPublisher events;
+    private final InstanceAdminGrants instanceAdmins;
 
     EmailVerificationService(
-            JdbcClient jdbc, AppUserRepository users, AuditLog audit, ApplicationEventPublisher events) {
+            JdbcClient jdbc,
+            AppUserRepository users,
+            AuditLog audit,
+            ApplicationEventPublisher events,
+            InstanceAdminGrants instanceAdmins) {
         this.jdbc = jdbc;
         this.users = users;
         this.audit = audit;
         this.events = events;
+        this.instanceAdmins = instanceAdmins;
     }
 
     public void request(UUID userId) {
@@ -112,6 +118,8 @@ public class EmailVerificationService {
         jdbc.sql("UPDATE app_user SET email_verified_at = now() WHERE id = ? AND email_verified_at IS NULL")
                 .param(userId)
                 .update();
+
+        instanceAdmins.grantIfListed(userId);
     }
 
     @Transactional(readOnly = true)

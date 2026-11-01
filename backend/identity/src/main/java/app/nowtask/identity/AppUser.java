@@ -43,6 +43,9 @@ public class AppUser {
     @Column(name = "oidc_subject")
     private String oidcSubject;
 
+    @Column(name = "instance_admin", insertable = false, updatable = false)
+    private boolean instanceAdmin;
+
     protected AppUser() {
     }
 
@@ -123,5 +126,9 @@ public class AppUser {
 
     public String getOidcSubject() {
         return oidcSubject;
+    }
+
+    public boolean isInstanceAdmin() {
+        return instanceAdmin;
     }
 }

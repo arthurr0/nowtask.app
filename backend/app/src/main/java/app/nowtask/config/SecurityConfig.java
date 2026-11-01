@@ -74,6 +74,7 @@ class SecurityConfig {
                                 "/api/organization/permissions")
                         .authenticated()
                         .requestMatchers("/api/orgs", "/api/orgs/**").authenticated()
+                        .requestMatchers("/api/instance/**").hasAuthority(OrganizationContextFilter.INSTANCE_ADMIN)
                         .requestMatchers("/api/organization/roles/**").hasAuthority("PERM_ROLES_MANAGE")
                         .requestMatchers("/api/organization/invites", "/api/organization/invites/**")
                         .hasAuthority("PERM_MEMBERS_INVITE")

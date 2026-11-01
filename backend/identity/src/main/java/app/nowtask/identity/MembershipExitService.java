@@ -103,6 +103,7 @@ class MembershipExitService {
                             password_hash = NULL,
                             oidc_subject = NULL,
                             email_verified_at = NULL,
+                            instance_admin = FALSE,
                             state = 'deleted'
                         WHERE id = ?
                         """)

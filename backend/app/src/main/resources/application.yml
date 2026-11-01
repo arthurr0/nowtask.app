@@ -68,6 +68,8 @@ nowtask:
     url: ${NOWTASK_APP_URL:http://localhost:8080}
   signup:
     mode: ${NOWTASK_SIGNUP_MODE:open}
+  instance:
+    admins: ${NOWTASK_INSTANCE_ADMINS:}
   mail:
     from: ${NOWTASK_MAIL_FROM:nowtask@localhost}
     from-name: ${NOWTASK_MAIL_FROM_NAME:nowtask}

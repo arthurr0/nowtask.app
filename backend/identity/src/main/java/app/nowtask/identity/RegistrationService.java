@@ -35,12 +35,19 @@ public class RegistrationService {
     private final JdbcClient jdbc;
     private final PasswordEncoder encoder;
     private final AuditLog audit;
+    private final InstanceAdminGrants instanceAdmins;
 
-    RegistrationService(AppUserRepository users, JdbcClient jdbc, PasswordEncoder encoder, AuditLog audit) {
+    RegistrationService(
+            AppUserRepository users,
+            JdbcClient jdbc,
+            PasswordEncoder encoder,
+            AuditLog audit,
+            InstanceAdminGrants instanceAdmins) {
         this.users = users;
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.audit = audit;
+        this.instanceAdmins = instanceAdmins;
     }
 
     public UserView register(String name, String email, String password) {
@@ -69,10 +76,13 @@ public class RegistrationService {
                         emailVerified ? java.sql.Timestamp.from(java.time.Instant.now()) : null)
                 .update();
 
+        instanceAdmins.grantIfListed(id);
+
         audit.record("account.signup", cleanEmail, Map.of());
 
         return users.findById(id)
-                .map(user -> UserDirectoryService.toView(user, null))
+                .map(user -> UserDirectoryService.toView(user, null)
+                        .withInstanceAdmin(user.isInstanceAdmin() && "active".equals(user.getState())))
                 .orElseThrow(() -> NotFoundException.of("User", id.toString()));
     }
 

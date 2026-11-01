@@ -3,7 +3,6 @@ package app.nowtask.identity;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,17 +22,17 @@ public class SignupService {
     private final RegistrationService registrations;
     private final EmailVerificationService verifications;
     private final JdbcClient jdbc;
-    private final String mode;
+    private final InstanceSettingsService settings;
 
     SignupService(
             RegistrationService registrations,
             EmailVerificationService verifications,
             JdbcClient jdbc,
-            @Value("${nowtask.signup.mode:open}") String mode) {
+            InstanceSettingsService settings) {
         this.registrations = registrations;
         this.verifications = verifications;
         this.jdbc = jdbc;
-        this.mode = mode == null || mode.isBlank() ? MODE_OPEN : mode.trim().toLowerCase(Locale.ROOT);
+        this.settings = settings;
     }
 
     public SignupResultView signup(String name, String email, String password) {
@@ -51,7 +50,7 @@ public class SignupService {
 
     @Transactional(readOnly = true)
     public String mode() {
-        return mode;
+        return settings.effectiveSignupMode();
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +70,8 @@ public class SignupService {
     }
 
     private void guardMode() {
+        String mode = settings.effectiveSignupMode();
+
         if (MODE_INVITE_ONLY.equals(mode)) {
             throw new RuleViolationException(
                     "This installation only accepts accounts created from an invitation", "SIGNUP_INVITE_ONLY");

@@ -35,6 +35,9 @@ final class ApiKeyScopeRules {
         if (path.startsWith("/api/organization")) {
             return Rule.deny("The organization panel, including key management, is not available to API keys");
         }
+        if (path.startsWith("/api/instance")) {
+            return Rule.deny("The instance administration is not available to API keys");
+        }
         if (path.startsWith("/api/notifications")) {
             return Rule.deny("Notifications are personal and available only to signed-in people");
         }

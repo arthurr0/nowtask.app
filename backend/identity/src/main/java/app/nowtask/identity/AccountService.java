@@ -20,6 +20,7 @@ import app.nowtask.identity.api.MembershipView;
 import app.nowtask.identity.api.Organizations;
 import app.nowtask.identity.api.UserDirectory;
 import app.nowtask.identity.api.UserView;
+import app.nowtask.shared.ConflictException;
 import app.nowtask.shared.NotFoundException;
 import app.nowtask.shared.OrganizationContext;
 import app.nowtask.shared.OrganizationContextHolder;
@@ -45,6 +46,7 @@ public class AccountService {
     private final PasswordEncoder encoder;
     private final AuditLog audit;
     private final ApplicationEventPublisher events;
+    private final InstanceUserService instanceUsers;
 
     AccountService(
             JdbcClient jdbc,
@@ -57,7 +59,8 @@ public class AccountService {
             MembershipExitService exits,
             PasswordEncoder encoder,
             AuditLog audit,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events,
+            InstanceUserService instanceUsers) {
         this.jdbc = jdbc;
         this.users = users;
         this.directory = directory;
@@ -69,6 +72,7 @@ public class AccountService {
         this.encoder = encoder;
         this.audit = audit;
         this.events = events;
+        this.instanceUsers = instanceUsers;
     }
 
     public UserView profile(PatchBody patch) {
@@ -182,6 +186,11 @@ public class AccountService {
         AppUser user = users.findById(me.id()).orElseThrow(() -> NotFoundException.of("User", me.id()));
 
         requirePassword(user, password);
+
+        if (instanceUsers.isLastActiveAdmin(user.getId())) {
+            throw new ConflictException(
+                    "The last instance administrator cannot delete the account", "LAST_INSTANCE_ADMIN");
+        }
 
         List<MembershipView> memberships = organizations.membershipsOf(user.getId());
 

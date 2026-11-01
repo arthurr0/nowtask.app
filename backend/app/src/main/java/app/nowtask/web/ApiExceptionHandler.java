@@ -13,6 +13,7 @@ import app.nowtask.shared.ForbiddenException;
 import app.nowtask.shared.NoOrganizationException;
 import app.nowtask.shared.NotFoundException;
 import app.nowtask.shared.RuleViolationException;
+import app.nowtask.shared.ServiceUnavailableException;
 import app.nowtask.shared.TooManyRequestsException;
 
 @RestControllerAdvice
@@ -42,6 +43,11 @@ class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header("Retry-After", String.valueOf(e.retryAfterSeconds()))
                 .body(codedBody(HttpStatus.TOO_MANY_REQUESTS, e.getMessage(), e.errorCode(), null));
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    ResponseEntity<Map<String, Object>> serviceUnavailable(ServiceUnavailableException e) {
+        return coded(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage(), e.errorCode(), null);
     }
 
     @ExceptionHandler(ForbiddenException.class)

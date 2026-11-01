@@ -136,7 +136,8 @@ class UserDirectoryService implements UserDirectory {
         AppUser user = users.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> NotFoundException.of("User", authentication.getName()));
 
-        return toView(user, currentRole(user.getId()));
+        return toView(user, currentRole(user.getId()))
+                .withInstanceAdmin(user.isInstanceAdmin() && "active".equals(user.getState()));
     }
 
     private List<UserView> openInvitesAsUsers(UUID organizationId) {
