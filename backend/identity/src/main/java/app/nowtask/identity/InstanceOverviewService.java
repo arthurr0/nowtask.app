@@ -72,7 +72,7 @@ public class InstanceOverviewService {
         long[] users = jdbc.sql("""
                         SELECT count(*) FILTER (WHERE state IN ('active', 'disabled')),
                                count(*) FILTER (WHERE state = 'disabled'),
-                               count(*) FILTER (WHERE instance_admin AND state IN ('active', 'disabled'))
+                               count(*) FILTER (WHERE instance_admin AND state = 'active')
                         FROM app_user
                         """)
                 .query((rs, rowNum) -> new long[] {rs.getLong(1), rs.getLong(2), rs.getLong(3)})

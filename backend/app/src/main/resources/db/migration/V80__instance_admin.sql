@@ -37,3 +37,4 @@ CREATE TABLE instance_audit_event (
 CREATE INDEX idx_instance_audit_event_created ON instance_audit_event (created_at DESC, id);
 
 REVOKE UPDATE, DELETE ON instance_audit_event FROM nowtask_app;
+REVOKE INSERT, DELETE ON instance_settings FROM nowtask_app;

@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import app.nowtask.identity.api.InstanceViews.OrganizationItem;
 import app.nowtask.identity.api.InstanceViews.Page;
 import app.nowtask.shared.NotFoundException;
 import app.nowtask.shared.RuleViolationException;
+import app.nowtask.shared.events.RealtimeEvents;
 
 @Service
 @Transactional
@@ -23,10 +25,12 @@ public class InstanceOrganizationService {
 
     private final JdbcClient jdbc;
     private final InstanceAuditService audit;
+    private final ApplicationEventPublisher events;
 
-    InstanceOrganizationService(JdbcClient jdbc, InstanceAuditService audit) {
+    InstanceOrganizationService(JdbcClient jdbc, InstanceAuditService audit, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.audit = audit;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -47,6 +51,10 @@ public class InstanceOrganizationService {
     public void suspend(UUID actorId, UUID id) {
         OrganizationItem organization = require(id);
 
+        if ("suspended".equals(organization.state())) {
+            return;
+        }
+
         jdbc.sql("SELECT instance_organization_set_state(:id, 'suspended')")
                 .param("id", id)
                 .query(Integer.class)
@@ -54,10 +62,16 @@ public class InstanceOrganizationService {
 
         audit.record(actorId, "organization.suspend", "organization", id.toString(), organization.name(),
                 Map.of("slug", organization.slug()));
+
+        events.publishEvent(new RealtimeEvents.OrganizationAccessRevoked(id));
     }
 
     public void restore(UUID actorId, UUID id) {
         OrganizationItem organization = require(id);
+
+        if ("active".equals(organization.state())) {
+            return;
+        }
 
         jdbc.sql("SELECT instance_organization_set_state(:id, 'active')")
                 .param("id", id)
@@ -87,6 +101,8 @@ public class InstanceOrganizationService {
         detail.put("tasks", organization.taskCount());
 
         audit.record(actorId, "organization.delete", "organization", id.toString(), organization.name(), detail);
+
+        events.publishEvent(new RealtimeEvents.OrganizationAccessRevoked(id));
     }
 
     private OrganizationItem require(UUID id) {

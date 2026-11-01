@@ -2,7 +2,7 @@ CREATE FUNCTION instance_organization_counts()
 RETURNS TABLE (organizations BIGINT, organizations_suspended BIGINT, tasks BIGINT)
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
     SELECT count(*) FILTER (WHERE o.state IN ('active', 'suspended')),
            count(*) FILTER (WHERE o.state = 'suspended'),
@@ -32,7 +32,7 @@ RETURNS TABLE (
     total         BIGINT)
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
     WITH filtered AS (
         SELECT o.id, o.name, o.slug, o.state, o.sso_domain, o.created_at, o.suspended_at
@@ -62,7 +62,7 @@ CREATE FUNCTION instance_organization_set_state(p_id UUID, p_state TEXT)
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     affected INTEGER;
@@ -85,7 +85,7 @@ CREATE FUNCTION instance_organization_close(p_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     affected INTEGER;
@@ -124,7 +124,7 @@ RETURNS TABLE (
     total              BIGINT)
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
     WITH filtered AS (
         SELECT u.id, u.name, u.email, u.initials, u.state, u.instance_admin,

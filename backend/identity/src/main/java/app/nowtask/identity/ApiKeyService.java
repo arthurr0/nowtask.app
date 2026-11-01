@@ -102,7 +102,7 @@ class ApiKeyService implements ApiKeys, ApiKeyAuthenticator {
         }
 
         Optional<AppUser> owner = users.findById(row.ownerId());
-        if (owner.isEmpty() || owner.get().isPending()) {
+        if (owner.isEmpty() || owner.get().isPending() || !"active".equals(owner.get().getState())) {
             return Optional.empty();
         }
 

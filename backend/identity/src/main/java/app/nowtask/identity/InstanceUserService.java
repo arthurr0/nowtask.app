@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import app.nowtask.identity.api.InstanceViews.Page;
 import app.nowtask.identity.api.InstanceViews.UserItem;
 import app.nowtask.shared.ConflictException;
 import app.nowtask.shared.NotFoundException;
+import app.nowtask.shared.events.RealtimeEvents;
 
 @Service
 @Transactional
@@ -24,11 +26,14 @@ public class InstanceUserService {
     private final JdbcClient jdbc;
     private final SessionService sessions;
     private final InstanceAuditService audit;
+    private final ApplicationEventPublisher events;
 
-    InstanceUserService(JdbcClient jdbc, SessionService sessions, InstanceAuditService audit) {
+    InstanceUserService(
+            JdbcClient jdbc, SessionService sessions, InstanceAuditService audit, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.sessions = sessions;
         this.audit = audit;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -53,14 +58,30 @@ public class InstanceUserService {
 
         UserItem user = require(id);
 
+        if ("disabled".equals(user.state())) {
+            return;
+        }
+
+        List<UUID> activeAdmins = lockActiveAdmins();
+        if (activeAdmins.contains(id) && activeAdmins.size() <= 1) {
+            throw new ConflictException(
+                    "At least one instance administrator has to remain", "LAST_INSTANCE_ADMIN");
+        }
+
         jdbc.sql("UPDATE app_user SET state = 'disabled' WHERE id = ? AND state = 'active'").param(id).update();
         int closed = closeSessions(id, user.email());
 
         audit.record(actorId, "user.disable", "user", id.toString(), user.email(), Map.of("sessions", closed));
+
+        events.publishEvent(new RealtimeEvents.UserAccessRevoked(id));
     }
 
     public void enable(UUID actorId, UUID id) {
         UserItem user = require(id);
+
+        if ("active".equals(user.state())) {
+            return;
+        }
 
         jdbc.sql("UPDATE app_user SET state = 'active' WHERE id = ? AND state = 'disabled'").param(id).update();
 
@@ -73,6 +94,8 @@ public class InstanceUserService {
         int closed = closeSessions(id, user.email());
 
         audit.record(actorId, "user.sessions_revoke", "user", id.toString(), user.email(), Map.of("sessions", closed));
+
+        events.publishEvent(new RealtimeEvents.UserAccessRevoked(id));
     }
 
     public UserItem setInstanceAdmin(UUID actorId, UUID id, boolean value) {
@@ -88,10 +111,7 @@ public class InstanceUserService {
         }
 
         if (user.instanceAdmin()) {
-            List<UUID> activeAdmins = jdbc.sql(
-                            "SELECT id FROM app_user WHERE instance_admin AND state = 'active' FOR UPDATE")
-                    .query(UUID.class)
-                    .list();
+            List<UUID> activeAdmins = lockActiveAdmins();
 
             if ("active".equals(user.state()) && activeAdmins.size() <= 1) {
                 throw new ConflictException(
@@ -116,6 +136,12 @@ public class InstanceUserService {
                 .list();
 
         return activeAdmins.size() == 1 && activeAdmins.get(0).equals(userId);
+    }
+
+    private List<UUID> lockActiveAdmins() {
+        return jdbc.sql("SELECT id FROM app_user WHERE instance_admin AND state = 'active' ORDER BY id FOR UPDATE")
+                .query(UUID.class)
+                .list();
     }
 
     private int closeSessions(UUID id, String email) {

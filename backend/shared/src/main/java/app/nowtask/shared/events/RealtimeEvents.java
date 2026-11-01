@@ -16,4 +16,10 @@ public final class RealtimeEvents {
 
     public record NotificationPosted(UUID organizationId, UUID userId, String taskKey, Instant at) {
     }
+
+    public record OrganizationAccessRevoked(UUID organizationId) {
+    }
+
+    public record UserAccessRevoked(UUID userId) {
+    }
 }

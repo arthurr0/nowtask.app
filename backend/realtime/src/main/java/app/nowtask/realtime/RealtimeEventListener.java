@@ -39,6 +39,16 @@ class RealtimeEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onOrganizationAccessRevoked(RealtimeEvents.OrganizationAccessRevoked event) {
+        broker.closeOrganization(event.organizationId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onUserAccessRevoked(RealtimeEvents.UserAccessRevoked event) {
+        broker.closeUser(event.userId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     void onStatusFlowChanged(ConfigEvents.StatusFlowChanged event) {
         broker.publish(
                 event.organizationId(),

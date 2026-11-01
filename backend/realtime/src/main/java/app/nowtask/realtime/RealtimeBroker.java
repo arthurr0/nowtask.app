@@ -77,6 +77,24 @@ public class RealtimeBroker {
         });
     }
 
+    public void closeOrganization(UUID organizationId) {
+        Map<Long, Stream> open = streams.get(organizationId);
+        if (open == null) {
+            return;
+        }
+        open.values().forEach(this::close);
+    }
+
+    public void closeUser(UUID userId) {
+        for (Map<Long, Stream> open : streams.values()) {
+            for (Stream stream : open.values()) {
+                if (stream.userId.equals(userId)) {
+                    close(stream);
+                }
+            }
+        }
+    }
+
     @Scheduled(fixedDelay = 20_000, initialDelay = 20_000)
     void heartbeat() {
         for (Map<Long, Stream> open : streams.values()) {

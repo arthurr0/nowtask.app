@@ -1,5 +1,6 @@
 package app.nowtask.identity;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import app.nowtask.identity.api.AuditLog;
+import app.nowtask.shared.ConflictException;
 import app.nowtask.shared.NotFoundException;
 
 @Service
@@ -88,6 +90,16 @@ class MembershipExitService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void anonymize(UUID userId) {
+        List<UUID> activeAdmins = jdbc.sql(
+                        "SELECT id FROM app_user WHERE instance_admin AND state = 'active' ORDER BY id FOR UPDATE")
+                .query(UUID.class)
+                .list();
+
+        if (activeAdmins.contains(userId) && activeAdmins.size() <= 1) {
+            throw new ConflictException(
+                    "The last instance administrator cannot delete the account", "LAST_INSTANCE_ADMIN");
+        }
+
         jdbc.sql("DELETE FROM email_verification WHERE user_id = ?").param(userId).update();
         jdbc.sql("DELETE FROM password_reset WHERE user_id = ?").param(userId).update();
         jdbc.sql("DELETE FROM email_change WHERE user_id = ?").param(userId).update();

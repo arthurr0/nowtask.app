@@ -29,8 +29,7 @@ class OrganizationContextFilter extends OncePerRequestFilter {
     static final String INSTANCE_ADMIN = "INSTANCE_ADMIN";
 
     private static final List<String> WITHOUT_ORGANIZATION =
-            List.of("/api/auth/", "/api/account/", "/api/meta", "/api/orgs", "/api/invites/", "/api/instance/",
-                    "/actuator/");
+            List.of("/api/auth/", "/api/account/", "/api/meta", "/api/orgs", "/api/invites/", "/actuator/");
 
     private final Organizations organizations;
     private final UserDirectory directory;
@@ -72,6 +71,18 @@ class OrganizationContextFilter extends OncePerRequestFilter {
         }
 
         OrganizationContextHolder.set(OrganizationContext.withoutOrganization(userId));
+
+        if (isInstancePath(request)) {
+            try {
+                if (instanceAdmin) {
+                    grantAuthorities(authentication, null, true);
+                }
+                chain.doFilter(request, response);
+            } finally {
+                OrganizationContextHolder.clear();
+            }
+            return;
+        }
 
         try {
             Optional<MembershipView> membership = resolve(request, userId);
@@ -141,6 +152,11 @@ class OrganizationContextFilter extends OncePerRequestFilter {
         } finally {
             OrganizationContextHolder.clear();
         }
+    }
+
+    private static boolean isInstancePath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/instance") || path.startsWith("/api/instance/");
     }
 
     private boolean needsOrganization(HttpServletRequest request) {
