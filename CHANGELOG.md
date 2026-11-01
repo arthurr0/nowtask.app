@@ -6,6 +6,19 @@ All notable changes to nowtask are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Instance administration: a global role above organizations, kept as a flag on the account
+  and granted from `NOWTASK_INSTANCE_ADMINS` or in the panel. The new `/api/instance` API
+  gives an overview, a list of organizations (suspend, restore, delete) and users (disable,
+  enable, close sessions, grant or revoke the role), runtime settings, a test mail and an
+  audit log of every change. It works without any organization and is closed to API keys.
+- Runtime signup mode: an instance administrator can override `NOWTASK_SIGNUP_MODE` from the
+  database. Clearing the override returns to the variable.
+- Instance announcement: a message with a level and an optional end, returned as
+  `announcement` in `GET /api/bootstrap`.
+- `instanceAdmin` on the current user payload.
+
 ## [0.1.0] - 2026-09-17
 
 First release. Everything below is new.

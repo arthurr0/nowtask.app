@@ -28,7 +28,7 @@ read on its own.
 | `exports` | CSV and XLSX export |
 | `app` | Spring configuration, security, the tenant data source, Flyway migrations, the entry point |
 
-Endpoints: `/api/auth`, `/api/account`, `/api/orgs`, `/api/organization`, `/api/onboarding`,
+Endpoints: `/api/auth`, `/api/account`, `/api/orgs`, `/api/organization`, `/api/instance`, `/api/onboarding`,
 `/api/presets`, `/api/projects`, `/api/me`, `/api/bootstrap`, `/api/tasks`, `/api/workspace`,
 `/api/rules`, `/api/views`, `/api/search`, `/api/timeline`, `/api/metrics`,
 `/api/notifications`, `/api/integrations`, `/api/export`, `/api/events`, `/api/meta`.
@@ -62,7 +62,12 @@ Two paths, both handled by Spring Security:
 - **API key**: `Authorization: Bearer nt_<prefix>_<secret>`. The key is looked up by prefix,
   the secret is compared as a SHA-256 hash, and the scopes become `SCOPE_*` authorities.
   `ApiKeyScopeRules` maps every path and method to the scope it needs and closes
-  `/api/organization/**` and `/api/auth/**` to keys regardless of scope.
+  `/api/organization/**`, `/api/auth/**` and `/api/instance/**` to keys regardless of scope.
+- **Instance administrator**: a flag on the account (`app_user.instance_admin`), not an
+  organization permission. A session user with the flag gets the `INSTANCE_ADMIN` authority per
+  request, even without any organization, and `/api/instance/**` requires it. API keys never get it.
+  Cross organization reads and writes of the panel go through narrow `SECURITY DEFINER`
+  functions (`instance_*`), so row level security stays untouched.
 
 Roles are a set of permissions. Four templates exist (administrator, manager, member, guest)
 and an organization can define its own. Endpoints check permissions, never role names.
@@ -83,7 +88,7 @@ listeners consume them:
 
 ### Database
 
-Flyway with 39 migrations, currently at `V79`. Numbering reserves ranges so that areas
+Flyway with 41 migrations, currently at `V81`. Numbering reserves ranges so that areas
 developed in parallel do not collide:
 
 | Range | Area |
@@ -94,7 +99,8 @@ developed in parallel do not collide:
 | V40 to V49 | organizations and row level security |
 | V50 to V59 | presets and custom fields |
 | V60 to V69 | onboarding, invitations, account self-service |
-| V70 onwards | later changes in order |
+| V70 to V79 | task and view settings, GitHub integration |
+| V80 onwards | instance administration, later changes in order |
 
 Migrations run as the owner role with `out-of-order: true`, so a lower number added later
 still applies. An applied migration is never edited.

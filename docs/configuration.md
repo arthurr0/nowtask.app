@@ -10,7 +10,8 @@ accepts can also be set the Spring way, but the variables below are the supporte
 | Variable | Default | Meaning |
 |---|---|---|
 | `NOWTASK_APP_URL` | `http://localhost:8080` | The public address of the interface. Every link in a mail is built from it, and the GitHub App callback uses it. |
-| `NOWTASK_SIGNUP_MODE` | `open` | Who may create an account: `open` (anyone), `invite-only` (only through an invitation), `sso-only` (only through corporate sign-in, reserved for a future release). |
+| `NOWTASK_SIGNUP_MODE` | `open` | Who may create an account: `open` (anyone), `invite-only` (only through an invitation), `sso-only` (only through corporate sign-in, reserved for a future release). An instance administrator can override this value at runtime in the instance panel; the override is stored in the database and wins over the variable until it is cleared, which returns control to the variable. |
+| `NOWTASK_INSTANCE_ADMINS` | empty | Comma separated e-mail addresses of instance administrators (compare ignoring case). On every start, each existing active account with a listed address gets the instance administrator flag, and an account registered later with a listed address gets it at registration. The variable only grants and never revokes: administrators can grant and revoke the flag in the panel. When mail is configured (`NOWTASK_MAIL_HOST`), the address has to be verified first, so the flag is applied once the person confirms the address. Without mail, nobody can verify an address, so the flag is applied at once. |
 
 ## Database
 

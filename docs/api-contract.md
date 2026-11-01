@@ -644,6 +644,105 @@ redelivery changes nothing twice.
 `/api/integrations` requires the administrator role and is not available to API keys.
 `/api/export/**` is available to API keys under the `tasks:read` scope.
 
+## Instance administration
+
+An instance administrator is a global role above organizations. It is a flag on the account
+(`app_user.instance_admin`), not an organization permission, and it is not in the `Permission`
+enum. The flag is granted from `NOWTASK_INSTANCE_ADMINS` (on start and at registration, never
+revoked by the variable) and by other administrators in the panel.
+
+- A session user with the flag gets the `INSTANCE_ADMIN` authority per request. `/api/instance/**`
+  requires it and works without an organization, so there is no `409 NO_ORGANIZATION` here.
+- API keys never get the authority and `/api/instance/**` is closed to them regardless of scope.
+- Everyone else gets `403`, an anonymous caller gets `401`.
+- Invariants: at least one active instance administrator remains (`409 LAST_INSTANCE_ADMIN`, also
+  when the last one tries to delete the account), and an administrator cannot disable their own
+  account or revoke their own flag (`409 SELF_ACTION`).
+- Every mutating call writes one row to the instance audit log.
+- Lists take `page` (0 based) and `size` (default 50, at most 200) and answer
+  `{ items, total, page, size }`.
+
+```
+GET    /api/instance/overview
+GET    /api/instance/organizations?q=&state=active|suspended&page=&size=
+POST   /api/instance/organizations/{id}/suspend         -> 204
+POST   /api/instance/organizations/{id}/restore         -> 204
+DELETE /api/instance/organizations/{id}   {confirmSlug} -> 204
+GET    /api/instance/users?q=&state=active|disabled&admin=true|false&page=&size=
+POST   /api/instance/users/{id}/disable                 -> 204
+POST   /api/instance/users/{id}/enable                  -> 204
+POST   /api/instance/users/{id}/sessions/revoke         -> 204
+PATCH  /api/instance/users/{id}           {instanceAdmin} -> InstanceUserDto
+GET    /api/instance/settings
+PATCH  /api/instance/settings             {signupMode?, announcement?}
+POST   /api/instance/mail/test            {}            -> 202
+GET    /api/instance/audit?page=&size=
+```
+
+`GET /api/instance/overview`:
+
+```
+{ version, schemaVersion,
+  counts: { organizations, organizationsSuspended, users, usersDisabled, instanceAdmins, tasks,
+            activeSessions },
+  signupsLast30Days,
+  signupMode: { effective, source: "settings" | "env" },
+  health: { database: "up" | "down", mail: "configured" | "not_configured",
+            github: "configured" | "not_configured" } }
+```
+
+`InstanceOrganizationDto`: `{ id, name, slug, state, ssoDomain, memberCount, taskCount, createdAt,
+suspendedAt }`. `state` is `active` or `suspended`. Suspending sets `suspended_at` and blocks the
+members and the API keys of the organization the same way as a removed membership, restoring
+undoes it. Deleting reuses the existing closing path: the organization gets the state `deleted`,
+its API keys are removed, and the address stays taken. A `confirmSlug` that differs from the slug
+is `422 SLUG_MISMATCH`.
+
+`InstanceUserDto`: `{ id, name, email, initials, state, instanceAdmin, emailVerified,
+organizationCount, lastSeenAt }`. `state` is `active` or `disabled`. Disabling also closes every
+session of the account (the `user_session` rows and the Spring Session rows), and the account can
+not sign in until it is enabled. Accounts in the state `deleted` are not listed and answer `404`.
+
+`GET /api/instance/settings` and the response of `PATCH`:
+
+```
+{ signupMode: "open" | "invite-only" | "sso-only" | null,
+  effectiveSignupMode, envSignupMode,
+  announcement: { text, level: "info" | "warning" | "critical", until } | null,
+  updatedAt, updatedBy: { id, name } | null }
+```
+
+`signupMode` is the override stored in the database, `null` means "use `NOWTASK_SIGNUP_MODE`" and
+`envSignupMode` is that variable. `SignupService` reads the effective mode on every signup.
+`PATCH` accepts any subset of the two fields, a missing field is left alone and `null` clears it.
+`announcement.text` is required and at most 500 characters (`422 ANNOUNCEMENT_TOO_LONG`), `level`
+defaults to `info`, `until` is an ISO 8601 timestamp with an offset or `null` for no end. An
+unknown mode or level is `400`. The settings page shows the stored announcement even after it
+expired.
+
+`POST /api/instance/mail/test` sends a short test message to the e-mail address of the caller
+through the normal mail infrastructure. It answers `202`, `503 MAIL_NOT_CONFIGURED` when
+`NOWTASK_MAIL_HOST` is empty, and `503 MAIL_SEND_FAILED` when the server refused the message.
+
+`GET /api/instance/audit` items:
+
+```
+{ id, actor: { id, name } | null, action, targetType, targetId, targetLabel, detail, createdAt }
+```
+
+Actions: `organization.suspend`, `organization.restore`, `organization.delete`, `user.disable`,
+`user.enable`, `user.sessions_revoke`, `user.instance_admin_grant`, `user.instance_admin_revoke`,
+`settings.update`, `mail.test`. A grant from `NOWTASK_INSTANCE_ADMINS` is recorded with a `null`
+actor and `detail.source = "env"`. The table is append only for the application role.
+
+Exposed to every signed in user:
+
+- `UserDto` (from `/api/auth/login`, `/api/auth/signup`, `/api/auth/me`, `/api/account/profile`
+  and `currentUser` in `/api/bootstrap`) has `instanceAdmin: boolean` for the caller. In lists of
+  other people it is always `false`.
+- `GET /api/bootstrap` has `announcement: { text, level, until } | null`. It is the active
+  announcement only: text set and `until` empty or in the future.
+
 ## To add: corporate login
 
 Corporate login is delivered through OIDC with Keycloak run in `docker compose`. A button on the
@@ -680,3 +779,4 @@ So that parallel work does not collide, every area gets its own range:
 | `V50` to `V59` | work form presets, sprints, field options |
 | `V60` to `V69` | onboarding, invitations, address verification |
 | `V70` to `V79` | task and view settings, GitHub integration, linked GitHub accounts |
+| `V80` to `V89` | instance administration |
