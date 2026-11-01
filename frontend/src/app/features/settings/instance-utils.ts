@@ -20,6 +20,9 @@ export function instanceErrorMessage(error: unknown, t: Translate): string {
   if (code === 'SELF_ACTION') return t('instance.error.selfAction');
   if (code === 'LAST_INSTANCE_ADMIN') return t('instance.error.lastAdmin');
   if (code === 'MAIL_NOT_CONFIGURED') return t('instance.error.mailNotConfigured');
+  if (code === 'MAIL_SEND_FAILED') return t('instance.error.mailSendFailed');
+  if (code === 'ANNOUNCEMENT_TOO_LONG') return t('instance.error.announcementTooLong');
+  if (code === 'SLUG_MISMATCH') return t('instance.error.slugMismatch');
   if (errorStatus(error) === 409) return t('instance.error.conflict');
   const message =
     typeof error === 'object' && error !== null ? (error as ErrorBody).error?.message : '';

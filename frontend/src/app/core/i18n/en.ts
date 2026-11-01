@@ -1443,6 +1443,7 @@ export const en: Dictionary = {
   'instance.orgs.deleteConfirm': 'Delete permanently',
   'instance.orgs.empty': 'No organizations match these filters',
   'instance.state.active': 'Active',
+  'instance.state.deleted': 'Deleted',
   'instance.state.suspended': 'Suspended',
   'instance.users.search': 'Search by name or e-mail',
   'instance.users.total': 'Users: {count}',
@@ -1481,6 +1482,9 @@ export const en: Dictionary = {
   'instance.error.lastAdmin': 'At least one instance administrator must remain.',
   'instance.error.mailNotConfigured': 'Mail is not configured on this server.',
   'instance.error.slugMismatch': 'The slug does not match the organization.',
+  'instance.error.mailSendFailed': 'The message could not be sent. Check the mail server settings.',
+  'instance.error.announcementTooLong':
+    'The announcement is too long. The limit is 500 characters.',
   'instance.error.conflict': 'The state changed in the meantime. Refresh the list and try again.',
   'instance.settings.signupTitle': 'Sign-up',
   'instance.settings.signupLead':

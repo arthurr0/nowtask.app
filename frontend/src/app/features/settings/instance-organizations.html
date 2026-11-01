@@ -80,6 +80,8 @@
                 [class.text-ink-2]="organization.state === 'active'"
                 [class.bg-warn-soft]="organization.state === 'suspended'"
                 [class.text-warn]="organization.state === 'suspended'"
+                [class.bg-surface-3]="organization.state === 'deleted'"
+                [class.text-ink-3]="organization.state === 'deleted'"
                 >{{ t('instance.state.' + organization.state) }}</span
               >
               @if (organization.suspendedAt) {
@@ -97,16 +99,22 @@
             <span class="w-[92px] flex-none font-mono text-xs text-ink-3">{{
               formatDate(organization.createdAt)
             }}</span>
-            <ui-menu
-              [items]="menu(organization)"
-              triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
-              triggerHeight="28px"
-              ariaLabel="common.more"
-              align="end"
-              (selected)="onMenu($event, organization)"
-            >
-              <ui-icon name="dots" [size]="15" />
-            </ui-menu>
+            @if (menu(organization); as items) {
+              @if (items.length) {
+                <ui-menu
+                  [items]="items"
+                  triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                  triggerHeight="28px"
+                  ariaLabel="common.more"
+                  align="end"
+                  (selected)="onMenu($event, organization)"
+                >
+                  <ui-icon name="dots" [size]="15" />
+                </ui-menu>
+              } @else {
+                <span class="w-7 flex-none"></span>
+              }
+            }
           </div>
         } @empty {
           @if (!store.loading()) {

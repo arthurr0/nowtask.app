@@ -16,7 +16,7 @@ import { Menu, type MenuItem } from '../../ui/menu';
 import { ToastService } from '../../ui/toast.service';
 import { DeleteOrganizationDialog } from './instance-dialogs';
 import { InstancePager, InstanceSegmented, type SegmentOption } from './instance-shared';
-import { errorStatus, instanceErrorMessage } from './instance-utils';
+import { instanceErrorMessage } from './instance-utils';
 
 const SEARCH_DELAY = 300;
 
@@ -83,6 +83,7 @@ export class InstanceOrganizations implements OnInit {
   }
 
   protected menu(organization: InstanceOrganizationDto): MenuItem[] {
+    if (organization.state === 'deleted') return [];
     return [
       organization.state === 'suspended'
         ? { id: 'restore', label: 'instance.orgs.restore', icon: 'play' }
@@ -131,11 +132,7 @@ export class InstanceOrganizations implements OnInit {
       this.toast.success(this.t('instance.orgs.deleted'));
       if (!reloaded) this.toast.error(this.t('instance.loadFailed'));
     } catch (error) {
-      this.deleteError.set(
-        errorStatus(error) === 422
-          ? this.t('instance.error.slugMismatch')
-          : instanceErrorMessage(error, this.t),
-      );
+      this.deleteError.set(instanceErrorMessage(error, this.t));
     } finally {
       this.deleteBusy.set(false);
     }

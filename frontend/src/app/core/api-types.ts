@@ -723,7 +723,7 @@ export interface InstanceOverviewDto {
   };
 }
 
-export type InstanceOrganizationState = 'active' | 'suspended';
+export type InstanceOrganizationState = 'active' | 'suspended' | 'deleted';
 
 export interface InstanceOrganizationDto {
   id: string;

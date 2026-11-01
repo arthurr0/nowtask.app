@@ -1448,6 +1448,7 @@ export const de: Dictionary = {
   'instance.orgs.deleteConfirm': 'Endgültig löschen',
   'instance.orgs.empty': 'Keine Organisationen für diese Filter',
   'instance.state.active': 'Aktiv',
+  'instance.state.deleted': 'Gelöscht',
   'instance.state.suspended': 'Gesperrt',
   'instance.users.search': 'Nach Name oder E-Mail suchen',
   'instance.users.total': 'Benutzer: {count}',
@@ -1486,6 +1487,9 @@ export const de: Dictionary = {
   'instance.error.lastAdmin': 'Es muss mindestens ein Instanz-Administrator übrig bleiben.',
   'instance.error.mailNotConfigured': 'E-Mail ist auf diesem Server nicht konfiguriert.',
   'instance.error.slugMismatch': 'Das Kürzel passt nicht zur Organisation.',
+  'instance.error.mailSendFailed':
+    'Die Nachricht konnte nicht gesendet werden. Prüfe die Einstellungen des Mailservers.',
+  'instance.error.announcementTooLong': 'Der Hinweis ist zu lang. Maximal 500 Zeichen.',
   'instance.error.conflict':
     'Der Zustand hat sich inzwischen geändert. Aktualisiere die Liste und versuche es erneut.',
   'instance.settings.signupTitle': 'Registrierung',

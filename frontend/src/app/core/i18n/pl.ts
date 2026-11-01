@@ -1434,6 +1434,7 @@ export const pl = {
   'instance.orgs.deleteConfirm': 'Usuń na stałe',
   'instance.orgs.empty': 'Brak organizacji dla tych filtrów',
   'instance.state.active': 'Aktywna',
+  'instance.state.deleted': 'Usunięta',
   'instance.state.suspended': 'Zawieszona',
   'instance.users.search': 'Szukaj po imieniu lub e-mailu',
   'instance.users.total': 'Użytkownicy: {count}',
@@ -1472,6 +1473,9 @@ export const pl = {
   'instance.error.lastAdmin': 'Musi zostać co najmniej jeden administrator instancji.',
   'instance.error.mailNotConfigured': 'Poczta nie jest skonfigurowana na tym serwerze.',
   'instance.error.slugMismatch': 'Identyfikator nie zgadza się z organizacją.',
+  'instance.error.mailSendFailed':
+    'Nie udało się wysłać wiadomości. Sprawdź ustawienia serwera poczty.',
+  'instance.error.announcementTooLong': 'Ogłoszenie jest za długie. Maksymalnie 500 znaków.',
   'instance.error.conflict': 'Stan zmienił się w międzyczasie. Odśwież listę i spróbuj ponownie.',
   'instance.settings.signupTitle': 'Rejestracja',
   'instance.settings.signupLead':
