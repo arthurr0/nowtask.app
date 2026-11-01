@@ -284,6 +284,7 @@
   </aside>
 
   <main class="app-main flex min-w-0 flex-1 flex-col overflow-hidden">
+    <app-announcement-banner />
     @if (store.ready()) {
       <router-outlet />
     } @else {

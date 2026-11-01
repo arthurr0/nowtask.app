@@ -29,6 +29,7 @@ import { Menu, type MenuItem } from '../../ui/menu';
 import { PageState } from '../../ui/page-state';
 import { PromptService } from '../../ui/prompt.service';
 import { ToastService } from '../../ui/toast.service';
+import { AnnouncementBanner } from './announcement-banner';
 import { TaskComposerDialog } from '../task-composer/task-composer';
 import { TaskDialog } from '../task-detail/task-dialog';
 import { OnboardingChecklist } from '../onboarding/checklist';
@@ -92,6 +93,7 @@ function defaultNavigation(): NavItemDto[] {
     CommandPaletteDialog,
     OnboardingChecklist,
     OnboardingTour,
+    AnnouncementBanner,
   ],
   templateUrl: './shell.html',
 })
