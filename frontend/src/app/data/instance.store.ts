@@ -12,7 +12,7 @@ import type {
   InstanceUserQuery,
 } from '../core/api-types';
 import { LoadableStore } from './feature.stores';
-import { WorkspaceStore } from './workspace.store';
+import { WorkspaceStore, describe } from './workspace.store';
 
 export const INSTANCE_PAGE_SIZE = 25;
 
@@ -42,9 +42,14 @@ export function instanceQuery(values: object): string {
   return text ? `?${text}` : '';
 }
 
+type ListKey = 'organizations' | 'users' | 'audit';
+
 @Injectable({ providedIn: 'root' })
 export class InstanceStore extends LoadableStore {
   private readonly workspace = inject(WorkspaceStore);
+
+  private readonly sequences: Record<ListKey, number> = { organizations: 0, users: 0, audit: 0 };
+  private readonly pending = new Set<ListKey>();
 
   private readonly overviewSignal = signal<InstanceOverviewDto | null>(null);
   private readonly organizationsSignal = signal<InstancePageDto<InstanceOrganizationDto> | null>(
@@ -73,57 +78,59 @@ export class InstanceStore extends LoadableStore {
     });
   }
 
-  async loadOrganizations(patch: Partial<InstanceOrganizationQuery> = {}): Promise<void> {
+  async loadOrganizations(patch: Partial<InstanceOrganizationQuery> = {}): Promise<boolean> {
     const query = { ...this.organizationQuerySignal(), ...patch };
     this.organizationQuerySignal.set(query);
-    await this.guard(async () => {
-      this.organizationsSignal.set(
-        await firstValueFrom(
+    return this.loadList(
+      'organizations',
+      () =>
+        firstValueFrom(
           this.http.get<InstancePageDto<InstanceOrganizationDto>>(
             `${BASE}/organizations${instanceQuery(query)}`,
           ),
         ),
-      );
-    });
+      (page) => this.organizationsSignal.set(page),
+    );
   }
 
-  async suspendOrganization(id: string): Promise<void> {
+  async suspendOrganization(id: string): Promise<boolean> {
     await firstValueFrom(this.http.post(`${BASE}/organizations/${id}/suspend`, {}));
-    await this.loadOrganizations();
+    return this.refreshOrganizations();
   }
 
-  async restoreOrganization(id: string): Promise<void> {
+  async restoreOrganization(id: string): Promise<boolean> {
     await firstValueFrom(this.http.post(`${BASE}/organizations/${id}/restore`, {}));
-    await this.loadOrganizations();
+    return this.refreshOrganizations();
   }
 
-  async deleteOrganization(id: string, confirmSlug: string): Promise<void> {
+  async deleteOrganization(id: string, confirmSlug: string): Promise<boolean> {
     await firstValueFrom(
       this.http.delete(`${BASE}/organizations/${id}`, { body: { confirmSlug } }),
     );
-    await this.loadOrganizations();
+    return this.refreshOrganizations();
   }
 
-  async loadUsers(patch: Partial<InstanceUserQuery> = {}): Promise<void> {
+  async loadUsers(patch: Partial<InstanceUserQuery> = {}): Promise<boolean> {
     const query = { ...this.userQuerySignal(), ...patch };
     this.userQuerySignal.set(query);
-    await this.guard(async () => {
-      this.usersSignal.set(
-        await firstValueFrom(
+    return this.loadList(
+      'users',
+      () =>
+        firstValueFrom(
           this.http.get<InstancePageDto<InstanceUserDto>>(`${BASE}/users${instanceQuery(query)}`),
         ),
-      );
-    });
+      (page) => this.usersSignal.set(page),
+    );
   }
 
-  async disableUser(id: string): Promise<void> {
+  async disableUser(id: string): Promise<boolean> {
     await firstValueFrom(this.http.post(`${BASE}/users/${id}/disable`, {}));
-    await this.loadUsers();
+    return this.refreshUsers();
   }
 
-  async enableUser(id: string): Promise<void> {
+  async enableUser(id: string): Promise<boolean> {
     await firstValueFrom(this.http.post(`${BASE}/users/${id}/enable`, {}));
-    await this.loadUsers();
+    return this.refreshUsers();
   }
 
   async revokeUserSessions(id: string): Promise<void> {
@@ -162,19 +169,70 @@ export class InstanceStore extends LoadableStore {
     await firstValueFrom(this.http.post(`${BASE}/mail/test`, {}));
   }
 
-  async loadAudit(page = 0): Promise<void> {
-    await this.guard(async () => {
-      this.auditSignal.set(
-        await firstValueFrom(
+  async loadAudit(page = 0): Promise<boolean> {
+    return this.loadList(
+      'audit',
+      () =>
+        firstValueFrom(
           this.http.get<InstancePageDto<InstanceAuditDto>>(
             `${BASE}/audit${instanceQuery({ page, size: INSTANCE_PAGE_SIZE })}`,
           ),
         ),
-      );
-    });
+      (result) => this.auditSignal.set(result),
+    );
+  }
+
+  private async refreshOrganizations(): Promise<boolean> {
+    const ok = await this.loadOrganizations();
+    const page = this.organizationsSignal();
+    const current = this.organizationQuerySignal().page;
+    if (ok && page && page.items.length === 0 && current > 0) {
+      return this.loadOrganizations({ page: current - 1 });
+    }
+    return ok;
+  }
+
+  private async refreshUsers(): Promise<boolean> {
+    const ok = await this.loadUsers();
+    const page = this.usersSignal();
+    const current = this.userQuerySignal().page;
+    if (ok && page && page.items.length === 0 && current > 0) {
+      return this.loadUsers({ page: current - 1 });
+    }
+    return ok;
+  }
+
+  private async loadList<T>(
+    key: ListKey,
+    request: () => Promise<T>,
+    apply: (value: T) => void,
+  ): Promise<boolean> {
+    const sequence = ++this.sequences[key];
+    this.pending.add(key);
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    try {
+      const value = await request();
+      if (sequence !== this.sequences[key]) return true;
+      apply(value);
+      return true;
+    } catch (error) {
+      if (sequence !== this.sequences[key]) return true;
+      this.errorSignal.set(describe(error));
+      return false;
+    } finally {
+      if (sequence === this.sequences[key]) {
+        this.pending.delete(key);
+        this.loadingSignal.set(this.pending.size > 0);
+      }
+    }
   }
 
   clear(): void {
+    for (const key of Object.keys(this.sequences) as ListKey[]) {
+      this.sequences[key]++;
+    }
+    this.pending.clear();
     this.resetState();
     this.overviewSignal.set(null);
     this.organizationsSignal.set(null);

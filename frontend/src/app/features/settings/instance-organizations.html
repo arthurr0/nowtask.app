@@ -63,15 +63,14 @@
           <div class="flex min-h-14 items-center gap-4 border-b border-line py-2">
             <span class="flex min-w-0 flex-1 flex-col">
               <span class="truncate text-[13px] font-medium">{{ organization.name }}</span>
-              <span class="truncate text-[11px] text-ink-3">
-                &#64;{{ organization.slug }}
-                @if (organization.ssoDomain) {
-                  <span>
-                    ,
-                    {{ t('instance.orgs.sso', { domain: organization.ssoDomain }) }}</span
-                  >
-                }
-              </span>
+              <span class="truncate text-[11px] text-ink-3">{{
+                organization.ssoDomain
+                  ? t('instance.orgs.slugSso', {
+                      slug: organization.slug,
+                      domain: organization.ssoDomain,
+                    })
+                  : t('instance.orgs.slugLine', { slug: organization.slug })
+              }}</span>
             </span>
             <span class="flex w-[110px] flex-none flex-col items-start gap-0.5">
               <span

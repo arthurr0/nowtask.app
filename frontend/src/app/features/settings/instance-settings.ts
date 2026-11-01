@@ -87,12 +87,16 @@ export class InstanceSettings implements OnInit {
     });
   });
 
-  protected readonly dirty = computed(() => {
+  protected readonly signupChanged = computed(() => {
+    const settings = this.store.settings();
+    return settings !== null && this.signupDraft() !== (settings.signupMode ?? '');
+  });
+
+  protected readonly announcementChanged = computed(() => {
     const settings = this.store.settings();
     if (!settings) return false;
     const announcement = settings.announcement;
     const text = this.textDraft().trim();
-    if (this.signupDraft() !== (settings.signupMode ?? '')) return true;
     if (!announcement) return text !== '';
     return (
       text !== announcement.text ||
@@ -100,6 +104,8 @@ export class InstanceSettings implements OnInit {
       this.untilDraft() !== isoToLocalInput(announcement.until)
     );
   });
+
+  protected readonly dirty = computed(() => this.signupChanged() || this.announcementChanged());
 
   constructor() {
     effect(() => {
@@ -133,13 +139,23 @@ export class InstanceSettings implements OnInit {
 
   protected async save(): Promise<void> {
     if (!this.dirty() || this.saving()) return;
-    const text = this.textDraft().trim();
-    const patch: InstanceSettingsPatch = {
-      signupMode: (this.signupDraft() || null) as InstanceSignupMode | null,
-      announcement: text
-        ? { text, level: this.levelDraft(), until: localInputToIso(this.untilDraft()) }
-        : null,
-    };
+    const settings = this.store.settings();
+    const patch: InstanceSettingsPatch = {};
+    if (this.signupChanged()) {
+      patch.signupMode = (this.signupDraft() || null) as InstanceSignupMode | null;
+    }
+    if (this.announcementChanged()) {
+      const text = this.textDraft().trim();
+      const previous = settings?.announcement ?? null;
+      const untilUnchanged = this.untilDraft() === isoToLocalInput(previous?.until ?? null);
+      patch.announcement = text
+        ? {
+            text,
+            level: this.levelDraft(),
+            until: untilUnchanged ? (previous?.until ?? null) : localInputToIso(this.untilDraft()),
+          }
+        : null;
+    }
     this.saving.set(true);
     try {
       await this.store.saveSettings(patch);

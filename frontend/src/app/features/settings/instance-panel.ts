@@ -26,20 +26,19 @@ export type InstanceTab = 'overview' | 'organizations' | 'users' | 'settings' | 
       </header>
 
       <div
-        role="tablist"
+        role="group"
         class="flex gap-1 overflow-x-auto border-b border-line"
         [attr.aria-label]="t('instance.tabs')"
       >
         @for (item of tabs; track item.id) {
           <button
             type="button"
-            role="tab"
             class="-mb-px flex h-10 flex-none items-center border-b-2 px-3 text-[13px]"
             [class.border-ink]="tab() === item.id"
             [class.font-medium]="tab() === item.id"
             [class.border-transparent]="tab() !== item.id"
             [class.text-ink-2]="tab() !== item.id"
-            [attr.aria-selected]="tab() === item.id"
+            [attr.aria-pressed]="tab() === item.id"
             (click)="tab.set(item.id)"
           >
             {{ t(item.label) }}

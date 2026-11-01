@@ -23,6 +23,7 @@ import { TextField } from '../../ui/text-field';
       size="sm"
       title="instance.orgs.deleteTitle"
       [description]="lead()"
+      [dismissible]="!busy()"
       (closed)="cancelled.emit()"
     >
       <div class="flex flex-col gap-4">
@@ -43,7 +44,8 @@ import { TextField } from '../../ui/text-field';
       <div dialogFooter class="flex w-full items-center justify-end gap-2">
         <button
           type="button"
-          class="flex h-9 items-center rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+          class="flex h-9 items-center rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px] disabled:opacity-50"
+          [disabled]="busy()"
           (click)="cancelled.emit()"
         >
           {{ t('common.cancel') }}

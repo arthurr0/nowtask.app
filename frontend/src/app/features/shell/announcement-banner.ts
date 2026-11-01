@@ -1,9 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   announcementIconTone,
   announcementKey,
   announcementTone,
   announcementVisible,
+  clearDismissedAnnouncement,
   readDismissedAnnouncement,
   writeDismissedAnnouncement,
 } from '../../core/announcement';
@@ -34,7 +43,7 @@ import { Icon } from '../../ui/icon';
         </span>
         <button
           type="button"
-          class="flex h-5 w-5 flex-none items-center justify-center rounded-[5px] text-ink-2"
+          class="hoverable -my-1.5 -mr-1.5 flex h-8 w-8 flex-none items-center justify-center rounded-[6px] text-ink-2"
           [attr.aria-label]="t('instance.banner.dismiss')"
           (click)="dismiss()"
         >
@@ -58,6 +67,16 @@ export class AnnouncementBanner {
     if (!announcementVisible(announcement)) return null;
     return announcementKey(announcement) === this.dismissed() ? null : announcement;
   });
+
+  constructor() {
+    effect(() => {
+      if (!this.store.ready() || this.store.announcement() !== null) return;
+      untracked(() => {
+        clearDismissedAnnouncement();
+        this.dismissed.set(null);
+      });
+    });
+  }
 
   protected dismiss(): void {
     const announcement = this.current();

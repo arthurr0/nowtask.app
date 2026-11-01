@@ -100,7 +100,7 @@ export class InstanceAudit implements OnInit {
     void this.load(0);
   }
 
-  protected load(page: number): Promise<void> {
+  protected load(page: number): Promise<boolean> {
     this.page.set(page);
     return this.store.loadAudit(page);
   }

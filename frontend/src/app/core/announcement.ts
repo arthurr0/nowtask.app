@@ -13,7 +13,7 @@ export function announcementVisible(
 }
 
 export function announcementKey(announcement: AnnouncementDto): string {
-  return `${announcement.level}:${announcement.text}`;
+  return JSON.stringify([announcement.level, announcement.text, announcement.until]);
 }
 
 export function readDismissedAnnouncement(): string | null {
@@ -29,6 +29,15 @@ export function writeDismissedAnnouncement(key: string): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, key);
+  } catch {
+    return;
+  }
+}
+
+export function clearDismissedAnnouncement(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
   } catch {
     return;
   }

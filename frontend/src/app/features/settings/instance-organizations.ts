@@ -126,9 +126,10 @@ export class InstanceOrganizations implements OnInit {
     this.deleteBusy.set(true);
     this.deleteError.set('');
     try {
-      await this.store.deleteOrganization(target.id, slug);
+      const reloaded = await this.store.deleteOrganization(target.id, slug);
       this.deleteTarget.set(null);
       this.toast.success(this.t('instance.orgs.deleted'));
+      if (!reloaded) this.toast.error(this.t('instance.loadFailed'));
     } catch (error) {
       this.deleteError.set(
         errorStatus(error) === 422
@@ -140,10 +141,11 @@ export class InstanceOrganizations implements OnInit {
     }
   }
 
-  private async run(work: () => Promise<void>, doneKey: string): Promise<void> {
+  private async run(work: () => Promise<boolean | void>, doneKey: string): Promise<void> {
     try {
-      await work();
+      const reloaded = await work();
       this.toast.success(this.t(doneKey));
+      if (reloaded === false) this.toast.error(this.t('instance.loadFailed'));
     } catch (error) {
       this.toast.error(instanceErrorMessage(error, this.t));
     }
