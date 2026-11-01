@@ -37,13 +37,30 @@
         <span class="flex-1">{{ t(item.label) }}</span>
       </button>
     }
+
+    @if (isInstanceAdmin()) {
+      <span class="kap px-2 pt-5 pb-1.5">{{ t('instance.section') }}</span>
+      @for (item of instanceSections(); track item.id) {
+        <button
+          type="button"
+          class="flex h-[34px] items-center gap-2.5 rounded-field px-2 text-left"
+          [class.bg-surface-2]="section() === item.id"
+          [class.font-medium]="section() === item.id"
+          [class.text-ink-2]="section() !== item.id"
+          (click)="section.set(item.id)"
+        >
+          <ui-icon [name]="item.icon" [size]="16" />
+          <span class="flex-1">{{ t(item.label) }}</span>
+        </button>
+      }
+    }
   </nav>
 
   <div
     class="flex min-w-0 flex-1 flex-col overflow-y-auto px-5 py-6 pb-24 lg:px-8 lg:pb-8 scroll-thin"
   >
     <div class="mb-5 flex gap-2 overflow-x-auto lg:hidden">
-      @for (item of accountSections.concat(personalSections); track item.id) {
+      @for (item of mobileSections(); track item.id) {
         <button
           type="button"
           class="flex h-11 flex-none items-center gap-2 rounded-full px-4 text-[13px]"
@@ -61,6 +78,11 @@
     </div>
 
     @switch (section()) {
+      @case ('instance') {
+        @if (isInstanceAdmin()) {
+          <app-instance-panel />
+        }
+      }
       @case ('profile') {
         <section class="flex flex-col gap-8">
           <header class="flex flex-col gap-1">

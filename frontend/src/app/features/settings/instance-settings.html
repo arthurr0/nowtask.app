@@ -1,0 +1,131 @@
+@if (store.settings()) {
+  <div class="flex flex-col gap-8">
+    <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+      <div class="flex w-[168px] flex-none flex-col gap-1">
+        <span class="text-[13px] font-medium">{{ t('instance.settings.signupTitle') }}</span>
+        <span class="text-xs leading-normal text-ink-3">{{
+          t('instance.settings.signupLead')
+        }}</span>
+      </div>
+      <div class="flex w-full max-w-[420px] flex-col gap-3">
+        <ui-select-field
+          label="instance.settings.signupMode"
+          [options]="signupOptions()"
+          [value]="signupDraft()"
+          (valueChange)="signupDraft.set($event)"
+          [hint]="effectiveLabel()"
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+      <div class="flex w-[168px] flex-none flex-col gap-1">
+        <span class="text-[13px] font-medium">{{ t('instance.settings.announcementTitle') }}</span>
+        <span class="text-xs leading-normal text-ink-3">{{
+          t('instance.settings.announcementLead')
+        }}</span>
+      </div>
+      <div class="flex w-full max-w-[420px] flex-col gap-4">
+        <ui-textarea-field
+          label="instance.settings.announcementText"
+          hint="instance.settings.announcementEmpty"
+          [rows]="3"
+          [maxLength]="announcementMax"
+          [value]="textDraft()"
+          (valueChange)="textDraft.set($event)"
+        />
+        <ui-select-field
+          label="instance.settings.announcementLevel"
+          [options]="levelOptions()"
+          [value]="levelDraft()"
+          (valueChange)="setLevel($event)"
+        />
+        <ui-date-field
+          label="instance.settings.announcementUntil"
+          hint="instance.settings.announcementUntilHint"
+          [withTime]="true"
+          [value]="untilDraft()"
+          (valueChange)="untilDraft.set($event)"
+        />
+
+        @if (textDraft().trim()) {
+          <div class="flex flex-col gap-1.5">
+            <span class="kap">{{ t('instance.settings.preview') }}</span>
+            <div
+              class="flex items-start gap-2.5 rounded-panel border px-3 py-2.5 text-[13px]"
+              [class]="tone(levelDraft())"
+            >
+              <ui-icon
+                name="alert"
+                [size]="15"
+                class="mt-px flex-none"
+                [class]="iconTone(levelDraft())"
+              />
+              <span class="min-w-0 flex-1 break-words">{{ textDraft().trim() }}</span>
+            </div>
+          </div>
+        }
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="flex h-9 items-center gap-1.5 rounded-[7px] bg-inv px-3.5 text-[13px] font-medium text-inv-ink"
+            [disabled]="!dirty() || saving()"
+            [class.opacity-50]="!dirty() || saving()"
+            (click)="save()"
+          >
+            <ui-icon name="save" [size]="15" />
+            {{ t('instance.settings.save') }}
+          </button>
+          @if (textDraft()) {
+            <button
+              type="button"
+              class="flex h-9 items-center rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+              (click)="clearAnnouncement()"
+            >
+              {{ t('common.delete') }}
+            </button>
+          }
+        </div>
+        @if (updatedLabel()) {
+          <span class="text-[11px] text-ink-3">{{ updatedLabel() }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 lg:flex-row lg:gap-10">
+      <div class="flex w-[168px] flex-none flex-col gap-1">
+        <span class="text-[13px] font-medium">{{ t('instance.settings.mailTitle') }}</span>
+        <span class="text-xs leading-normal text-ink-3">{{ t('instance.settings.mailLead') }}</span>
+      </div>
+      <div class="flex w-full max-w-[420px] flex-col gap-3">
+        <div>
+          <button
+            type="button"
+            class="flex h-9 items-center gap-1.5 rounded-[7px] border border-line-strong bg-surface px-3.5 text-[13px]"
+            [disabled]="mailSending()"
+            [class.opacity-50]="mailSending()"
+            (click)="sendTestMail()"
+          >
+            <ui-icon name="message" [size]="15" />
+            {{ t('instance.settings.mailTest') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else if (store.error()) {
+  <div class="flex flex-col items-start gap-3 rounded-panel border border-line p-4">
+    <p class="flex items-center gap-2 text-[13px] text-ink-2">
+      <ui-icon name="alert" [size]="15" />
+      {{ t('instance.loadFailed') }}
+    </p>
+    <button
+      type="button"
+      class="flex h-8 items-center rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+      (click)="load()"
+    >
+      {{ t('instance.retry') }}
+    </button>
+  </div>
+}

@@ -1,0 +1,147 @@
+<div class="flex min-w-0 flex-col gap-3">
+  <div class="flex flex-wrap items-center gap-2.5">
+    <span
+      class="focus-ring flex h-[34px] min-w-[220px] flex-1 items-center gap-2 rounded-field border border-line bg-surface-2 px-2.5 lg:max-w-[360px]"
+    >
+      <ui-icon name="search" [size]="15" class="text-ink-3" />
+      <input
+        class="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-ink-3"
+        [placeholder]="t('instance.users.search')"
+        [attr.aria-label]="t('instance.users.search')"
+        [value]="search()"
+        (input)="onSearch($any($event.target).value)"
+      />
+      @if (search()) {
+        <button
+          type="button"
+          class="text-ink-3"
+          [attr.aria-label]="t('ui.field.clear')"
+          (click)="clearSearch()"
+        >
+          <ui-icon name="x" [size]="12" />
+        </button>
+      }
+    </span>
+    <app-instance-segmented
+      [options]="stateOptions"
+      [value]="store.userQuery().state"
+      ariaLabel="common.status"
+      (picked)="setState($event)"
+    />
+    <app-instance-segmented
+      [options]="adminOptions"
+      [value]="store.userQuery().admin"
+      ariaLabel="instance.users.adminBadge"
+      (picked)="setAdmin($event)"
+    />
+    <span class="flex-1"></span>
+    <span class="font-mono text-[11px] text-ink-3">{{
+      t('instance.users.total', { count: store.users()?.total ?? 0 })
+    }}</span>
+  </div>
+
+  @if (store.error() && !store.users()) {
+    <div class="flex flex-col items-start gap-3 rounded-panel border border-line p-4">
+      <p class="flex items-center gap-2 text-[13px] text-ink-2">
+        <ui-icon name="alert" [size]="15" />
+        {{ t('instance.loadFailed') }}
+      </p>
+      <button
+        type="button"
+        class="flex h-8 items-center rounded-field border border-line bg-surface-2 px-2.5 text-xs text-ink-2"
+        (click)="reload()"
+      >
+        {{ t('instance.retry') }}
+      </button>
+    </div>
+  } @else {
+    <div class="overflow-x-auto scroll-thin">
+      <div class="min-w-[760px]">
+        <div class="kap flex h-9 items-center gap-4 border-b border-line">
+          <span class="min-w-0 flex-1">{{ t('instance.tab.users') }}</span>
+          <span class="w-[110px]">{{ t('common.status') }}</span>
+          <span class="w-[80px] text-right">{{ t('instance.users.organizations') }}</span>
+          <span class="w-[110px]">{{ t('instance.users.lastSeen') }}</span>
+          <span class="w-7"></span>
+        </div>
+        @for (user of store.users()?.items ?? []; track user.id) {
+          <div
+            class="flex min-h-14 items-center gap-4 border-b border-line py-2"
+            [class.opacity-70]="user.state === 'disabled'"
+          >
+            <span
+              class="inline-flex h-8 w-8 flex-none items-center justify-center rounded-full bg-surface-3 font-mono text-xs text-ink-2"
+              >{{ user.initials }}</span
+            >
+            <span class="flex min-w-0 flex-1 flex-col">
+              <span class="flex min-w-0 items-center gap-2">
+                <span class="truncate text-[13px] font-medium">{{ user.name }}</span>
+                @if (isSelf(user)) {
+                  <span class="flex-none text-[11px] text-ink-3"
+                    >({{ t('instance.users.you') }})</span
+                  >
+                }
+                @if (user.instanceAdmin) {
+                  <span
+                    class="flex-none rounded-full bg-inv px-2 py-0.5 text-[10px] text-inv-ink"
+                    >{{ t('instance.users.adminBadge') }}</span
+                  >
+                }
+              </span>
+              <span class="flex min-w-0 items-center gap-1.5 text-[11px] text-ink-3">
+                <span class="truncate">{{ user.email }}</span>
+                @if (!user.emailVerified) {
+                  <span class="flex-none text-warn">{{ t('instance.users.unverified') }}</span>
+                }
+              </span>
+            </span>
+            <span class="w-[110px] flex-none">
+              <span
+                class="rounded-full px-2.5 py-0.5 text-[11px]"
+                [class.border]="user.state === 'active'"
+                [class.border-line]="user.state === 'active'"
+                [class.text-ink-2]="user.state === 'active'"
+                [class.bg-warn-soft]="user.state === 'disabled'"
+                [class.text-warn]="user.state === 'disabled'"
+                >{{ t('instance.userState.' + user.state) }}</span
+              >
+            </span>
+            <span class="w-[80px] flex-none text-right font-mono text-xs text-ink-2">{{
+              user.organizationCount
+            }}</span>
+            <span class="w-[110px] flex-none font-mono text-xs text-ink-3">{{
+              user.lastSeenAt ? formatDateTime(user.lastSeenAt) : t('instance.users.never')
+            }}</span>
+            @if (menu(user); as items) {
+              @if (items.length) {
+                <ui-menu
+                  [items]="items"
+                  triggerClass="hoverable flex h-7 w-7 flex-none items-center justify-center rounded-[6px] text-ink-3"
+                  triggerHeight="28px"
+                  ariaLabel="common.more"
+                  align="end"
+                  (selected)="onMenu($event, user)"
+                >
+                  <ui-icon name="dots" [size]="15" />
+                </ui-menu>
+              } @else {
+                <span class="w-7 flex-none"></span>
+              }
+            }
+          </div>
+        } @empty {
+          @if (!store.loading()) {
+            <p class="py-8 text-center text-xs text-ink-3">{{ t('instance.users.empty') }}</p>
+          }
+        }
+      </div>
+    </div>
+
+    <app-instance-pager
+      [page]="store.userQuery().page"
+      [total]="store.users()?.total ?? 0"
+      [size]="pageSize"
+      (pageChange)="setPage($event)"
+    />
+  }
+</div>

@@ -34,9 +34,17 @@ import { Topbar } from '../../ui/topbar';
 import { ViewControls } from '../../ui/view-controls';
 import { TextField } from '../../ui/text-field';
 import { DeleteAccountDialog, EmailChangeDialog, type EmailChangeDraft } from './account-dialogs';
+import { InstancePanel } from './instance-panel';
 
 type Section =
-  'profile' | 'security' | 'notifications' | 'github' | 'appearance' | 'views' | 'language';
+  | 'profile'
+  | 'security'
+  | 'notifications'
+  | 'github'
+  | 'appearance'
+  | 'views'
+  | 'language'
+  | 'instance';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -52,6 +60,7 @@ const MIN_PASSWORD_LENGTH = 10;
     TextField,
     EmailChangeDialog,
     DeleteAccountDialog,
+    InstancePanel,
   ],
   templateUrl: './settings.html',
 })
@@ -83,6 +92,20 @@ export class Settings implements OnInit {
     { id: 'views', icon: 'board', label: 'settings.views' },
     { id: 'language', icon: 'globe', label: 'settings.language' },
   ];
+
+  protected readonly isInstanceAdmin = computed(() => this.auth.user()?.instanceAdmin === true);
+
+  protected readonly instanceSections = computed<
+    readonly { id: Section; icon: string; label: string }[]
+  >(() =>
+    this.isInstanceAdmin() ? [{ id: 'instance', icon: 'shield', label: 'instance.nav' }] : [],
+  );
+
+  protected readonly mobileSections = computed(() => [
+    ...this.accountSections,
+    ...this.personalSections,
+    ...this.instanceSections(),
+  ]);
 
   protected readonly themeChoices: readonly { id: ThemeChoice; label: string }[] = [
     { id: 'light', label: 'settings.light' },
