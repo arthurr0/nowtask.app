@@ -27,7 +27,9 @@ class TenantSchemaTest {
             "user_notification_pref",
             "spring_session",
             "spring_session_attributes",
-            "github_account");
+            "github_account",
+            "instance_settings",
+            "instance_audit_event");
 
     private static final Set<String> NULLABLE_ORGANIZATION_ID = Set.of("audit_event");
 
@@ -50,7 +52,9 @@ class TenantSchemaTest {
             "user_notification_pref",
             "spring_session",
             "spring_session_attributes",
-            "github_account");
+            "github_account",
+            "instance_settings",
+            "instance_audit_event");
 
     @Test
     void everyDomainTableCarriesTheOrganization() throws SQLException {
@@ -209,6 +213,11 @@ class TenantSchemaTest {
                         "github_installation_lookup",
                         "github_installation_release",
                         "invite_lookup",
+                        "instance_organization_close",
+                        "instance_organization_counts",
+                        "instance_organization_page",
+                        "instance_organization_set_state",
+                        "instance_user_page",
                         "invites_due_for_reminder",
                         "organization_by_sso_domain",
                         "organization_slug_taken");
